@@ -1,0 +1,19 @@
+{
+	"name": "lernassi",
+	"short_name": "lernassi",
+	"description": "KI-Lernassistent für selbstwirksames Lernen",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"background_color": "#ffffff",
+	"theme_color": "#1d4ed8",
+	"lang": "de",
+	"icons": [
+		{
+			"src": "/favicon.svg",
+			"sizes": "any",
+			"type": "image/svg+xml",
+			"purpose": "any"
+		}
+	]
+}
