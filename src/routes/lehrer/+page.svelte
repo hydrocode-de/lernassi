@@ -2,29 +2,31 @@
 	let { data, form } = $props();
 </script>
 
-<h1>Meine Klassen</h1>
-{#if form?.message}<div class="msg error">{form.message}</div>{/if}
-{#if form?.ok}<div class="msg ok">{form.ok}</div>{/if}
+<h1 style="margin:0 0 18px">Meine Klassen</h1>
+
+{#if form?.message}<div class="meldung meldung--fehler">{form.message}</div>{/if}
+{#if form?.ok}<div class="meldung meldung--ok">{form.ok}</div>{/if}
 
 <div class="card">
-	<h2 style="margin-top:0">Neue Klasse</h2>
-	<form method="POST" action="?/createClass" class="row">
-		<div style="flex:1">
-			<label for="name">Klassenname</label>
-			<input id="name" name="name" placeholder="z. B. 7b Geschichte" required />
-		</div>
-		<button>Anlegen</button>
+	<h3 style="margin:0 0 4px">Neue Klasse</h3>
+	<p class="small" style="margin:0 0 12px">Ein Klassencode entsteht automatisch.</p>
+	<form method="POST" action="?/createClass" class="stack">
+		<label class="field">
+			<span class="field__label">Name der Klasse</span>
+			<input name="name" placeholder="z. B. 9b Geschichte" required />
+		</label>
+		<button class="btn">Anlegen</button>
 	</form>
 </div>
 
 {#if data.classes.length === 0}
-	<p class="muted">Noch keine Klassen. Leg oben deine erste an.</p>
+	<p class="muted" style="margin-top:20px">Noch keine Klasse angelegt.</p>
 {:else}
-	<ul class="clean">
-		{#each data.classes as c (c.id)}
+	<ul class="liste" style="margin-top:22px">
+		{#each data.classes as klasse (klasse.id)}
 			<li>
-				<a href="/lehrer/klasse/{c.id}">{c.name}</a>
-				<span class="pill code">{c.joinCode}</span>
+				<a href="/lehrer/klasse/{klasse.id}" style="font-size:17px">{klasse.name}</a>
+				<span class="tag mono">{klasse.joinCode}</span>
 			</li>
 		{/each}
 	</ul>

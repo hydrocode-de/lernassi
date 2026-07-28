@@ -1,0 +1,66 @@
+<!-- @dsCard group="Patterns" viewport="900x740" name="Inhaltsverzeichnis (ein Fach)" subtitle="Fach wählen, dann Kapitel – Fächer werden nie gemischt" -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+body{padding:32px;max-width:820px}
+.subjects{display:flex;gap:10px;overflow:auto;padding-bottom:4px}
+.subj{font-family:var(--display);font-weight:600;font-size:15px;line-height:1;display:inline-flex;align-items:center;gap:8px;padding:11px 15px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.subj[aria-current="true"]{background:var(--lavender);border-color:var(--lavender-2);color:var(--lavender-ink)}
+.subj em{font-style:normal;font-weight:400;opacity:.65}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:26px 0 4px}
+.progress{height:6px;border-radius:3px;background:var(--paper-2);overflow:hidden;display:flex;margin:14px 0 26px}
+.progress span{display:block}
+.chapter{border-top:1px solid var(--line);padding:20px 0 4px}
+.chapter:first-of-type{border-top:0}
+.chapter > .row{margin-bottom:10px}
+.items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.item{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:12px;padding:11px 14px 11px 12px;border-radius:var(--r);cursor:pointer}
+.item:hover{background:var(--surface)}
+.dot{width:10px;height:10px;border-radius:50%}
+.item .t{font-size:16px}
+.item .m{font-size:13px;color:var(--ink-3);white-space:nowrap}
+.only{font-size:13px;color:var(--ink-3);margin:26px 0 0;padding-top:16px;border-top:1px solid var(--line)}
+</style>
+<p class="eyebrow">Patterns</p>
+<h1 style="margin:0 0 16px">Inhaltsverzeichnis</h1>
+<div class="subjects">
+<button class="subj" aria-current="true">Geschichte <em>12</em></button>
+<button class="subj">Mathematik <em>9</em></button>
+<button class="subj">Biologie <em>6</em></button>
+<button class="subj">Deutsch <em>4</em></button>
+<button class="subj">Englisch <em>3</em></button>
+</div>
+<div class="head">
+<div><h2>Geschichte</h2><p class="small" style="margin:4px 0 0">12 Aufschriebe in 3 Kapiteln · Klasse 9b</p></div>
+<span class="tag tag--mint">5 verstanden</span>
+</div>
+<div class="progress">
+<span style="background:var(--mint-2);width:42%"></span><span style="background:var(--apricot-2);width:25%"></span><span style="background:var(--rose-2);width:17%"></span><span style="background:var(--sky-2);width:16%"></span>
+</div>
+<section class="chapter">
+<div class="row"><h3>Erster Weltkrieg</h3><span class="small">5 Themen</span></div>
+<ul class="items">
+<li class="item"><span class="dot" style="background:var(--rose-ink)"></span><span class="t">Ursachen und Bündnissysteme</span><span class="m">heute</span></li>
+<li class="item"><span class="dot" style="background:var(--apricot-ink)"></span><span class="t">Kriegsverlauf 1914–1916</span><span class="m">vor 4 Tagen</span></li>
+<li class="item"><span class="dot" style="background:var(--mint-ink)"></span><span class="t">Kriegsende und Versailles</span><span class="m">vor 1 Woche</span></li>
+<li class="item"><span class="dot" style="background:var(--sky-ink)"></span><span class="t">Quellen: Feldpostbriefe</span><span class="m">vor 2 Wochen</span></li>
+<li class="item"><span class="dot" style="background:var(--mint-ink)"></span><span class="t">Begriffe: Mobilmachung, Ultimatum</span><span class="m">vor 2 Wochen</span></li>
+</ul>
+</section>
+<section class="chapter">
+<div class="row"><h3>Weimarer Republik</h3><span class="small">4 Themen</span></div>
+<ul class="items">
+<li class="item"><span class="dot" style="background:var(--apricot-ink)"></span><span class="t">Gründung und Verfassung</span><span class="m">vor 3 Wochen</span></li>
+<li class="item"><span class="dot" style="background:var(--mint-ink)"></span><span class="t">Krisenjahr 1923</span><span class="m">vor 3 Wochen</span></li>
+<li class="item"><span class="dot" style="background:var(--sky-ink)"></span><span class="t">Goldene Zwanziger</span><span class="m">vor 1 Monat</span></li>
+<li class="item"><span class="dot" style="background:var(--mint-ink)"></span><span class="t">Weltwirtschaftskrise</span><span class="m">vor 1 Monat</span></li>
+</ul>
+</section>
+<section class="chapter">
+<div class="row"><h3>Industrialisierung</h3><span class="small">3 Themen</span></div>
+<ul class="items">
+<li class="item"><span class="dot" style="background:var(--sky-ink)"></span><span class="t">Dampfmaschine und Eisenbahn</span><span class="m">vor 2 Monaten</span></li>
+<li class="item"><span class="dot" style="background:var(--apricot-ink)"></span><span class="t">Soziale Frage</span><span class="m">vor 2 Monaten</span></li>
+<li class="item"><span class="dot" style="background:var(--mint-ink)"></span><span class="t">Kinderarbeit</span><span class="m">vor 2 Monaten</span></li>
+</ul>
+</section>
+<p class="only">Regel: Ein Inhaltsverzeichnis zeigt immer genau ein Fach. Fachwechsel oben, Gliederung darunter nach Kapitel und Thema – Aufschriebe aus verschiedenen Fächern stehen nie in derselben Liste.</p>

@@ -102,6 +102,80 @@ export const learningGoals = sqliteTable('learning_goals', {
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
+// ─────────────────────────────────────────────────────────────
+// Ingestion: Material aufbauen (M2)
+// ─────────────────────────────────────────────────────────────
+
+// Gliederung pro Kind: Fach → Kapitel → Thema. Wächst mit jedem Aufschrieb.
+// Ein Inhaltsverzeichnis zeigt immer genau EIN Fach (Fächer werden nie gemischt).
+export const tocEntries = sqliteTable('toc_entries', {
+	id: id(),
+	studentId: text('student_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	parentId: text('parent_id'),
+	kind: text('kind').notNull(), // 'subject' | 'chapter' | 'topic'
+	title: text('title').notNull(),
+	sortOrder: integer('sort_order').notNull().default(0),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
+// Eine Fotosession: die Seiten, die in einem Zug aufgenommen wurden.
+// Daraus können mehrere eigenständige Aufschriebe entstehen — eine einzelne Seite
+// kann schon zwei Themen tragen.
+export const uploads = sqliteTable('uploads', {
+	id: id(),
+	studentId: text('student_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	subject: text('subject').notNull(),
+	pageCount: integer('page_count').notNull().default(0),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
+// Einzelseite der Fotosession. imageRef nur gesetzt, wenn das Bild behalten werden darf
+// (Standard: nicht speichern; Testumgebung oder Einwilligung: ablegen).
+export const uploadPages = sqliteTable('upload_pages', {
+	id: id(),
+	uploadId: text('upload_id')
+		.notNull()
+		.references(() => uploads.id, { onDelete: 'cascade' }),
+	pageNumber: integer('page_number').notNull(),
+	imageRef: text('image_ref'),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
+// Ein eigenständiger Aufschrieb (ein Thema) aus einer Fotosession.
+export const notes = sqliteTable('notes', {
+	id: id(),
+	studentId: text('student_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	uploadId: text('upload_id').references(() => uploads.id, { onDelete: 'cascade' }),
+	topicId: text('topic_id').references(() => tocEntries.id, { onDelete: 'set null' }),
+	transcript: text('transcript'),
+	summary: text('summary'),
+	keywords: text('keywords'), // kommagetrennt, für die Begriffs-Chips
+	pageNumbers: text('page_numbers'), // z. B. "2,3" — welche Seiten dieses Thema betreffen
+	sortOrder: integer('sort_order').notNull().default(0),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
+// Kind-Präferenzen (zusätzlich zur rechtlichen Elterneinwilligung).
+export const consents = sqliteTable('consents', {
+	id: id(),
+	studentId: text('student_id')
+		.notNull()
+		.unique()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	// Standard: Fotos werden NICHT behalten. Der Schalter ist noch nicht freigegeben.
+	keepOwnImages: integer('keep_own_images', { mode: 'boolean' }).notNull().default(false),
+	teacherMayViewImages: integer('teacher_may_view_images', { mode: 'boolean' })
+		.notNull()
+		.default(false),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
 // Vergebene (reservierte) Pseudonyme pro Klasse. Die Lehrkraft generiert die Liste
 // und teilt sie aus; ein Kind beansprucht beim Registrieren ein unbeanspruchtes.
 // So können keine Klarnamen als Pseudonym reinrutschen.

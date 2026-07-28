@@ -2,19 +2,42 @@
 	let { form } = $props();
 </script>
 
-<h1>Anmeldung fürs Lernen</h1>
-<p class="muted">Deine Lehrkraft gibt dir einen <strong>Klassencode</strong> und ein <strong>Pseudonym</strong>. Ein Passwort denkst du dir selbst aus.</p>
-{#if form?.message}<div class="msg error">{form.message}</div>{/if}
+<h1 style="margin:0 0 6px">Willkommen</h1>
+<p class="muted" style="margin:0 0 18px;font-size:16px">
+	Deine Lehrkraft gibt dir einen Klassencode und ein Pseudonym. Ein Passwort denkst du dir selbst
+	aus – merk es dir gut.
+</p>
 
-<div class="card">
-	<form method="POST">
-		<label for="code">Klassencode</label>
-		<input id="code" name="code" value={form?.code ?? ''} placeholder="z. B. K7M2PQ" required />
-		<label for="pseudonym">Pseudonym</label>
-		<input id="pseudonym" name="pseudonym" value={form?.pseudonym ?? ''} placeholder="z. B. mutig_tiger_42" required />
-		<label for="password">Passwort (min. 6 Zeichen)</label>
-		<input id="password" name="password" type="password" required />
-		<button>Los geht's</button>
-	</form>
-</div>
-<p class="muted">Schon registriert? <a href="/schueler/anmelden">Anmelden</a></p>
+{#if form?.message}
+	<div class="meldung meldung--fehler">{form.message}</div>
+{/if}
+
+<form method="POST" class="stack" style="max-width:420px">
+	<label class="field">
+		<span class="field__label">Klassencode</span>
+		<input
+			name="code"
+			value={form?.code ?? ''}
+			class="mono"
+			autocapitalize="characters"
+			autocomplete="off"
+			required
+		/>
+	</label>
+	<label class="field">
+		<span class="field__label">Pseudonym</span>
+		<input name="pseudonym" value={form?.pseudonym ?? ''} autocapitalize="none" required />
+	</label>
+	<div>
+		<label class="field">
+			<span class="field__label">Passwort</span>
+			<input name="password" type="password" required />
+		</label>
+		<p class="field__hint">Mindestens 6 Zeichen.</p>
+	</div>
+	<button class="btn btn--go btn--lg btn--block">Los geht's</button>
+</form>
+
+<p class="small" style="margin:18px 2px 0">
+	Schon dabei? <a href="/schueler/anmelden">Anmelden</a>
+</p>

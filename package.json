@@ -11,6 +11,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "node --env-file=.env scripts/migrate.mjs",
+		"health:requesty": "node --env-file=.env scripts/health-requesty.mjs",
 		"db:studio": "drizzle-kit studio"
 	},
 	"devDependencies": {
@@ -25,8 +26,13 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@ai-sdk/openai-compatible": "^3.0.16",
+		"@fontsource-variable/source-sans-3": "^5.3.0",
+		"@fontsource/quicksand": "^5.3.0",
+		"ai": "^7.0.40",
 		"better-auth": "^1.6.25",
 		"better-sqlite3": "^12.11.1",
-		"drizzle-orm": "^0.45.2"
+		"drizzle-orm": "^0.45.2",
+		"zod": "^4.4.3"
 	}
 }

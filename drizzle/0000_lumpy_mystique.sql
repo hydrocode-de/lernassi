@@ -25,6 +25,16 @@ CREATE TABLE `classes` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `classes_join_code_unique` ON `classes` (`join_code`);--> statement-breakpoint
+CREATE TABLE `consents` (
+	`id` text PRIMARY KEY NOT NULL,
+	`student_id` text NOT NULL,
+	`keep_own_images` integer DEFAULT false NOT NULL,
+	`teacher_may_view_images` integer DEFAULT false NOT NULL,
+	`updated_at` integer NOT NULL,
+	FOREIGN KEY (`student_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `consents_student_id_unique` ON `consents` (`student_id`);--> statement-breakpoint
 CREATE TABLE `learning_goals` (
 	`id` text PRIMARY KEY NOT NULL,
 	`class_id` text NOT NULL,
@@ -36,6 +46,34 @@ CREATE TABLE `learning_goals` (
 	FOREIGN KEY (`class_id`) REFERENCES `classes`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE TABLE `notes` (
+	`id` text PRIMARY KEY NOT NULL,
+	`student_id` text NOT NULL,
+	`upload_id` text,
+	`topic_id` text,
+	`transcript` text,
+	`summary` text,
+	`keywords` text,
+	`page_numbers` text,
+	`sort_order` integer DEFAULT 0 NOT NULL,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`student_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`upload_id`) REFERENCES `uploads`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`topic_id`) REFERENCES `toc_entries`(`id`) ON UPDATE no action ON DELETE set null
+);
+--> statement-breakpoint
+CREATE TABLE `pseudonyms` (
+	`id` text PRIMARY KEY NOT NULL,
+	`class_id` text NOT NULL,
+	`value` text NOT NULL,
+	`claimed` integer DEFAULT false NOT NULL,
+	`user_id` text,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`class_id`) REFERENCES `classes`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE set null
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `pseudonyms_value_unique` ON `pseudonyms` (`value`);--> statement-breakpoint
 CREATE TABLE `session` (
 	`id` text PRIMARY KEY NOT NULL,
 	`user_id` text NOT NULL,
@@ -59,6 +97,35 @@ CREATE TABLE `students` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `students_user_id_unique` ON `students` (`user_id`);--> statement-breakpoint
+CREATE TABLE `toc_entries` (
+	`id` text PRIMARY KEY NOT NULL,
+	`student_id` text NOT NULL,
+	`parent_id` text,
+	`kind` text NOT NULL,
+	`title` text NOT NULL,
+	`sort_order` integer DEFAULT 0 NOT NULL,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`student_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `upload_pages` (
+	`id` text PRIMARY KEY NOT NULL,
+	`upload_id` text NOT NULL,
+	`page_number` integer NOT NULL,
+	`image_ref` text,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`upload_id`) REFERENCES `uploads`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `uploads` (
+	`id` text PRIMARY KEY NOT NULL,
+	`student_id` text NOT NULL,
+	`subject` text NOT NULL,
+	`page_count` integer DEFAULT 0 NOT NULL,
+	`created_at` integer NOT NULL,
+	FOREIGN KEY (`student_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `user` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text,

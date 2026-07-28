@@ -1,0 +1,35 @@
+<!-- @dsCard group="Patterns" viewport="760x680" name="Aufschrieb fotografieren" subtitle="Fach zuerst, dann Kamera – Seiten sammeln sich unten" -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+body{padding:32px;max-width:440px}
+.frame{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px}
+.viewfinder{position:relative;aspect-ratio:3/4;border-radius:var(--r);background:repeating-linear-gradient(180deg,var(--paper-2) 0 9px,var(--paper) 9px 18px);display:grid;place-items:center;overflow:hidden}
+.corner{position:absolute;width:26px;height:26px;border:2px solid var(--lavender-ink);opacity:.55}
+.tl{top:12px;left:12px;border-right:0;border-bottom:0;border-radius:6px 0 0 0}
+.tr{top:12px;right:12px;border-left:0;border-bottom:0;border-radius:0 6px 0 0}
+.bl{bottom:12px;left:12px;border-right:0;border-top:0;border-radius:0 0 0 6px}
+.br{bottom:12px;right:12px;border-left:0;border-top:0;border-radius:0 0 6px 0}
+.mono{font-family:ui-monospace,monospace;font-size:11px;color:var(--ink-3);text-align:center;line-height:1.6}
+.pages{display:flex;gap:8px;margin-top:16px;align-items:center}
+.page{width:38px;height:48px;border-radius:6px;background:repeating-linear-gradient(180deg,var(--paper-2) 0 6px,var(--surface) 6px 12px);border:1px solid var(--line-2)}
+.page--add{display:grid;place-items:center;border-style:dashed;color:var(--ink-3);font-size:20px;font-family:var(--display)}
+</style>
+<p class="eyebrow">Patterns</p>
+<h1 style="margin:0 0 6px">Aufschrieb fotografieren</h1>
+<p class="muted" style="margin:0 0 18px;font-size:16px">Halte dein Heft ins Bild – eine Seite nach der anderen.</p>
+<div class="frame">
+<div class="row" style="margin-bottom:14px">
+<span class="tag">Fach: Geschichte</span><button class="btn btn--plain" style="font-size:14px">ändern</button>
+</div>
+<div class="viewfinder">
+<span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+<p class="mono">Kamerabild<br>Heftseite im Hochformat</p>
+</div>
+<div class="pages">
+<div class="page"></div><div class="page"></div><div class="page page--add">+</div>
+<span class="small" style="margin-left:4px">2 Seiten</span>
+</div>
+<button class="btn btn--lg btn--block" style="margin-top:18px">Seite aufnehmen</button>
+<button class="btn btn--go btn--block" style="margin-top:10px">Fertig – einordnen</button>
+</div>
+<p class="small" style="margin-top:14px">Unscharf? lernassi fragt nach, bevor der Aufschrieb gespeichert wird.</p>

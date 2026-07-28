@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
+
+:root{
+/* Papier & Tinte — warm, ruhig, nie clean-clinical */
+--paper:#FBFAF7;--paper-2:#F5F2EC;--surface:#FFFFFF;
+--ink:oklch(0.30 0.02 60);--ink-2:oklch(0.50 0.015 60);--ink-3:oklch(0.65 0.012 60);
+--line:oklch(0.91 0.008 60);--line-2:oklch(0.86 0.01 60);
+
+/* Lernfarben — gleiche Helligkeit & Chroma, nur Ton wechselt.
+   lavender = lernen · mint = verstanden · apricot = üben · rose = neu · sky = wiederholen */
+--lavender:oklch(0.92 0.045 285);--lavender-2:oklch(0.86 0.06 285);--lavender-ink:oklch(0.45 0.09 285);
+--mint:oklch(0.92 0.045 165);--mint-2:oklch(0.86 0.06 165);--mint-ink:oklch(0.45 0.09 165);
+--apricot:oklch(0.92 0.045 60);--apricot-2:oklch(0.86 0.06 60);--apricot-ink:oklch(0.45 0.09 60);
+--rose:oklch(0.92 0.045 20);--rose-2:oklch(0.86 0.06 20);--rose-ink:oklch(0.45 0.09 20);
+--sky:oklch(0.92 0.045 235);--sky-2:oklch(0.86 0.06 235);--sky-ink:oklch(0.45 0.09 235);
+
+--display:"Quicksand",ui-rounded,system-ui,sans-serif; /* @kind font */
+--text:"Source Sans 3",system-ui,sans-serif;
+--r-sm:10px;--r:14px;--r-lg:20px;--r-pill:999px;
+--sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-5:24px;--sp-6:32px;
+--shadow:0 1px 0 var(--line-2);--shadow-lift:0 2px 6px oklch(0.30 0.02 60/.06)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--text);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--display);font-weight:700;letter-spacing:-.01em;margin:0;text-wrap:pretty}
+h1{font-size:30px}h2{font-size:23px}h3{font-size:19px}
+a{color:var(--lavender-ink);text-decoration-color:var(--lavender-2);text-underline-offset:3px}
+a:hover{color:oklch(0.38 0.10 285)}
+.eyebrow{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.muted{color:var(--ink-2)}
+.small{font-size:14px;color:var(--ink-2)}
+
+/* ---------- Buttons: Pastellfläche, Tintenschrift, kein Schlagschatten ---------- */
+.btn{font-family:var(--display);font-weight:600;font-size:16px;line-height:1;display:inline-flex;align-items:center;gap:8px;padding:13px 18px;border-radius:var(--r);border:1px solid transparent;cursor:pointer;transition:background .15s,border-color .15s,transform .1s;background:var(--lavender);color:var(--lavender-ink);border-color:var(--lavender-2)}
+.btn:hover{background:var(--lavender-2)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--lavender-ink);outline-offset:2px}
+.btn--go{background:var(--mint);color:var(--mint-ink);border-color:var(--mint-2)}
+.btn--go:hover{background:var(--mint-2)}
+.btn--quiet{background:transparent;color:var(--ink-2);border-color:var(--line-2)}
+.btn--quiet:hover{background:var(--paper-2);color:var(--ink)}
+.btn--plain{background:transparent;border-color:transparent;color:var(--ink-2);padding-inline:8px}
+.btn--plain:hover{color:var(--ink);background:transparent;text-decoration:underline;text-underline-offset:4px}
+.btn--lg{font-size:19px;padding:18px 24px;border-radius:var(--r-lg)}
+.btn--block{width:100%;justify-content:center}
+
+/* ---------- Chips: Lernstand statt Deko ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.chip{font-family:var(--text);font-size:15px;line-height:1;display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.chip:hover{border-color:var(--ink-3);color:var(--ink)}
+.chip__dot{width:7px;height:7px;border-radius:50%;background:var(--line-2);flex:none}
+.chip[aria-pressed="true"]{background:var(--lavender);border-color:var(--lavender-2);color:var(--lavender-ink);font-weight:600}
+.chip[aria-pressed="true"] .chip__dot{background:var(--lavender-ink)}
+.chip--mint .chip__dot{background:var(--mint-ink)}
+.chip--apricot .chip__dot{background:var(--apricot-ink)}
+.chip--rose .chip__dot{background:var(--rose-ink)}
+.chip--sky .chip__dot{background:var(--sky-ink)}
+
+/* Status-Marke, nicht klickbar */
+.tag{font-family:var(--display);font-weight:600;font-size:13px;line-height:1;display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:var(--r-sm);background:var(--paper-2);color:var(--ink-2)}
+.tag--mint{background:var(--mint);color:var(--mint-ink)}
+.tag--apricot{background:var(--apricot);color:var(--apricot-ink)}
+.tag--rose{background:var(--rose);color:var(--rose-ink)}
+.tag--sky{background:var(--sky);color:var(--sky-ink)}
+
+/* ---------- Felder: gefüllt, Label als Teil des Feldes ---------- */
+.field{display:block;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);padding:10px 14px 11px;transition:border-color .15s,box-shadow .15s}
+.field:focus-within{border-color:var(--lavender-ink);box-shadow:0 0 0 4px var(--lavender)}
+.field__label{display:block;font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px}
+.field input,.field textarea{width:100%;border:0;padding:0;background:transparent;font-family:var(--text);font-size:18px;color:var(--ink);resize:none}
+.field input:focus,.field textarea:focus{outline:none}
+.field input::placeholder{color:var(--ink-3)}
+.field__hint{font-size:13px;color:var(--ink-3);margin:6px 0 0 14px}
+.field--invalid{border-color:var(--rose-ink)}
+.field--invalid:focus-within{box-shadow:0 0 0 4px var(--rose)}
+
+/* Code-Eingabe: ein Kästchen pro Zeichen */
+.codeinput{display:flex;gap:var(--sp-2)}
+.codeinput input{width:46px;height:56px;text-align:center;font-family:var(--display);font-weight:700;font-size:24px;text-transform:uppercase;color:var(--ink);background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);transition:border-color .15s,box-shadow .15s}
+.codeinput input:focus{outline:none;border-color:var(--lavender-ink);box-shadow:0 0 0 4px var(--lavender)}
+.codeinput input[data-filled]{background:var(--lavender);border-color:var(--lavender-2);color:var(--lavender-ink)}
+
+/* ---------- Karten ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px}
+.card--tint{background:var(--paper-2);border-color:transparent}
+.stack{display:flex;flex-direction:column;gap:var(--sp-3)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3)}

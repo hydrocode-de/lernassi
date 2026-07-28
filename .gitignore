@@ -30,3 +30,9 @@ local.db*
 
 # Milestone-Arbeitsdocs (bewusst NICHT committed)
 /milestones/
+
+# Hochgeladene Seitenbilder (nie committen)
+/data/
+
+# Echte Aufschriebe für Tests (personenbezogen, NIE committen)
+/testing/
