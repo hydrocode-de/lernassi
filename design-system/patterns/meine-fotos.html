@@ -1,0 +1,46 @@
+<!-- @dsCard group="Patterns" viewport="760x620" name="Meine Fotos (Schalter)" subtitle="Standard aus – der Schalter ist noch nicht freigegeben" -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+body{padding:32px;max-width:520px}
+.zeile{display:flex;align-items:center;gap:16px}
+.frage{margin:0;font-family:var(--display);font-weight:700;font-size:18px}
+.schalter{flex:none;width:66px;height:40px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--paper-2);cursor:pointer;display:flex;align-items:center;justify-content:flex-start;padding:0 4px}
+.schalter.an{border-color:var(--mint-2);background:var(--mint);justify-content:flex-end}
+.knopf{width:32px;height:32px;border-radius:50%;background:var(--surface);box-shadow:var(--shadow-lift)}
+.trenner{margin:30px 0 0;padding-top:20px;border-top:1px solid var(--line)}
+.regel{font-size:13px;color:var(--ink-3);margin:26px 0 0;padding-top:16px;border-top:1px solid var(--line)}
+</style>
+<p class="eyebrow">Patterns</p>
+<h1 style="margin:0 0 18px">Meine Fotos</h1>
+
+<div class="card">
+	<div class="zeile">
+		<div style="flex:1">
+			<p class="frage">Meine Fotos behalten</p>
+			<p class="small" style="margin:5px 0 0">Das können wir noch nicht anbieten.</p>
+		</div>
+		<button class="schalter" aria-pressed="false" disabled><span class="knopf"></span></button>
+	</div>
+</div>
+<div class="card card--tint" style="margin-top:12px">
+	<p style="margin:0;font-size:16px;line-height:1.55">Aus: Deine Fotos werden nur gelesen und danach nicht behalten. Was in deinem Inhaltsverzeichnis steht, bleibt dir.</p>
+</div>
+<p class="small" style="margin:18px 2px 0">Deine Lehrerin sieht nie das Bild aus deinem Heft – nur, an welchem Thema du arbeitest.</p>
+
+<div class="trenner">
+	<p class="eyebrow" style="margin:0 0 12px">Zustand „an" (in der Testumgebung)</p>
+	<div class="card">
+		<div class="zeile">
+			<div style="flex:1">
+				<p class="frage">Meine Fotos behalten</p>
+				<p class="small" style="margin:5px 0 0">Wenn das an ist, kannst du deine Heftseiten später noch einmal ansehen.</p>
+			</div>
+			<button class="schalter an" aria-pressed="true"><span class="knopf"></span></button>
+		</div>
+	</div>
+	<div class="card card--tint" style="margin-top:12px">
+		<p style="margin:0;font-size:16px;line-height:1.55">An: Deine Heftseiten bleiben in deinem Heft. Nur du siehst sie.</p>
+	</div>
+</div>
+
+<p class="regel">Wichtig: „Aus" heißt, dass das Bild gar nicht gespeichert wird – niemand kann es ansehen, auch die Lehrkraft nicht. Der Text darf nichts anderes behaupten.</p>
