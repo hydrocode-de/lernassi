@@ -304,6 +304,47 @@ a:hover {
 	box-shadow: 0 0 0 4px var(--rose);
 }
 
+/* ---------- Klassencode: ein Kästchen je Zeichen ---------- */
+.codeinput {
+	display: flex;
+	gap: var(--sp-2);
+}
+.codeinput input {
+	width: 46px;
+	height: 56px;
+	text-align: center;
+	font-family: var(--display);
+	font-weight: 700;
+	font-size: 24px;
+	text-transform: uppercase;
+	color: var(--ink);
+	background: var(--surface);
+	border: 1px solid var(--line-2);
+	border-radius: var(--r);
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
+}
+.codeinput input:focus {
+	outline: none;
+	border-color: var(--lavender-ink);
+	box-shadow: 0 0 0 4px var(--lavender);
+}
+.codeinput input[data-filled] {
+	background: var(--lavender);
+	border-color: var(--lavender-2);
+	color: var(--lavender-ink);
+}
+@media (max-width: 400px) {
+	.codeinput {
+		gap: var(--sp-1);
+	}
+	.codeinput input {
+		width: 100%;
+		min-width: 0;
+	}
+}
+
 /* ---------- Karten ---------- */
 .card {
 	background: var(--surface);

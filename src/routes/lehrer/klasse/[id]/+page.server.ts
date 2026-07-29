@@ -7,7 +7,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 async function ownedClass(locals: App.Locals, id: string) {
-	if (!locals.user || locals.user.role !== 'teacher') throw redirect(303, '/lehrer/anmelden');
+	if (!locals.user || locals.user.role !== 'teacher') throw redirect(303, '/anmelden?ansicht=lehrer-anmelden');
 	const cls = (
 		await db
 			.select()

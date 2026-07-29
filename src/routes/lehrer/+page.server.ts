@@ -6,7 +6,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.user || locals.user.role !== 'teacher') throw redirect(303, '/lehrer/anmelden');
+	if (!locals.user || locals.user.role !== 'teacher') throw redirect(303, '/anmelden?ansicht=lehrer-anmelden');
 	const list = await db
 		.select()
 		.from(classes)
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
 	createClass: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'teacher') throw redirect(303, '/lehrer/anmelden');
+		if (!locals.user || locals.user.role !== 'teacher') throw redirect(303, '/anmelden?ansicht=lehrer-anmelden');
 		const fd = await request.formData();
 		const name = String(fd.get('name') ?? '').trim();
 		if (!name) return fail(400, { message: 'Bitte einen Klassennamen angeben.' });
