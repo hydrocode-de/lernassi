@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/styles.css">
+<script src="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/_ds_bundle.js"></script>
+<style>
+@keyframes ls-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ls-breathe{0%,100%{opacity:.35}50%{opacity:.9}}
+body{margin:0;background:var(--paper-2)}
+</style>
+</helmet>
+<div style="width:max-content;display:flex;flex-direction:column;gap:20px;padding:34px 28px 56px;font-family:var(--text)">
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<span class="eyebrow" style="margin-right:4px">Schritt</span>
+<button class="chip" onClick="{{ goOpen }}" aria-pressed="{{ isOpen }}">Ohne Auswahl gestartet</button>
+<button class="chip" onClick="{{ goCheck }}" aria-pressed="{{ isCheck }}">Einordnen</button>
+<button class="chip" onClick="{{ goMirror }}" aria-pressed="{{ isMirror }}">Vergleichen</button>
+<button class="chip" onClick="{{ goPlan }}" aria-pressed="{{ isPlan }}">Plan machen</button>
+<button class="chip" onClick="{{ goDone }}" aria-pressed="{{ isDone }}">Plan steht</button>
+</div>
+
+<div style="display:flex;gap:26px;align-items:flex-start">
+
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ 1240 }}" height="{{ 860 }}" url="lernassi.de/ueben" hint-size="1240px,860px">
+<div style="height:100%;display:flex;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<aside style="flex:none;width:250px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;padding:22px 14px 14px">
+<p style="margin:0 0 20px 4px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.01em">lernassi</p>
+<div style="display:flex;flex-direction:column;gap:3px">
+<a href="Aufschrieb-Loop.dc.html" style="display:flex;align-items:center;min-height:46px;padding:8px 12px;border-radius:var(--r);background:transparent;color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">Inhalt</a>
+<span style="display:flex;align-items:center;min-height:46px;padding:8px 12px;border-radius:var(--r);background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:600;font-size:16px">Üben</span>
+</div>
+<div class="card card--tint" style="margin-top:24px;padding:14px 16px">
+<p class="eyebrow" style="margin:0 0 8px">Diese Runde</p>
+<p style="margin:0;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.4">{{ scopeLabel }}</p>
+<p class="small" style="margin:8px 0 0;font-size:13px">Geschichte, Klasse 9b</p>
+</div>
+<div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:11px">
+<span style="width:34px;height:34px;border-radius:50%;background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:700;font-size:14px;display:grid;place-items:center">bf</span>
+<span><span style="display:block;font-family:var(--display);font-weight:600;font-size:15px">blaufuchs42</span><span class="small" style="display:block;font-size:13px">Mein Konto</span></span>
+</div>
+</aside>
+
+<main style="flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden">
+
+<sc-if value="{{ inSession }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;padding:22px 40px 12px;border-bottom:1px solid var(--line)">
+<div class="row" style="margin-bottom:12px">
+<h2 style="margin:0">{{ scopeLabel }}</h2>
+<button class="btn btn--plain" onClick="{{ goPick }}" style="min-height:44px;white-space:nowrap">Runde beenden</button>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<span class="tag" style="background:{{ pill1Bg }};color:{{ pill1Ink }};font-size:13px;min-height:30px">1 Einordnen</span>
+<span style="width:14px;height:1px;background:var(--line-2)"></span>
+<span class="tag" style="background:{{ pill2Bg }};color:{{ pill2Ink }};font-size:13px;min-height:30px">2 Vergleichen</span>
+<span style="width:14px;height:1px;background:var(--line-2)"></span>
+<span class="tag" style="background:{{ pill3Bg }};color:{{ pill3Ink }};font-size:13px;min-height:30px">3 Plan machen</span>
+<span class="small" style="margin-left:8px;font-size:13px">{{ phaseNote }}</span>
+</div>
+</div>
+
+<div style="flex:1;overflow:auto;padding:22px 40px 28px">
+<div style="max-width:620px;display:flex;flex-direction:column;gap:14px">
+
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="card" style="animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">Woran willst du heute arbeiten?</p>
+</div>
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Aus deinem Heft</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ chooseKrise }}" style="min-height:58px;justify-content:space-between;text-align:left"><span>Krisenjahr 1923</span><span class="tag tag--rose" style="font-size:12px">neu</span></button>
+<button class="btn btn--quiet btn--block" onClick="{{ chooseInflation }}" style="min-height:58px;justify-content:space-between;text-align:left"><span>Hyperinflation</span><span class="tag tag--apricot" style="font-size:12px">wackelt</span></button>
+<button class="btn btn--quiet btn--block" onClick="{{ chooseWeimar }}" style="min-height:58px;justify-content:space-between;text-align:left"><span>Weimarer Republik</span><span class="small" style="font-size:13px">ganzes Kapitel</span></button>
+<button class="btn btn--quiet btn--block" onClick="{{ chooseFach }}" style="min-height:58px;justify-content:space-between;text-align:left"><span>Geschichte</span><span class="small" style="font-size:13px">ganzes Fach</span></button>
+</div>
+<p class="small" style="margin:14px 0 0">Oder such es dir im <a href="Aufschrieb-Loop.dc.html">Inhaltsverzeichnis</a> aus.</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCheck }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="card" style="animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">{{ scopeLabel }} – vier Fragen aus deinem Heft vom 12. März.</p>
+</div>
+
+<div class="card">
+<p style="margin:0 0 14px;font-size:17px">Wie sicher fühlst du dich gerade damit?</p>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+<button class="btn btn--quiet" onClick="{{ setConf1 }}" style="min-height:52px">Gar nicht sicher</button>
+<button class="btn btn--quiet" onClick="{{ setConf2 }}" style="min-height:52px">Ein bisschen</button>
+<button class="btn btn--quiet" onClick="{{ setConf3 }}" style="min-height:52px">Ziemlich sicher</button>
+<button class="btn btn--quiet" onClick="{{ setConf4 }}" style="min-height:52px">Sehr sicher</button>
+</div>
+</div>
+
+<sc-if value="{{ hasConf }}" hint-placeholder-val="{{ false }}">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-family:var(--display);font-weight:600;font-size:16px;animation:ls-rise .2s ease">{{ confLabel }}</div>
+</sc-if>
+
+<sc-if value="{{ showQ1 }}" hint-placeholder-val="{{ false }}">
+<div class="card" style="animation:ls-rise .25s ease">
+<p class="eyebrow" style="margin:0 0 8px">Frage 1 von 4</p>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">1923 rücken französische und belgische Truppen ins Ruhrgebiet ein. Warum?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ1 }}" style="min-height:54px;justify-content:flex-start;text-align:left">Deutschland zahlt die Reparationen nicht mehr</button>
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ1 }}" style="min-height:54px;justify-content:flex-start;text-align:left">Deutschland hat Frankreich angegriffen</button>
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ1 }}" style="min-height:54px;justify-content:flex-start;text-align:left">Die Kohle im Ruhrgebiet war aufgebraucht</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ doneQ1 }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px;max-width:80%">Deutschland zahlt die Reparationen nicht mehr</div>
+<div class="card" style="background:var(--mint);border-color:var(--mint-2)">
+<p style="margin:0;font-size:17px;line-height:1.55;color:var(--mint-ink)">Stimmt – und genau das steht auch in deinem Heft. Danach kam der passive Widerstand.</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ showQ2 }}" hint-placeholder-val="{{ false }}">
+<div class="card" style="animation:ls-rise .25s ease">
+<p class="eyebrow" style="margin:0 0 8px">Frage 2 von 4</p>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Was hat die Inflation Ende 1923 gestoppt?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ2Wrong }}" style="min-height:54px;justify-content:flex-start;text-align:left">Der Hitlerputsch im November</button>
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ2Right }}" style="min-height:54px;justify-content:flex-start;text-align:left">Ein neues Geld: die Rentenmark</button>
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ2Wrong }}" style="min-height:54px;justify-content:flex-start;text-align:left">Frankreich zieht aus dem Ruhrgebiet ab</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ q2Wrong }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px;max-width:80%">Der Hitlerputsch im November</div>
+<div class="card" style="background:var(--apricot);border-color:var(--apricot-2)">
+<p style="margin:0 0 12px;font-size:17px;line-height:1.55;color:var(--apricot-ink)">Im November war er, ja. Aber Geld wird davon nicht stabil. In deinem Heft steht ein Wort direkt daneben.</p>
+<button class="btn btn--go" onClick="{{ retryQ2 }}" style="min-height:50px">Nochmal versuchen</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ q2Right }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px;max-width:80%">Ein neues Geld: die Rentenmark</div>
+<div class="card" style="background:var(--mint);border-color:var(--mint-2)">
+<p style="margin:0;font-size:17px;line-height:1.55;color:var(--mint-ink)">Richtig. Beim zweiten Griff war es da.</p>
+</div>
+<div class="card">
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Vier von vier durch. Schauen wir, was davon schon sitzt.</p>
+<button class="btn btn--lg btn--block" onClick="{{ goMirror }}" style="min-height:56px">Weiter</button>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMirror }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="card" style="animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">Am Anfang hast du „{{ confLabel }}" gesagt. So sieht es nach den Fragen aus:</p>
+</div>
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Sitzt schon</p>
+<div class="chips" style="margin-bottom:18px">
+<span class="chip chip--mint" style="cursor:default"><span class="chip__dot"></span>Ruhrbesetzung</span>
+<span class="chip chip--mint" style="cursor:default"><span class="chip__dot"></span>Ursachen der Inflation</span>
+</div>
+<p class="eyebrow" style="margin:0 0 12px">Wackelt noch</p>
+<div class="chips">
+<span class="chip chip--apricot" style="cursor:default"><span class="chip__dot"></span>Rentenmark</span>
+<span class="chip chip--apricot" style="cursor:default"><span class="chip__dot"></span>Folgen für Familien</span>
+<span class="chip chip--rose" style="cursor:default"><span class="chip__dot"></span>Hitlerputsch</span>
+</div>
+</div>
+<div class="card">
+<p style="margin:0 0 14px;font-size:17px">Passt das zu deinem Gefühl?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ ackFits }}" style="min-height:54px;justify-content:flex-start">Ja, kommt hin</button>
+<button class="btn btn--quiet btn--block" onClick="{{ ackLess }}" style="min-height:54px;justify-content:flex-start">Ich dachte, ich kann mehr</button>
+<button class="btn btn--quiet btn--block" onClick="{{ ackMore }}" style="min-height:54px;justify-content:flex-start">Ich kann mehr als das</button>
+</div>
+</div>
+<sc-if value="{{ hasAck }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px;max-width:80%">{{ ackLabel }}</div>
+<div class="card">
+<p style="margin:0 0 6px;font-size:17px">Was davon willst du zuerst festmachen?</p>
+<p class="small" style="margin:0 0 14px">Bis zu zwei auswählen.</p>
+<div class="chips">
+<button class="chip" onClick="{{ toggleF1 }}" aria-pressed="{{ f1 }}" style="min-height:48px">Rentenmark</button>
+<button class="chip" onClick="{{ toggleF2 }}" aria-pressed="{{ f2 }}" style="min-height:48px">Folgen für Familien</button>
+<button class="chip" onClick="{{ toggleF3 }}" aria-pressed="{{ f3 }}" style="min-height:48px">Hitlerputsch</button>
+<button class="chip" onClick="{{ toggleF4 }}" aria-pressed="{{ f4 }}" style="min-height:48px">Reihenfolge im Jahr</button>
+</div>
+<sc-if value="{{ hasFocus }}" hint-placeholder-val="{{ false }}">
+<button class="btn btn--lg btn--block" onClick="{{ goPlan }}" style="min-height:56px;margin-top:18px">Weiter zum Plan</button>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="card" style="animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">Jetzt dein Plan. Zwei Punkte reichen für den Anfang – du wählst.</p>
+</div>
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Zur Auswahl</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button onClick="{{ toggleP1 }}" aria-pressed="{{ p1 }}" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:1px solid {{ p1Border }};border-radius:var(--r);background:{{ p1Bg }};cursor:pointer;text-align:left;font:inherit;color:inherit">
+<span><span style="display:block;font-size:16px">Rentenmark in eigenen Worten erklären</span><span class="small" style="display:block;font-size:13px">etwa 5 Minuten</span></span>
+<span class="tag" style="font-size:12px">{{ p1Label }}</span>
+</button>
+<button onClick="{{ toggleP2 }}" aria-pressed="{{ p2 }}" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:1px solid {{ p2Border }};border-radius:var(--r);background:{{ p2Bg }};cursor:pointer;text-align:left;font:inherit;color:inherit">
+<span><span style="display:block;font-size:16px">Fünf Fragen zur Inflation beantworten</span><span class="small" style="display:block;font-size:13px">etwa 10 Minuten</span></span>
+<span class="tag" style="font-size:12px">{{ p2Label }}</span>
+</button>
+<button onClick="{{ toggleP3 }}" aria-pressed="{{ p3 }}" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;width:100%;min-height:60px;padding:12px 14px;border:1px solid {{ p3Border }};border-radius:var(--r);background:{{ p3Bg }};cursor:pointer;text-align:left;font:inherit;color:inherit">
+<span><span style="display:block;font-size:16px">Zeitstrahl 1923 selbst legen</span><span class="small" style="display:block;font-size:13px">etwa 10 Minuten</span></span>
+<span class="tag" style="font-size:12px">{{ p3Label }}</span>
+</button>
+</div>
+</div>
+<sc-if value="{{ hasPicks }}" hint-placeholder-val="{{ false }}">
+<div class="card" style="animation:ls-rise .2s ease">
+<p style="margin:0 0 14px;font-size:17px">Wann willst du anfangen?</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<button class="chip" onClick="{{ setWhenToday }}" aria-pressed="{{ whenToday }}" style="min-height:50px">Heute noch</button>
+<button class="chip" onClick="{{ setWhenTomorrow }}" aria-pressed="{{ whenTomorrow }}" style="min-height:50px">Morgen</button>
+<button class="chip" onClick="{{ setWhenExam }}" aria-pressed="{{ whenExam }}" style="min-height:50px">Vor der Klassenarbeit</button>
+</div>
+<sc-if value="{{ hasWhen }}" hint-placeholder-val="{{ false }}">
+<button class="btn btn--go btn--lg btn--block" onClick="{{ goDone }}" style="min-height:56px;margin-top:18px">Plan speichern</button>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="card" style="background:var(--mint);border-color:var(--mint-2);animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55;color:var(--mint-ink)">Dein Plan steht – und er ist deiner. Du hast beide Punkte selbst gewählt.</p>
+</div>
+<div class="card">
+<div class="row" style="margin-bottom:14px"><h3>Mein Lernplan</h3><span class="tag tag--sky" style="font-size:12px">{{ whenLabel }}</span></div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<div style="display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:12px;min-height:56px">
+<span style="width:26px;height:26px;border-radius:50%;background:var(--paper-2);color:var(--ink-2);font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center">1</span>
+<span style="font-size:16px">Rentenmark in eigenen Worten erklären</span>
+<span class="tag" style="font-size:12px">von dir gewählt</span>
+</div>
+<div style="height:1px;background:var(--line)"></div>
+<div style="display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:12px;min-height:56px">
+<span style="width:26px;height:26px;border-radius:50%;background:var(--paper-2);color:var(--ink-2);font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center">2</span>
+<span style="font-size:16px">Fünf Fragen zur Inflation beantworten</span>
+<span class="tag" style="font-size:12px">von dir gewählt</span>
+</div>
+</div>
+</div>
+<div class="card card--tint">
+<p style="margin:0;font-size:16px;line-height:1.55">Im Inhaltsverzeichnis steht jetzt: Ruhrbesetzung sitzt, Rentenmark wackelt noch.</p>
+</div>
+<div style="display:flex;gap:10px">
+<button class="btn btn--lg" onClick="{{ goCheck }}" style="min-height:56px">Ersten Punkt starten</button>
+<button class="btn btn--quiet" onClick="{{ goPick }}" style="min-height:56px">Zum Inhaltsverzeichnis</button>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+</sc-if>
+
+</main>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ 402 }}" height="{{ 874 }}" hint-size="402px,874px">
+<div style="height:100%;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<sc-if value="{{ inSession }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;display:flex;flex-direction:column">
+<div style="flex:none;padding:56px 18px 10px;border-bottom:1px solid var(--line);background:var(--surface)">
+<div class="row" style="margin-bottom:10px">
+<span style="font-family:var(--display);font-weight:700;font-size:17px">{{ scopeLabel }}</span>
+<button class="btn btn--plain" onClick="{{ goPick }}" style="min-height:44px;font-size:14px">Beenden</button>
+</div>
+<div style="display:flex;align-items:center;gap:6px">
+<span class="tag" style="background:{{ pill1Bg }};color:{{ pill1Ink }};font-size:12px;min-height:28px">1 Einordnen</span>
+<span class="tag" style="background:{{ pill2Bg }};color:{{ pill2Ink }};font-size:12px;min-height:28px">2 Vergleichen</span>
+<span class="tag" style="background:{{ pill3Bg }};color:{{ pill3Ink }};font-size:12px;min-height:28px">3 Plan</span>
+</div>
+<p class="small" style="margin:8px 0 0;font-size:13px">{{ phaseNote }}</p>
+</div>
+
+<div style="flex:1;overflow:auto;padding:16px 18px 24px;display:flex;flex-direction:column;gap:12px">
+
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="card" style="animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">Woran willst du heute arbeiten?</p>
+</div>
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Aus deinem Heft</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ chooseKrise }}" style="min-height:62px;justify-content:space-between;text-align:left"><span>Krisenjahr 1923</span><span class="tag tag--rose" style="font-size:11px">neu</span></button>
+<button class="btn btn--quiet btn--block" onClick="{{ chooseInflation }}" style="min-height:62px;justify-content:space-between;text-align:left"><span>Hyperinflation</span><span class="tag tag--apricot" style="font-size:11px">wackelt</span></button>
+<button class="btn btn--quiet btn--block" onClick="{{ chooseWeimar }}" style="min-height:62px;justify-content:space-between;text-align:left"><span>Weimarer Republik</span><span class="small" style="font-size:12px">Kapitel</span></button>
+<button class="btn btn--quiet btn--block" onClick="{{ chooseFach }}" style="min-height:62px;justify-content:space-between;text-align:left"><span>Geschichte</span><span class="small" style="font-size:12px">ganzes Fach</span></button>
+</div>
+<p class="small" style="margin:14px 0 0">Oder such es dir im <a href="Aufschrieb-Loop.dc.html">Inhaltsverzeichnis</a> aus.</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isCheck }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="card" style="animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">{{ scopeLabel }} – vier Fragen aus deinem Heft vom 12. März.</p>
+</div>
+<div class="card">
+<p style="margin:0 0 14px;font-size:17px">Wie sicher fühlst du dich gerade damit?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ setConf1 }}" style="min-height:56px;justify-content:flex-start">Gar nicht sicher</button>
+<button class="btn btn--quiet btn--block" onClick="{{ setConf2 }}" style="min-height:56px;justify-content:flex-start">Ein bisschen</button>
+<button class="btn btn--quiet btn--block" onClick="{{ setConf3 }}" style="min-height:56px;justify-content:flex-start">Ziemlich sicher</button>
+<button class="btn btn--quiet btn--block" onClick="{{ setConf4 }}" style="min-height:56px;justify-content:flex-start">Sehr sicher</button>
+</div>
+</div>
+<sc-if value="{{ hasConf }}" hint-placeholder-val="{{ false }}">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-family:var(--display);font-weight:600;font-size:16px;animation:ls-rise .2s ease">{{ confLabel }}</div>
+</sc-if>
+<sc-if value="{{ showQ1 }}" hint-placeholder-val="{{ false }}">
+<div class="card" style="animation:ls-rise .25s ease">
+<p class="eyebrow" style="margin:0 0 8px">Frage 1 von 4</p>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">1923 rücken französische und belgische Truppen ins Ruhrgebiet ein. Warum?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ1 }}" style="min-height:60px;justify-content:flex-start;text-align:left;line-height:1.35">Deutschland zahlt die Reparationen nicht mehr</button>
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ1 }}" style="min-height:60px;justify-content:flex-start;text-align:left;line-height:1.35">Deutschland hat Frankreich angegriffen</button>
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ1 }}" style="min-height:60px;justify-content:flex-start;text-align:left;line-height:1.35">Die Kohle im Ruhrgebiet war aufgebraucht</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ doneQ1 }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px;max-width:85%">Deutschland zahlt die Reparationen nicht mehr</div>
+<div class="card" style="background:var(--mint);border-color:var(--mint-2)">
+<p style="margin:0;font-size:17px;line-height:1.55;color:var(--mint-ink)">Genau so steht es auch in deinem Heft. Das war der Auslöser.</p>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ showQ2 }}" hint-placeholder-val="{{ false }}">
+<div class="card" style="animation:ls-rise .25s ease">
+<p class="eyebrow" style="margin:0 0 8px">Frage 2 von 4</p>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Was hat die Inflation Ende 1923 gestoppt?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ2Wrong }}" style="min-height:60px;justify-content:flex-start;text-align:left;line-height:1.35">Der Hitlerputsch im November</button>
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ2Right }}" style="min-height:60px;justify-content:flex-start;text-align:left;line-height:1.35">Ein neues Geld: die Rentenmark</button>
+<button class="btn btn--quiet btn--block" onClick="{{ answerQ2Wrong }}" style="min-height:60px;justify-content:flex-start;text-align:left;line-height:1.35">Frankreich zieht aus dem Ruhrgebiet ab</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ q2Wrong }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px;max-width:85%">Der Hitlerputsch im November</div>
+<div class="card" style="background:var(--apricot);border-color:var(--apricot-2)">
+<p style="margin:0 0 12px;font-size:17px;line-height:1.55;color:var(--apricot-ink)">Im November war er, ja. Aber Geld wird davon nicht stabil. In deinem Heft steht ein Wort direkt daneben.</p>
+<button class="btn btn--go btn--block" onClick="{{ retryQ2 }}" style="min-height:54px">Nochmal versuchen</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ q2Right }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px;max-width:85%">Ein neues Geld: die Rentenmark</div>
+<div class="card" style="background:var(--mint);border-color:var(--mint-2)">
+<p style="margin:0;font-size:17px;line-height:1.55;color:var(--mint-ink)">Richtig. Beim zweiten Griff war es da.</p>
+</div>
+<button class="btn btn--lg btn--block" onClick="{{ goMirror }}" style="min-height:60px">Weiter</button>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMirror }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="card" style="animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">Am Anfang hast du „{{ confLabel }}" gesagt. So sieht es nach den Fragen aus:</p>
+</div>
+<div class="card">
+<p class="eyebrow" style="margin:0 0 10px">Sitzt schon</p>
+<div class="chips" style="margin-bottom:16px">
+<span class="chip chip--mint" style="cursor:default"><span class="chip__dot"></span>Ruhrbesetzung</span>
+<span class="chip chip--mint" style="cursor:default"><span class="chip__dot"></span>Ursachen der Inflation</span>
+</div>
+<p class="eyebrow" style="margin:0 0 10px">Wackelt noch</p>
+<div class="chips">
+<span class="chip chip--apricot" style="cursor:default"><span class="chip__dot"></span>Rentenmark</span>
+<span class="chip chip--apricot" style="cursor:default"><span class="chip__dot"></span>Folgen für Familien</span>
+<span class="chip chip--rose" style="cursor:default"><span class="chip__dot"></span>Hitlerputsch</span>
+</div>
+</div>
+<div class="card">
+<p style="margin:0 0 14px;font-size:17px">Passt das zu deinem Gefühl?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ ackFits }}" style="min-height:56px;justify-content:flex-start">Ja, kommt hin</button>
+<button class="btn btn--quiet btn--block" onClick="{{ ackLess }}" style="min-height:56px;justify-content:flex-start">Ich dachte, ich kann mehr</button>
+<button class="btn btn--quiet btn--block" onClick="{{ ackMore }}" style="min-height:56px;justify-content:flex-start">Ich kann mehr als das</button>
+</div>
+</div>
+<sc-if value="{{ hasAck }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="align-self:flex-end;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px;max-width:85%">{{ ackLabel }}</div>
+<div class="card">
+<p style="margin:0 0 6px;font-size:17px">Was willst du zuerst festmachen?</p>
+<p class="small" style="margin:0 0 14px">Bis zu zwei auswählen.</p>
+<div class="chips">
+<button class="chip" onClick="{{ toggleF1 }}" aria-pressed="{{ f1 }}" style="min-height:50px">Rentenmark</button>
+<button class="chip" onClick="{{ toggleF2 }}" aria-pressed="{{ f2 }}" style="min-height:50px">Folgen für Familien</button>
+<button class="chip" onClick="{{ toggleF3 }}" aria-pressed="{{ f3 }}" style="min-height:50px">Hitlerputsch</button>
+<button class="chip" onClick="{{ toggleF4 }}" aria-pressed="{{ f4 }}" style="min-height:50px">Reihenfolge im Jahr</button>
+</div>
+<sc-if value="{{ hasFocus }}" hint-placeholder-val="{{ false }}">
+<button class="btn btn--lg btn--block" onClick="{{ goPlan }}" style="min-height:60px;margin-top:18px">Weiter zum Plan</button>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="card" style="animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">Jetzt dein Plan. Zwei Punkte reichen für den Anfang – du wählst.</p>
+</div>
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Vorschläge</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button onClick="{{ toggleP1 }}" aria-pressed="{{ p1 }}" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;width:100%;min-height:68px;padding:12px 14px;border:1px solid {{ p1Border }};border-radius:var(--r);background:{{ p1Bg }};cursor:pointer;text-align:left;font:inherit;color:inherit">
+<span><span style="display:block;font-size:16px;line-height:1.35">Rentenmark in eigenen Worten erklären</span><span class="small" style="display:block;font-size:13px">etwa 5 Minuten</span></span>
+<span class="tag" style="font-size:11px">{{ p1Label }}</span>
+</button>
+<button onClick="{{ toggleP2 }}" aria-pressed="{{ p2 }}" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;width:100%;min-height:68px;padding:12px 14px;border:1px solid {{ p2Border }};border-radius:var(--r);background:{{ p2Bg }};cursor:pointer;text-align:left;font:inherit;color:inherit">
+<span><span style="display:block;font-size:16px;line-height:1.35">Fünf Fragen zur Inflation beantworten</span><span class="small" style="display:block;font-size:13px">etwa 10 Minuten</span></span>
+<span class="tag" style="font-size:11px">{{ p2Label }}</span>
+</button>
+<button onClick="{{ toggleP3 }}" aria-pressed="{{ p3 }}" style="display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px;width:100%;min-height:68px;padding:12px 14px;border:1px solid {{ p3Border }};border-radius:var(--r);background:{{ p3Bg }};cursor:pointer;text-align:left;font:inherit;color:inherit">
+<span><span style="display:block;font-size:16px;line-height:1.35">Zeitstrahl 1923 selbst legen</span><span class="small" style="display:block;font-size:13px">etwa 10 Minuten</span></span>
+<span class="tag" style="font-size:11px">{{ p3Label }}</span>
+</button>
+</div>
+</div>
+<sc-if value="{{ hasPicks }}" hint-placeholder-val="{{ false }}">
+<div class="card" style="animation:ls-rise .2s ease">
+<p style="margin:0 0 14px;font-size:17px">Wann willst du anfangen?</p>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+<button class="chip" onClick="{{ setWhenToday }}" aria-pressed="{{ whenToday }}" style="min-height:52px">Heute noch</button>
+<button class="chip" onClick="{{ setWhenTomorrow }}" aria-pressed="{{ whenTomorrow }}" style="min-height:52px">Morgen</button>
+<button class="chip" onClick="{{ setWhenExam }}" aria-pressed="{{ whenExam }}" style="min-height:52px">Vor der Klassenarbeit</button>
+</div>
+<sc-if value="{{ hasWhen }}" hint-placeholder-val="{{ false }}">
+<button class="btn btn--go btn--lg btn--block" onClick="{{ goDone }}" style="min-height:60px;margin-top:18px">Plan speichern</button>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="card" style="background:var(--mint);border-color:var(--mint-2);animation:ls-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55;color:var(--mint-ink)">Dein Plan steht – und er ist deiner. Du hast beide Punkte selbst gewählt.</p>
+</div>
+<div class="card">
+<div class="row" style="margin-bottom:14px"><h3>Mein Lernplan</h3><span class="tag tag--sky" style="font-size:12px">{{ whenLabel }}</span></div>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="display:grid;grid-template-columns:26px 1fr;align-items:start;gap:12px">
+<span style="width:26px;height:26px;border-radius:50%;background:var(--paper-2);color:var(--ink-2);font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center">1</span>
+<span><span style="display:block;font-size:16px;line-height:1.4">Rentenmark in eigenen Worten erklären</span><span class="tag" style="font-size:11px;margin-top:6px">von dir gewählt</span></span>
+</div>
+<div style="height:1px;background:var(--line)"></div>
+<div style="display:grid;grid-template-columns:26px 1fr;align-items:start;gap:12px">
+<span style="width:26px;height:26px;border-radius:50%;background:var(--paper-2);color:var(--ink-2);font-family:var(--display);font-weight:700;font-size:13px;display:grid;place-items:center">2</span>
+<span><span style="display:block;font-size:16px;line-height:1.4">Fünf Fragen zur Inflation beantworten</span><span class="tag" style="font-size:11px;margin-top:6px">von dir gewählt</span></span>
+</div>
+</div>
+</div>
+<div class="card card--tint">
+<p style="margin:0;font-size:16px;line-height:1.55">Im Inhaltsverzeichnis steht jetzt: Ruhrbesetzung sitzt, Rentenmark wackelt noch.</p>
+</div>
+<button class="btn btn--lg btn--block" onClick="{{ goCheck }}" style="min-height:60px">Ersten Punkt starten</button>
+<button class="btn btn--quiet btn--block" onClick="{{ goPick }}" style="min-height:56px">Zum Inhaltsverzeichnis</button>
+</div>
+</sc-if>
+
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-import>
+
+</div>
+
+<p class="small" style="margin:0;max-width:680px">Start ist die Auswahl im Inhaltsverzeichnis (Inhalt-Seite) – hier läuft nur die Runde: Einordnen, Vergleichen, Plan machen. Antworten sind immer antippbar, kein freies Textfeld.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1780,&quot;height&quot;:1030},&quot;einstieg&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;mit Auswahl&quot;,&quot;ohne Auswahl&quot;],&quot;default&quot;:&quot;mit Auswahl&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Runde&quot;},&quot;scope&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Krisenjahr 1923&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Runde&quot;}}">
+class Component extends DCLogic {
+  state = { view: null, scope: null, conf: null, q1: false, q2: null, ack: null, focus: [], picks: [], when: null };
+
+  // Ankommen aus dem Inhaltsverzeichnis: #krise, #weimar … starten direkt,
+  // #offen kommt vom Menüpunkt „Üben" ohne Auswahl.
+  componentDidMount() {
+    const hash = (window.location.hash || '').replace('#', '');
+    if (hash === 'offen') this.setState({ view: 'open' });
+    else if (hash) this.setState({ scope: hash, view: 'check' });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const set = (patch) => this.setState(patch);
+    const scopes = {
+      fach: 'Geschichte – ganzes Fach',
+      weimar: 'Weimarer Republik',
+      krise: 'Krisenjahr 1923',
+      ruhr: 'Ruhrbesetzung',
+      inflation: 'Hyperinflation',
+      putsch: 'Hitlerputsch'
+    };
+    const confLabels = { 1: 'Gar nicht sicher', 2: 'Ein bisschen', 3: 'Ziemlich sicher', 4: 'Sehr sicher' };
+    const ackLabels = { fits: 'Ja, kommt hin', less: 'Ich dachte, ich kann mehr', more: 'Ich kann mehr als das' };
+    const whenLabels = { today: 'Heute noch', tomorrow: 'Morgen', exam: 'Vor der Klassenarbeit' };
+    const startOpen = (this.props.einstieg ?? 'mit Auswahl') === 'ohne Auswahl';
+    const phase = s.view || (startOpen ? 'open' : 'check');
+    const pill = (mine, done) => done
+      ? { bg: 'var(--mint)', ink: 'var(--mint-ink)' }
+      : (mine ? { bg: 'var(--lavender)', ink: 'var(--lavender-ink)' } : { bg: 'var(--paper-2)', ink: 'var(--ink-3)' });
+    const order = ['check', 'mirror', 'plan', 'done'];
+    const at = order.indexOf(phase);
+    const p1p = pill(phase === 'check' || phase === 'open', at > 0);
+    const p2p = pill(phase === 'mirror', at > 1);
+    const p3p = pill(phase === 'plan', at > 2);
+    const notes = {
+      open: 'Erst mal aussuchen',
+      check: 'Fragen aus deinem Heft',
+      mirror: 'Selbsteinschätzung und Ergebnis',
+      plan: 'Deine zwei Punkte',
+      done: 'Plan gespeichert'
+    };
+    const toggleIn = (list, id) => (list.indexOf(id) >= 0 ? list.filter((x) => x !== id) : list.concat([id]).slice(-2));
+    const pickStyle = (on) => ({ bg: on ? 'var(--lavender)' : 'var(--surface)', border: on ? 'var(--lavender-2)' : 'var(--line-2)', label: on ? 'nehme ich' : 'antippen' });
+    const ps1 = pickStyle(s.picks.indexOf('p1') >= 0);
+    const ps2 = pickStyle(s.picks.indexOf('p2') >= 0);
+    const ps3 = pickStyle(s.picks.indexOf('p3') >= 0);
+
+    return {
+      isOpen: phase === 'open',
+      isCheck: phase === 'check', isMirror: phase === 'mirror',
+      isPlan: phase === 'plan', isDone: phase === 'done', inSession: true,
+      scopeLabel: phase === 'open' ? 'Üben' : (scopes[s.scope] || this.props.scope || 'Krisenjahr 1923'),
+      chooseKrise: () => this.setState({ scope: 'krise', view: 'check' }),
+      chooseInflation: () => this.setState({ scope: 'inflation', view: 'check' }),
+      chooseWeimar: () => this.setState({ scope: 'weimar', view: 'check' }),
+      chooseFach: () => this.setState({ scope: 'fach', view: 'check' }),
+
+      pill1Bg: p1p.bg, pill1Ink: p1p.ink, pill2Bg: p2p.bg, pill2Ink: p2p.ink,
+      pill3Bg: p3p.bg, pill3Ink: p3p.ink, phaseNote: notes[phase] || '',
+
+      hasConf: s.conf !== null, confLabel: confLabels[s.conf] || 'Ziemlich sicher',
+      showQ1: s.conf !== null && !s.q1, doneQ1: s.q1,
+      showQ2: s.q1 && s.q2 === null, q2Wrong: s.q2 === 'wrong', q2Right: s.q2 === 'right',
+      setConf1: () => set({ conf: 1 }), setConf2: () => set({ conf: 2 }),
+      setConf3: () => set({ conf: 3 }), setConf4: () => set({ conf: 4 }),
+      answerQ1: () => set({ q1: true }),
+      answerQ2Wrong: () => set({ q2: 'wrong' }),
+      answerQ2Right: () => set({ q2: 'right' }),
+      retryQ2: () => set({ q2: null }),
+
+      hasAck: s.ack !== null, ackLabel: ackLabels[s.ack] || '',
+      ackFits: () => set({ ack: 'fits' }), ackLess: () => set({ ack: 'less' }), ackMore: () => set({ ack: 'more' }),
+      f1: s.focus.indexOf('f1') >= 0, f2: s.focus.indexOf('f2') >= 0,
+      f3: s.focus.indexOf('f3') >= 0, f4: s.focus.indexOf('f4') >= 0,
+      hasFocus: s.focus.length > 0,
+      toggleF1: () => set({ focus: toggleIn(s.focus, 'f1') }),
+      toggleF2: () => set({ focus: toggleIn(s.focus, 'f2') }),
+      toggleF3: () => set({ focus: toggleIn(s.focus, 'f3') }),
+      toggleF4: () => set({ focus: toggleIn(s.focus, 'f4') }),
+
+      p1: ps1.bg !== 'var(--surface)', p2: ps2.bg !== 'var(--surface)', p3: ps3.bg !== 'var(--surface)',
+      p1Bg: ps1.bg, p1Border: ps1.border, p1Label: ps1.label,
+      p2Bg: ps2.bg, p2Border: ps2.border, p2Label: ps2.label,
+      p3Bg: ps3.bg, p3Border: ps3.border, p3Label: ps3.label,
+      toggleP1: () => set({ picks: toggleIn(s.picks, 'p1') }),
+      toggleP2: () => set({ picks: toggleIn(s.picks, 'p2') }),
+      toggleP3: () => set({ picks: toggleIn(s.picks, 'p3') }),
+      hasPicks: s.picks.length > 0,
+      whenToday: s.when === 'today', whenTomorrow: s.when === 'tomorrow', whenExam: s.when === 'exam',
+      hasWhen: s.when !== null, whenLabel: whenLabels[s.when] || 'Heute noch',
+      setWhenToday: () => set({ when: 'today' }), setWhenTomorrow: () => set({ when: 'tomorrow' }),
+      setWhenExam: () => set({ when: 'exam' }),
+
+      goPick: () => { window.location.href = 'Aufschrieb-Loop.dc.html'; },
+      goOpen: () => set({ view: 'open' }),
+      goCheck: () => set({ view: 'check' }),
+      goMirror: () => set({ view: 'mirror' }),
+      goPlan: () => set({ view: 'plan', picks: s.picks.length ? s.picks : ['p1', 'p2'] }),
+      goDone: () => set({ view: 'done', picks: s.picks.length ? s.picks : ['p1', 'p2'], when: s.when || 'today' })
+    };
+  }
+}
+</script>
+</body>
+</html>

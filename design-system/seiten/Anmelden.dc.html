@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/styles.css">
+<script src="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/_ds_bundle.js"></script>
+<style>
+@keyframes lan-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+body{margin:0;background:var(--paper-2)}
+</style>
+</helmet>
+<div style="width:max-content;display:flex;flex-direction:column;gap:20px;padding:34px 28px 56px;font-family:var(--text)">
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<span class="eyebrow" style="margin-right:4px">Ansicht</span>
+<button class="chip" onClick="{{ setStudentIn }}" aria-pressed="{{ isSin }}">Schüler:in anmelden</button>
+<button class="chip" onClick="{{ setStudentUp }}" aria-pressed="{{ isSup }}">Schüler:in zum ersten Mal</button>
+<button class="chip" onClick="{{ setTeacherIn }}" aria-pressed="{{ isTin }}">Lehrkraft anmelden</button>
+<button class="chip" onClick="{{ setTeacherUp }}" aria-pressed="{{ isTup }}">Lehrkraft Konto anlegen</button>
+</div>
+
+<div style="display:flex;gap:26px;align-items:flex-start">
+
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ 1240 }}" height="{{ 800 }}" url="lernassi.de/anmelden" hint-size="1240px,800px">
+<div style="height:100%;display:flex;background:var(--surface);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<div style="flex:none;width:46%;background:var(--paper-2);padding:44px 48px;display:flex;flex-direction:column;justify-content:space-between">
+<p style="margin:0;font-family:var(--display);font-weight:700;font-size:23px;letter-spacing:-.01em">lernassi</p>
+<div>
+<h1 style="margin:0 0 12px;font-size:38px;max-width:15ch">Dein Heft, geordnet.</h1>
+<p class="muted" style="margin:0;font-size:19px;max-width:34ch;line-height:1.55">Aufschrieb fotografieren – Thema, Kapitel und Lernstand entstehen von allein.</p>
+<div style="display:flex;gap:12px;margin-top:34px">
+<div style="width:78px;height:104px;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper) 0 11px,var(--surface) 11px 22px);transform:rotate(-3deg)"></div>
+<div style="width:78px;height:104px;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper) 0 11px,var(--surface) 11px 22px);transform:rotate(1.5deg)"></div>
+<div style="width:78px;height:104px;border-radius:var(--r);border:1px solid var(--lavender-2);background:var(--lavender);display:grid;place-items:end start;padding:10px;transform:rotate(4deg)"><span style="font-family:var(--display);font-weight:700;font-size:13px;color:var(--lavender-ink)">1923</span></div>
+</div>
+</div>
+<p class="small" style="margin:0;max-width:38ch">Fotos bleiben bei dir, solange du das so willst.</p>
+</div>
+
+<div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:44px">
+<div style="width:100%;max-width:396px">
+
+<div style="display:flex;gap:6px;padding:4px;border-radius:var(--r-pill);background:var(--paper-2);margin-bottom:26px">
+<button onClick="{{ setStudentIn }}" style="flex:1;min-height:44px;border:0;border-radius:var(--r-pill);background:{{ tabStudentBg }};color:{{ tabStudentInk }};font-family:var(--display);font-weight:600;font-size:15px;cursor:pointer">Schüler:in</button>
+<button onClick="{{ setTeacherIn }}" style="flex:1;min-height:44px;border:0;border-radius:var(--r-pill);background:{{ tabTeacherBg }};color:{{ tabTeacherInk }};font-family:var(--display);font-weight:600;font-size:15px;cursor:pointer">Lehrkraft</button>
+</div>
+
+<sc-if value="{{ isSin }}" hint-placeholder-val="{{ true }}">
+<div style="animation:lan-rise .22s ease">
+<h2 style="margin:0 0 6px">Willkommen zurück</h2>
+<p class="muted" style="margin:0 0 22px;font-size:16px">Mit dem Pseudonym von deiner Lehrkraft.</p>
+<div class="stack">
+<label class="field"><span class="field__label">Pseudonym</span><input placeholder="blaufuchs42"></label>
+<label class="field"><span class="field__label">Passwort</span><input type="password" value="········"></label>
+<button class="btn btn--lg btn--block" style="min-height:56px">Anmelden</button>
+</div>
+<div class="row" style="margin-top:16px">
+<button class="btn btn--plain" onClick="{{ setStudentUp }}" style="min-height:44px;font-size:15px">Zum ersten Mal hier</button>
+<span class="small" style="font-size:13px;text-align:right;max-width:17ch">Passwort weg? Deine Lehrkraft gibt dir ein neues.</span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSup }}" hint-placeholder-val="{{ false }}">
+<div style="animation:lan-rise .22s ease">
+<h2 style="margin:0 0 6px">Schön, dass du da bist</h2>
+<p class="muted" style="margin:0 0 22px;font-size:16px">Klassencode und Pseudonym bekommst du von deiner Lehrkraft. Das Passwort denkst du dir selbst aus.</p>
+<div class="stack">
+<div>
+<p class="field__label" style="margin:0 0 8px 2px">Klassencode</p>
+<div class="codeinput">
+<input value="9" data-filled="true"><input value="B" data-filled="true"><input value="K" data-filled="true"><input value="7" data-filled="true"><input value=""><input value="">
+</div>
+</div>
+<label class="field"><span class="field__label">Pseudonym</span><input placeholder="blaufuchs42"></label>
+<div>
+<label class="field"><span class="field__label">Passwort</span><input type="password" value="······"></label>
+<p class="field__hint">Mindestens 6 Zeichen – am besten etwas, das du dir gut merkst.</p>
+</div>
+<button class="btn btn--go btn--lg btn--block" style="min-height:56px">Los geht's</button>
+</div>
+<button class="btn btn--plain" onClick="{{ setStudentIn }}" style="margin-top:14px;min-height:44px;font-size:15px">Ich war schon mal hier</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTin }}" hint-placeholder-val="{{ false }}">
+<div style="animation:lan-rise .22s ease">
+<h2 style="margin:0 0 6px">Anmelden</h2>
+<p class="muted" style="margin:0 0 22px;font-size:16px">Für Lehrkräfte mit E-Mail-Adresse.</p>
+<div class="stack">
+<label class="field"><span class="field__label">E-Mail</span><input type="email" placeholder="name@schule.de"></label>
+<label class="field"><span class="field__label">Passwort</span><input type="password" value="········"></label>
+<button class="btn btn--lg btn--block" style="min-height:56px">Anmelden</button>
+</div>
+<div class="row" style="margin-top:16px">
+<button class="btn btn--plain" onClick="{{ setTeacherUp }}" style="min-height:44px;font-size:15px">Konto anlegen</button>
+<button class="btn btn--plain" style="min-height:44px;font-size:15px">Passwort vergessen</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTup }}" hint-placeholder-val="{{ false }}">
+<div style="animation:lan-rise .22s ease">
+<h2 style="margin:0 0 6px">Konto anlegen</h2>
+<p class="muted" style="margin:0 0 22px;font-size:16px">Danach legst du deine erste Klasse an und verteilst Pseudonyme.</p>
+<div class="stack">
+<label class="field"><span class="field__label">Name</span><input placeholder="Frau Brandt"></label>
+<label class="field"><span class="field__label">E-Mail</span><input type="email" placeholder="name@schule.de"></label>
+<div>
+<label class="field"><span class="field__label">Passwort</span><input type="password" value="········"></label>
+<p class="field__hint">Mindestens 6 Zeichen.</p>
+</div>
+<button class="btn btn--go btn--lg btn--block" style="min-height:56px">Konto anlegen</button>
+</div>
+<button class="btn btn--plain" onClick="{{ setTeacherIn }}" style="margin-top:14px;min-height:44px;font-size:15px">Ich habe schon ein Konto</button>
+</div>
+</sc-if>
+
+</div>
+</div>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ 402 }}" height="{{ 874 }}" hint-size="402px,874px">
+<div style="height:100%;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+<div style="flex:1;overflow:auto;padding:58px 22px 28px;display:flex;flex-direction:column;justify-content:center">
+
+<p style="margin:0 0 24px;font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em">lernassi</p>
+
+<div>
+<sc-if value="{{ isSin }}" hint-placeholder-val="{{ true }}">
+<div style="animation:lan-rise .22s ease">
+<h1 style="margin:0 0 6px">Willkommen zurück</h1>
+<p class="muted" style="margin:0 0 22px;font-size:17px">Mit dem Pseudonym von deiner Lehrkraft.</p>
+<div class="stack">
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">Pseudonym</span><input placeholder="blaufuchs42" autocapitalize="none"></label>
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">Passwort</span><input type="password" value="········"></label>
+<button class="btn btn--lg btn--block" style="min-height:62px">Anmelden</button>
+</div>
+<p class="small" style="margin:12px 2px 0">Passwort weg? Deine Lehrkraft gibt dir ein neues.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSup }}" hint-placeholder-val="{{ false }}">
+<div style="animation:lan-rise .22s ease">
+<h1 style="margin:0 0 6px">Schön, dass du da bist</h1>
+<p class="muted" style="margin:0 0 22px;font-size:17px">Klassencode und Pseudonym bekommst du von deiner Lehrkraft.</p>
+<div class="stack">
+<div>
+<p class="field__label" style="margin:0 0 8px 2px">Klassencode</p>
+<div class="codeinput" style="gap:6px">
+<input value="9" data-filled="true" style="width:100%"><input value="B" data-filled="true" style="width:100%"><input value="K" data-filled="true" style="width:100%"><input value="7" data-filled="true" style="width:100%"><input value="" style="width:100%"><input value="" style="width:100%">
+</div>
+</div>
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">Pseudonym</span><input placeholder="blaufuchs42" autocapitalize="none"></label>
+<div>
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">Passwort</span><input type="password" value="······"></label>
+<p class="field__hint">Mindestens 6 Zeichen – merk es dir gut.</p>
+</div>
+<button class="btn btn--go btn--lg btn--block" style="min-height:62px">Los geht's</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTin }}" hint-placeholder-val="{{ false }}">
+<div style="animation:lan-rise .22s ease">
+<h1 style="margin:0 0 6px">Anmelden</h1>
+<p class="muted" style="margin:0 0 22px;font-size:17px">Für Lehrkräfte. Am Rechner hast du mehr Platz.</p>
+<div class="stack">
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">E-Mail</span><input type="email" placeholder="name@schule.de"></label>
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">Passwort</span><input type="password" value="········"></label>
+<button class="btn btn--lg btn--block" style="min-height:62px">Anmelden</button>
+</div>
+<button class="btn btn--plain" style="margin-top:10px;min-height:48px;font-size:15px">Passwort vergessen</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTup }}" hint-placeholder-val="{{ false }}">
+<div style="animation:lan-rise .22s ease">
+<h1 style="margin:0 0 6px">Konto anlegen</h1>
+<p class="muted" style="margin:0 0 22px;font-size:17px">Danach legst du deine erste Klasse an.</p>
+<div class="stack">
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">Name</span><input placeholder="Frau Brandt"></label>
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">E-Mail</span><input type="email" placeholder="name@schule.de"></label>
+<div>
+<label class="field" style="padding:12px 16px 13px"><span class="field__label">Passwort</span><input type="password" value="········"></label>
+<p class="field__hint">Mindestens 6 Zeichen.</p>
+</div>
+<button class="btn btn--go btn--lg btn--block" style="min-height:62px">Konto anlegen</button>
+</div>
+</div>
+</sc-if>
+</div>
+
+<div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--line)">
+<sc-if value="{{ studentMode }}" hint-placeholder-val="{{ true }}">
+<div class="row">
+<button class="btn btn--plain" onClick="{{ toggleStudent }}" style="min-height:52px;font-size:15px;padding-inline:0">{{ studentSwitchLabel }}</button>
+<button class="btn btn--plain" onClick="{{ setTeacherIn }}" style="min-height:52px;font-size:15px">Lehrkraft</button>
+</div>
+</sc-if>
+<sc-if value="{{ teacherMode }}" hint-placeholder-val="{{ false }}">
+<div class="row">
+<button class="btn btn--plain" onClick="{{ toggleTeacher }}" style="min-height:52px;font-size:15px;padding-inline:0">{{ teacherSwitchLabel }}</button>
+<button class="btn btn--plain" onClick="{{ setStudentIn }}" style="min-height:52px;font-size:15px">Schüler:in</button>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+</x-import>
+
+</div>
+
+<p class="small" style="margin:0;max-width:640px">Ein Einstieg für beide Rollen: Rolle als Umschalter im Formular statt eigener Startseite. Am Rechner ruht das Formular mittig neben einer ruhigen Info-Spalte, am Handy füllt es die Seite und die Rolle steckt unten im Fuß.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1780,&quot;height&quot;:1010},&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;student-in&quot;,&quot;student-up&quot;,&quot;teacher-in&quot;,&quot;teacher-up&quot;],&quot;default&quot;:&quot;student-in&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Ansicht&quot;}}">
+class Component extends DCLogic {
+  state = { view: null };
+  renderVals() {
+    const view = this.state.view || (this.props.startView ?? 'student-in');
+    const set = (v) => () => this.setState({ view: v });
+    const student = view === 'student-in' || view === 'student-up';
+    const active = { background: 'var(--surface)', color: 'var(--ink)' };
+    const idle = { background: 'transparent', color: 'var(--ink-3)' };
+    return {
+      isSin: view === 'student-in', isSup: view === 'student-up',
+      isTin: view === 'teacher-in', isTup: view === 'teacher-up',
+      studentMode: student, teacherMode: !student,
+      studentSwitchLabel: view === 'student-in' ? 'Zum ersten Mal hier' : 'Ich war schon mal hier',
+      teacherSwitchLabel: view === 'teacher-in' ? 'Konto anlegen' : 'Ich habe schon ein Konto',
+      tabStudentBg: student ? active.background : idle.background,
+      tabStudentInk: student ? active.color : idle.color,
+      tabTeacherBg: student ? idle.background : active.background,
+      tabTeacherInk: student ? idle.color : active.color,
+      setStudentIn: set('student-in'), setStudentUp: set('student-up'),
+      setTeacherIn: set('teacher-in'), setTeacherUp: set('teacher-up'),
+      toggleStudent: set(view === 'student-in' ? 'student-up' : 'student-in'),
+      toggleTeacher: set(view === 'teacher-in' ? 'teacher-up' : 'teacher-in')
+    };
+  }
+}
+</script>
+</body>
+</html>
