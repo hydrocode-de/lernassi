@@ -6,7 +6,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
-	if (!locals.user || locals.user.role !== 'student') throw redirect(303, '/schueler/anmelden');
+	if (!locals.user || locals.user.role !== 'student') throw redirect(303, '/anmelden');
 	const eintrag = (
 		await db.select().from(consents).where(eq(consents.studentId, locals.user.id))
 	)[0];
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
 	umstellen: async ({ request, locals }) => {
-		if (!locals.user || locals.user.role !== 'student') throw redirect(303, '/schueler/anmelden');
+		if (!locals.user || locals.user.role !== 'student') throw redirect(303, '/anmelden');
 		if (!dev) return fail(403, { message: 'Diese Einstellung ist noch nicht freigegeben.' });
 		const studentId = locals.user.id;
 		const fd = await request.formData();

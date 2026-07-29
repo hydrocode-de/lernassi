@@ -17,6 +17,13 @@ export function vorZeit(datum: Date | number): string {
 	return `vor ${Math.floor(tage / 30)} Monaten`;
 }
 
+/** Kürzel fürs Konto-Zeichen: die ersten Buchstaben der Pseudonym-Teile, z. B. „blaufuchs42" → „bf". */
+export function initialen(pseudonym: string | null | undefined): string {
+	const teile = (pseudonym ?? '').split(/[^a-zA-ZäöüÄÖÜß]+/).filter(Boolean);
+	if (!teile.length) return '?';
+	return (teile[0][0] + (teile[1]?.[0] ?? teile[0][1] ?? '')).toLowerCase();
+}
+
 export function seitenLabel(n: number): string {
 	if (n === 0) return 'Noch keine Seite';
 	return n === 1 ? '1 Seite' : `${n} Seiten`;
