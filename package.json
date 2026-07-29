@@ -11,6 +11,8 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "node --env-file=.env scripts/migrate.mjs",
+		"db:fixture": "node --env-file=.env scripts/fixture-export.mjs",
+		"db:seed": "node --env-file=.env scripts/seed.mjs",
 		"health:requesty": "node --env-file=.env scripts/health-requesty.mjs",
 		"db:studio": "drizzle-kit studio"
 	},
