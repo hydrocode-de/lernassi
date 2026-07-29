@@ -15,42 +15,58 @@
 {#if form?.message}<div class="meldung meldung--fehler">{form.message}</div>{/if}
 {#if form?.ok}<div class="meldung meldung--ok">{form.ok}</div>{/if}
 
-<h2 style="margin:28px 0 12px">Lernziele</h2>
+<h2 style="margin:28px 0 6px">Lernziele</h2>
+<p class="small" style="margin:0 0 12px">
+	Ein aktuelles Lernziel pro Fach, so formuliert wie im Bildungsplan – gerne nach Fachwissen,
+	Analyse, Urteils- und Methodenkompetenz gruppiert. Es steuert, welche Fragen lernassi aus dem
+	Heft eines Kindes auswählt und wie tief sie gehen. Die Kinder sehen es nicht.
+</p>
+
+{#if form?.warnung}<div class="meldung meldung--fehler">{form.warnung}</div>{/if}
+
+{#each data.goals.filter((z) => z.subject) as ziel (ziel.id)}
+	<div class="card" style="margin-bottom:12px">
+		<form method="POST" action="?/speichereZiel" class="stack">
+			<input type="hidden" name="subject" value={ziel.subject} />
+			<div class="row">
+				<h3>{ziel.subject}</h3>
+				<span class="small">
+					{#if ziel.updatedAt}
+						fortgeschrieben am {new Date(ziel.updatedAt).toLocaleDateString('de-DE')}
+					{/if}
+				</span>
+			</div>
+			<label class="field">
+				<span class="field__label">Lernziel</span>
+				<textarea name="text" rows="8" maxlength="8000">{ziel.description ?? ''}</textarea>
+			</label>
+			<button class="btn">Fortschreiben</button>
+		</form>
+	</div>
+{/each}
+
 <div class="card">
-	<form method="POST" action="?/createGoal" class="stack">
+	<form method="POST" action="?/speichereZiel" class="stack">
+		<label class="field" style="max-width:280px">
+			<span class="field__label">Fach</span>
+			<input name="subject" required placeholder="z. B. Geschichte" />
+		</label>
 		<label class="field">
 			<span class="field__label">Lernziel</span>
-			<input name="title" required placeholder="z. B. Ursachen des 1. Weltkriegs erklären" />
+			<textarea
+				name="text"
+				rows="6"
+				maxlength="8000"
+				placeholder={'Fachwissen: … \nAnalysekompetenz: … \nUrteilskompetenz: … \nMethodenkompetenz: …'}
+			></textarea>
 		</label>
-		<label class="field">
-			<span class="field__label">Beschreibung</span>
-			<textarea name="description" rows="2"></textarea>
-		</label>
-		<label class="field">
-			<span class="field__label">Fach</span>
-			<input name="subject" placeholder="z. B. Geschichte" />
-		</label>
-		<label class="field">
-			<span class="field__label">Worauf soll lernassi achten</span>
-			<input name="contextPrompt" placeholder="z. B. Fachbegriffe konsequent einfordern" />
-		</label>
+		<p class="small" style="margin:0">
+			Länger als {data.warnschwelle} Zeichen wird es unschärfer – die Anwendung sagt dann Bescheid,
+			hält dich aber nicht auf.
+		</p>
 		<button class="btn">Lernziel anlegen</button>
 	</form>
 </div>
-
-{#if data.goals.length}
-	<ul class="liste" style="margin-top:16px">
-		{#each data.goals as ziel (ziel.id)}
-			<li>
-				<div>
-					<div style="font-size:17px">{ziel.title}</div>
-					{#if ziel.description}<div class="small">{ziel.description}</div>{/if}
-				</div>
-				{#if ziel.subject}<span class="tag">{ziel.subject}</span>{/if}
-			</li>
-		{/each}
-	</ul>
-{/if}
 
 <h2 style="margin:32px 0 12px">Pseudonyme</h2>
 <div class="card">

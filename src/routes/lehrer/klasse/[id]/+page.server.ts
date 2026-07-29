@@ -2,6 +2,7 @@ import { db } from '$lib/server/db';
 import { auth } from '$lib/server/auth';
 import { classes, learningGoals, pseudonyms, students, user, account } from '$lib/server/db/schema';
 import { makePseudonym } from '$lib/server/roster';
+import { ZIEL_WARNSCHWELLE } from '$lib/lernziel';
 import { and, eq, desc } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -35,23 +36,47 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.from(pseudonyms)
 		.where(eq(pseudonyms.classId, cls.id))
 		.orderBy(desc(pseudonyms.createdAt));
-	return { cls, goals, pseudonyms: ps };
+	return { cls, goals, pseudonyms: ps, warnschwelle: ZIEL_WARNSCHWELLE };
 };
 
 export const actions: Actions = {
-	createGoal: async ({ params, locals, request }) => {
+	// Ein aktuelles Lernziel pro Fach, fortgeschrieben statt ergänzt.
+	speichereZiel: async ({ params, locals, request }) => {
 		const cls = await ownedClass(locals, params.id);
 		const fd = await request.formData();
-		const title = String(fd.get('title') ?? '').trim();
-		if (!title) return fail(400, { message: 'Bitte einen Titel für das Lernziel angeben.' });
-		await db.insert(learningGoals).values({
-			classId: cls.id,
-			title,
-			description: str(fd.get('description')),
-			contextPrompt: str(fd.get('contextPrompt')),
-			subject: str(fd.get('subject'))
-		});
-		return { ok: 'Lernziel angelegt.' };
+		const subject = str(fd.get('subject'));
+		const text = String(fd.get('text') ?? '').trim();
+		if (!subject) return fail(400, { message: 'Bitte das Fach angeben.' });
+		if (!text) return fail(400, { message: 'Bitte das Lernziel eintragen.' });
+
+		const vorhanden = (
+			await db.select().from(learningGoals).where(eq(learningGoals.classId, cls.id))
+		).find((z) => z.subject?.localeCompare(subject, 'de', { sensitivity: 'base' }) === 0);
+
+		if (vorhanden) {
+			await db
+				.update(learningGoals)
+				.set({ title: subject, subject, description: text, updatedAt: new Date() })
+				.where(eq(learningGoals.id, vorhanden.id));
+		} else {
+			await db.insert(learningGoals).values({
+				classId: cls.id,
+				title: subject,
+				subject,
+				description: text,
+				updatedAt: new Date()
+			});
+		}
+
+		return {
+			ok: `Lernziel für ${subject} gespeichert.`,
+			// Warnen, nicht blockieren: zu viel Kontext verwässert die Fragenauswahl.
+			warnung:
+				text.length > ZIEL_WARNSCHWELLE
+					? `Das Lernziel ist mit ${text.length} Zeichen sehr lang. Je knapper die Kompetenzen ` +
+						'formuliert sind, desto gezielter wählt lernassi die Fragen aus.'
+					: null
+		};
 	},
 
 	generatePseudonyms: async ({ params, locals, request }) => {
