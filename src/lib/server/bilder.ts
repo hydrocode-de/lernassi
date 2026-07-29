@@ -2,8 +2,9 @@
 // Gespeichert wird nur, wenn das Kind seine Fotos behalten möchte
 // (oder im Entwicklungsmodus, damit Transkripte gegen das Original geprüft werden können).
 
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { join, normalize } from 'node:path';
 import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 
@@ -25,4 +26,34 @@ export async function legeSeiteAb(
 	const name = `${seite}.${endung}`;
 	await writeFile(join(ziel, name), daten);
 	return `${noteId}/${name}`;
+}
+
+/** Entfernt die abgelegten Seiten einer verworfenen Aufnahme. */
+export async function entferneAufnahmeBilder(uploadId: string): Promise<void> {
+	await rm(join(ORDNER, uploadId), { recursive: true, force: true });
+}
+
+/** Fingerabdruck einer Seite — erkennt, ob dieselbe Datei schon einmal hochgeladen wurde. */
+export function fingerabdruck(daten: Uint8Array): string {
+	return createHash('sha256').update(daten).digest('hex');
+}
+
+const TYPEN: Record<string, string> = {
+	jpg: 'image/jpeg',
+	png: 'image/png',
+	pdf: 'application/pdf'
+};
+
+/** Liest eine abgelegte Seite. Der Verweis kommt aus der Datenbank, nie aus der URL. */
+export async function holeSeite(imageRef: string): Promise<{ daten: Buffer; typ: string } | null> {
+	// Sicherheitsnetz, falls je ein Verweis mit ".." in die Datenbank geriete.
+	const sauber = normalize(imageRef);
+	if (sauber.startsWith('..') || sauber.startsWith('/')) return null;
+	try {
+		const daten = await readFile(join(ORDNER, sauber));
+		const endung = sauber.split('.').pop()?.toLowerCase() ?? '';
+		return { daten, typ: TYPEN[endung] ?? 'application/octet-stream' };
+	} catch {
+		return null;
+	}
 }

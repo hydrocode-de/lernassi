@@ -1,0 +1,1 @@
+ALTER TABLE `upload_pages` ADD `image_hash` text;

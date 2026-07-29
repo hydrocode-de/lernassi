@@ -142,6 +142,9 @@ export const uploadPages = sqliteTable('upload_pages', {
 		.references(() => uploads.id, { onDelete: 'cascade' }),
 	pageNumber: integer('page_number').notNull(),
 	imageRef: text('image_ref'),
+	// Fingerabdruck des Bildes. Wird immer gesetzt, auch wenn das Bild nicht abgelegt wird —
+	// nur damit erkannt werden kann, dass dieselbe Heftseite schon einmal da war.
+	imageHash: text('image_hash'),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
