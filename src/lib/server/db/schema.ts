@@ -90,6 +90,10 @@ export const students = sqliteTable('students', {
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
+// Ein aktuelles Lernziel pro Klasse und Fach, von der Lehrkraft fortgeschrieben.
+// Freitext (Kompetenzformulierungen, wie Lehrkräfte sie real schreiben) — bewusst NICHT
+// zerlegt: es ist Kontext für die Agenten, und genau dafür ist Kontext da.
+// `description` trägt diesen Freitext; `title` bleibt aus M1 und führt nur noch das Fach.
 export const learningGoals = sqliteTable('learning_goals', {
 	id: id(),
 	classId: text('class_id')
@@ -99,7 +103,8 @@ export const learningGoals = sqliteTable('learning_goals', {
 	description: text('description'),
 	contextPrompt: text('context_prompt'), // Satz für die Schüler-KI (M2)
 	subject: text('subject'),
-	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -117,6 +122,10 @@ export const tocEntries = sqliteTable('toc_entries', {
 	kind: text('kind').notNull(), // 'subject' | 'chapter' | 'topic'
 	title: text('title').notNull(),
 	sortOrder: integer('sort_order').notNull().default(0),
+	// Nur bei kind='chapter': wann zuletzt eine abgeschlossene Runde über dieses Kapitel lief.
+	// Pro Kapitel, nicht pro Fach — sonst gelten neue Seiten in Kapitel A als eingeordnet,
+	// sobald Kapitel B geübt wurde.
+	lastAssessedAt: integer('last_assessed_at', { mode: 'timestamp' }),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
@@ -161,7 +170,10 @@ export const notes = sqliteTable('notes', {
 	keywords: text('keywords'), // kommagetrennt, für die Begriffs-Chips
 	pageNumbers: text('page_numbers'), // z. B. "2,3" — welche Seiten dieses Thema betreffen
 	sortOrder: integer('sort_order').notNull().default(0),
-	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now),
+	// Zusammen mit dem Kapitel-Zeitstempel die Antwort auf „ist hier was Neues?".
+	// Gleich createdAt = neu; später = nachträglich geändert.
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
 });
 
 // Kind-Präferenzen (zusätzlich zur rechtlichen Elterneinwilligung).
@@ -182,6 +194,97 @@ export const consents = sqliteTable('consents', {
 // Vergebene (reservierte) Pseudonyme pro Klasse. Die Lehrkraft generiert die Liste
 // und teilt sie aus; ein Kind beansprucht beim Registrieren ein unbeanspruchtes.
 // So können keine Klarnamen als Pseudonym reinrutschen.
+// ─────────────────────────────────────────────────────────────
+// Lern-Session: Material NUTZEN (M3)
+// ─────────────────────────────────────────────────────────────
+
+// Eine Einordnungs-Runde über GENAU EIN Kapitel. Heißt nicht `session`:
+// diesen Namen belegt Better Auth.
+export const rounds = sqliteTable('rounds', {
+	id: id(),
+	studentId: text('student_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	chapterId: text('chapter_id')
+		.notNull()
+		.references(() => tocEntries.id, { onDelete: 'cascade' }),
+	startedAt: integer('started_at', { mode: 'timestamp' }).notNull().$defaultFn(now),
+	finishedAt: integer('finished_at', { mode: 'timestamp' }),
+	status: text('status').notNull().default('laufend'), // 'laufend' | 'abgeschlossen' | 'verworfen'
+	confidenceBefore: integer('confidence_before'), // 1–4, vor der ersten Frage
+	mirrorReaction: text('mirror_reaction'), // 'kommt-hin' | 'dachte-mehr' | 'kann-mehr'
+	// Nur das Neue einordnen: ab hier zählt Material als neu (= Kapitel-Zeitstempel beim Start).
+	sinceAt: integer('since_at', { mode: 'timestamp' })
+});
+
+// Eine Frage der Runde. `kind='control'` ist eine Steuer-Frage (Nachfrage ohne Bewertung),
+// alle anderen sind bewertete Fragen.
+export const questions = sqliteTable('questions', {
+	id: id(),
+	roundId: text('round_id')
+		.notNull()
+		.references(() => rounds.id, { onDelete: 'cascade' }),
+	wave: integer('wave').notNull().default(1), // 1 = erste drei, 2 = letzte zwei
+	sortOrder: integer('sort_order').notNull().default(0),
+	kind: text('kind').notNull(), // 'single' | 'multi' | 'yesno' | 'order' | 'match' | 'control'
+	prompt: text('prompt').notNull(),
+	options: text('options'), // JSON: string[] bzw. bei 'match' {links,rechts}[]
+	// Bleibt serverseitig. Der Client bekommt sie nie zu sehen.
+	correctAnswer: text('correct_answer'), // JSON
+	hint: text('hint'), // optional; bei Ja/Nein meist leer
+	topicId: text('topic_id').references(() => tocEntries.id, { onDelete: 'set null' }),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
+export const responses = sqliteTable('responses', {
+	id: id(),
+	questionId: text('question_id')
+		.notNull()
+		.references(() => questions.id, { onDelete: 'cascade' }),
+	attempt: integer('attempt').notNull().default(1),
+	given: text('given'), // JSON, genau wie das Kind geklickt hat
+	outcome: text('outcome').notNull(), // 'richtig' | 'teilweise' | 'falsch'
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
+// Arbeitsgedächtnis des Agenten, fortschreibbar. Kein Zeugnis: weder Kind noch
+// Lehrkraft lesen das. Die Lehrkraft-Darstellung entsteht in M4 aus den harten Daten.
+export const chapterAssessments = sqliteTable('chapter_assessments', {
+	id: id(),
+	studentId: text('student_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	chapterId: text('chapter_id')
+		.notNull()
+		.unique()
+		.references(() => tocEntries.id, { onDelete: 'cascade' }),
+	text: text('text').notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
+// Der Lernplan eines Fachs IST die Menge seiner Punkte — kein Plan-Kopf, kein Deckel.
+// Eine neue Runde fügt hinzu; verworfene Punkte behalten ihren Status, damit nichts
+// dreimal vorgeschlagen wird.
+export const planItems = sqliteTable('plan_items', {
+	id: id(),
+	studentId: text('student_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	subjectId: text('subject_id')
+		.notNull()
+		.references(() => tocEntries.id, { onDelete: 'cascade' }),
+	chapterId: text('chapter_id').references(() => tocEntries.id, { onDelete: 'set null' }),
+	auftrag: text('auftrag').notNull(), // in Worten, keine vorgefertigte Frage
+	minutes: integer('minutes'),
+	dueAt: integer('due_at', { mode: 'timestamp' }), // null = „sofort"
+	status: text('status').notNull().default('offen'), // 'offen' | 'erledigt' | 'verworfen'
+	createdInRoundId: text('created_in_round_id').references(() => rounds.id, {
+		onDelete: 'set null'
+	}),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+});
+
 export const pseudonyms = sqliteTable('pseudonyms', {
 	id: id(),
 	classId: text('class_id')
