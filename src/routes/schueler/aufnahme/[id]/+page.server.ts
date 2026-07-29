@@ -57,7 +57,12 @@ async function meineAufnahme(locals: App.Locals, id: string) {
 	return upload;
 }
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+/** Nur Wege innerhalb der Anwendung — ein Ziel aus der Adresszeile darf nicht nach außen führen. */
+function saubererWeiterWeg(roh: string | null): string | null {
+	return roh && /^\/schueler\/kapitel\/[\w-]+$/.test(roh) ? roh : null;
+}
+
+export const load: PageServerLoad = async ({ params, locals, url }) => {
 	const upload = await meineAufnahme(locals, params.id);
 	const studentId = locals.user!.id;
 
@@ -100,7 +105,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		seitenGesamt: upload.pageCount,
 		themen,
 		kapitelAuswahl,
-		seiten
+		seiten,
+		// Kam das Kind aus einer Runde her, um Material nachzureichen? Dann führt der
+		// Abschluss zurück dorthin statt ins Inhaltsverzeichnis.
+		weiter: saubererWeiterWeg(url.searchParams.get('weiter'))
 	};
 };
 

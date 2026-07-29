@@ -1,8 +1,34 @@
 <script lang="ts">
 	import { initialen } from '$lib/heft';
+	import {
+		alleLesen,
+		alleLoeschen,
+		einstellungLesen,
+		einstellungSchreiben,
+		TAGE_OPTIONEN,
+		type Einstellung
+	} from '$lib/mitschrieb';
 
 	let { data } = $props();
 	const an = $derived(data.behalten);
+
+	// Was bei einer Runde überlegt wurde, liegt auf diesem Gerät — nicht bei uns.
+	let mitschrieb = $state<Einstellung>({ an: true, tage: 7 });
+	let runden = $state(0);
+
+	$effect(() => {
+		mitschrieb = einstellungLesen();
+		runden = alleLesen().length;
+	});
+
+	function mitschriebSetzen(neu: Einstellung) {
+		mitschrieb = neu;
+		einstellungSchreiben(neu);
+		runden = alleLesen().length;
+	}
+
+	const fristLabel = (tage: number) =>
+		tage === 0 ? 'bis ich es lösche' : tage === 1 ? '1 Tag' : tage === 7 ? '1 Woche' : '1 Monat';
 	const zugehoerigkeit = $derived(
 		[data.klasse && `Klasse ${data.klasse}`, data.lehrkraft && `bei ${data.lehrkraft}`]
 			.filter(Boolean)
@@ -57,6 +83,60 @@
 			Aus: Deine Fotos werden nur gelesen und danach nicht behalten. Was in deinem
 			Inhaltsverzeichnis steht, bleibt dir.
 		</p>
+	{/if}
+</div>
+
+<div class="card" style="margin-top:12px">
+	<div class="zeile">
+		<div style="flex:1">
+			<p class="frage">Meine Runden auf diesem Gerät liegen lassen</p>
+			<p class="small" style="margin:5px 0 0">
+				Was ich mir bei deinen Runden überlegt habe, bleibt dann hier auf deinem Gerät – nicht bei
+				uns. Du kannst es jederzeit wegwerfen.
+			</p>
+		</div>
+		<button
+			class="schalter"
+			class:an={mitschrieb.an}
+			aria-pressed={mitschrieb.an}
+			aria-label="Meine Runden auf diesem Gerät liegen lassen"
+			onclick={() => mitschriebSetzen({ ...mitschrieb, an: !mitschrieb.an })}
+		>
+			<span class="knopf"></span>
+		</button>
+	</div>
+
+	{#if mitschrieb.an}
+		<p class="small" style="margin:14px 0 8px">Wie lange soll es liegen bleiben?</p>
+		<div class="chips">
+			{#each TAGE_OPTIONEN as tage (tage)}
+				<button
+					type="button"
+					class="chip"
+					aria-pressed={mitschrieb.tage === tage}
+					onclick={() => mitschriebSetzen({ ...mitschrieb, tage })}
+				>
+					{fristLabel(tage)}
+				</button>
+			{/each}
+		</div>
+		{#if runden}
+			<div class="zeile" style="margin-top:14px">
+				<p class="small" style="margin:0;flex:1">
+					{runden}
+					{runden === 1 ? 'Runde liegt' : 'Runden liegen'} hier.
+				</p>
+				<button
+					class="btn btn--plain"
+					onclick={() => {
+						alleLoeschen();
+						runden = 0;
+					}}
+				>
+					Wegwerfen
+				</button>
+			</div>
+		{/if}
 	{/if}
 </div>
 

@@ -7,6 +7,7 @@
 	// Während des Fotografierens tritt die Navigation zurück.
 	const angemeldet = $derived(Boolean(data.pseudonym) && aktiv !== '/schueler/aufnehmen');
 	const aufKonto = $derived(aktiv.startsWith('/schueler/konto'));
+	const aufPlan = $derived(aktiv.startsWith('/schueler/plan'));
 	// Ohne Angabe steht das erste Fach offen — die Spalte markiert dasselbe wie die Seite.
 	const gewaehltesFach = $derived(
 		page.url.searchParams.get('fach') ?? data.faecher[0]?.id ?? null
@@ -56,6 +57,8 @@
 			</div>
 		{/if}
 
+		<a href="/schueler/plan" class="btn btn--plain uebenSpalte" class:an={aufPlan}>Mein Lernplan</a>
+		<!-- „Üben" heißt den Plan abarbeiten — das kommt später. -->
 		<span class="btn btn--plain spaeter uebenSpalte">Üben</span>
 
 		<div class="konto">
@@ -114,7 +117,7 @@
 		{#if angemeldet}
 			<nav class="tabs">
 				<a href="/schueler" class:an={aktiv === '/schueler'}>Inhalt</a>
-				<span class="spaeter">Üben</span>
+				<a href="/schueler/plan" class:an={aufPlan}>Plan</a>
 				<a href="/schueler/konto" class:an={aufKonto}>Ich</a>
 			</nav>
 		{/if}
@@ -184,8 +187,7 @@
 		background: var(--surface);
 		border-top: 1px solid var(--line);
 	}
-	.tabs a,
-	.tabs .spaeter {
+	.tabs a {
 		flex: 1;
 		min-height: 56px;
 		display: grid;
@@ -274,6 +276,14 @@
 		justify-content: flex-start;
 		min-height: 44px;
 		font-size: 15px;
+	}
+	.uebenSpalte + .uebenSpalte {
+		margin-top: 2px;
+	}
+	a.uebenSpalte.an {
+		background: var(--lavender);
+		color: var(--lavender-ink);
+		text-decoration: none;
 	}
 
 	.konto {

@@ -103,7 +103,13 @@
 {/each}
 
 <div class="abschluss">
-	<a href="/schueler" class="btn btn--go btn--lg btn--block speichern">Passt so – speichern</a>
+	{#if data.weiter}
+		<a href={data.weiter} class="btn btn--go btn--lg btn--block speichern">
+			Passt so – zurück zum Kapitel
+		</a>
+	{:else}
+		<a href="/schueler" class="btn btn--go btn--lg btn--block speichern">Passt so – speichern</a>
+	{/if}
 	<form method="POST" action="?/verwerfen">
 		<button class="btn btn--plain verwerfen">
 			{anzahl === 1 ? 'Doch nicht behalten – wieder löschen' : 'Alles wieder löschen'}

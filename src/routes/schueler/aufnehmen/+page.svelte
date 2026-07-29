@@ -130,6 +130,7 @@
 			</label>
 		{/if}
 		<input type="hidden" name="fach" value={gewaehltesFach} />
+		{#if data.weiter}<input type="hidden" name="weiter" value={data.weiter} />{/if}
 
 		<div class="raster">
 			<div class="links">

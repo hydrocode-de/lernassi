@@ -12,7 +12,12 @@ import { and, eq, inArray } from "drizzle-orm";
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ locals }) => {
+/** Nur Wege innerhalb der Anwendung — siehe aufnahme/[id]. */
+function saubererWeiterWeg(roh: string | null): string | null {
+  return roh && /^\/schueler\/kapitel\/[\w-]+$/.test(roh) ? roh : null;
+}
+
+export const load: PageServerLoad = async ({ locals, url }) => {
   if (!locals.user || locals.user.role !== "student")
     throw redirect(303, "/anmelden");
   const faecher = await db
@@ -26,6 +31,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     );
   return {
     faecher: faecher.sort((a, b) => a.title.localeCompare(b.title, "de")),
+    weiter: saubererWeiterWeg(url.searchParams.get("weiter")),
   };
 };
 
@@ -227,6 +233,10 @@ export const actions: Actions = {
       });
     }
 
-    throw redirect(303, `/schueler/aufnahme/${upload.id}`);
+    const weiter = saubererWeiterWeg(String(fd.get("weiter") ?? "") || null);
+    throw redirect(
+      303,
+      `/schueler/aufnahme/${upload.id}${weiter ? `?weiter=${encodeURIComponent(weiter)}` : ""}`,
+    );
   },
 };
