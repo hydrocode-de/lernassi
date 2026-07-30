@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/styles.css">
+<script src="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/_ds_bundle.js"></script>
+<style>
+@keyframes la-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+body{margin:0;background:var(--paper-2)}
+a{color:var(--lavender-ink)}
+a:hover{color:oklch(0.38 0.10 285)}
+</style>
+</helmet>
+<div style="width:max-content;display:flex;flex-direction:column;gap:20px;padding:34px 28px 56px;font-family:var(--text)">
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<span class="eyebrow" style="margin-right:4px">Schritt</span>
+<button class="chip" onClick="{{ goMachen }}" aria-pressed="{{ isMachen }}">erklären</button>
+<button class="chip" onClick="{{ goFragen }}" aria-pressed="{{ isFragen }}">Fragen</button>
+<button class="chip" onClick="{{ goVergleichen }}" aria-pressed="{{ isVergleichen }}">vergleichen</button>
+<button class="chip" onClick="{{ goFertig }}" aria-pressed="{{ isFertig }}">abgehakt</button>
+</div>
+
+<div style="display:flex;gap:26px;align-items:flex-start">
+
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ 1240 }}" height="{{ 880 }}" url="lernassi.de/schueler/ueben/p-4d19" hint-size="1240px,880px">
+<div style="height:100%;display:flex;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<aside style="flex:none;width:268px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;padding:22px 16px 14px">
+<p style="margin:0 0 20px 4px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.01em">lernassi</p>
+<a class="btn btn--block" href="Aufschrieb.dc.html" style="min-height:52px;gap:10px;font-size:15px;white-space:nowrap;text-decoration:none">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h2.6l1.3-2h8.2l1.3 2H20a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13.5" r="3.4"></circle></svg>
+Aufschrieb hinzufügen
+</a>
+<p class="eyebrow" style="margin:26px 0 10px 4px">Meine Fächer</p>
+<div style="display:flex;flex-direction:column;gap:3px">
+<a href="Inhaltsverzeichnis.dc.html" style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--lavender-ink)"></span>Geschichte<span style="font-weight:400;opacity:.7;font-size:14px">12</span>
+</a>
+<a href="Inhaltsverzeichnis.dc.html" style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--mint-ink)"></span>Mathematik<span style="font-weight:400;opacity:.7;font-size:14px">9</span>
+</a>
+</div>
+<a class="btn btn--plain" href="Lernplan.dc.html" style="margin:14px 0 0;justify-content:flex-start;min-height:44px;font-size:15px;text-decoration:none">Mein Lernplan</a>
+<span class="btn btn--plain" style="margin:2px 0 0;justify-content:flex-start;min-height:44px;font-size:15px;background:var(--lavender);color:var(--lavender-ink)">Üben</span>
+<div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:grid;grid-template-columns:34px 1fr;align-items:center;gap:11px;padding-bottom:6px">
+<span style="width:34px;height:34px;border-radius:50%;background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:700;font-size:14px;display:grid;place-items:center">bf</span>
+<span><span style="display:block;font-family:var(--display);font-weight:600;font-size:15px">blaufuchs42</span><span class="small" style="display:block;font-size:13px">Klasse 9b</span></span>
+</div>
+</aside>
+
+<main style="flex:1;min-width:0;overflow:auto">
+<div style="max-width:960px;padding:34px 40px 48px">
+
+<div style="padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:18px">
+<div class="row" style="align-items:flex-start">
+<div>
+<p class="eyebrow" style="margin:0 0 4px">Aus meinem Lernplan</p>
+<h1 style="margin:0;font-size:24px">{{ auftrag }}</h1>
+<p class="muted" style="margin:5px 0 0;font-size:16px">Geschichte · Weimarer Republik · {{ dauer }}</p>
+</div>
+<sc-if value="{{ nichtFertig }}" hint-placeholder-val="{{ true }}">
+<a class="btn btn--plain" href="Lernplan.dc.html" style="min-height:44px;white-space:nowrap;text-decoration:none">Übung beenden</a>
+</sc-if>
+</div>
+<div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px">
+<span class="tag" style="background:{{ p1Bg }};color:{{ p1Ink }}">1 Machen</span>
+<span class="tag" style="background:{{ p2Bg }};color:{{ p2Ink }}">2 Vergleichen</span>
+<span class="tag" style="background:{{ p3Bg }};color:{{ p3Ink }}">3 Abhaken</span>
+<span class="small" style="font-size:13px">{{ notiz }}</span>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px;max-width:620px">
+
+<sc-if value="{{ isMachen }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="card" style="animation:la-rise .25s ease">
+<div class="row" style="margin-bottom:10px"><p class="eyebrow" style="margin:0">Deine Aufgabe</p><span class="tag tag--apricot" style="font-size:12px">wackelt noch</span></div>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Sag es einmal in eigenen Worten: Was war die Rentenmark – und warum hat sie die Inflation gestoppt?</p>
+<p class="small" style="margin:0 0 18px">Laut sagen oder im Kopf. Erst danach vergleichen – sonst liest du nur mit.</p>
+<div style="display:flex;flex-direction:column;gap:10px">
+<button class="btn btn--lg btn--block" onClick="{{ goVergleichen }}" style="min-height:56px">Hab ich – vergleichen</button>
+<sc-if value="{{ ohneHilfe }}" hint-placeholder-val="{{ true }}">
+<button class="btn btn--quiet btn--block" onClick="{{ hilfe }}" style="min-height:52px">Ich komme nicht rein – Stützwörter zeigen</button>
+</sc-if>
+</div>
+</div>
+<sc-if value="{{ mitHilfe }}" hint-placeholder-val="{{ false }}">
+<div class="card card--tint" style="animation:la-rise .2s ease">
+<p class="eyebrow" style="margin:0 0 10px">Stützwörter aus deinem Heft</p>
+<div class="chips">
+<span class="chip" style="cursor:default">gedeckt durch Grund und Boden</span>
+<span class="chip" style="cursor:default">15. November 1923</span>
+<span class="chip" style="cursor:default">1 Billion alte Mark</span>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isFragen }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="align-self:flex-end;max-width:85%;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px">Sparbücher wurden wertlos</div>
+<div class="card" style="background:var(--mint);border-color:var(--mint-2);color:var(--mint-ink)">
+<p style="margin:0;font-size:17px;line-height:1.55">Stimmt – genau so steht es in deinem Heft.</p>
+</div>
+<div class="card" style="animation:la-rise .25s ease">
+<p class="eyebrow" style="margin:0 0 8px">Frage 3 von 5</p>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Wer hat bei der Inflation gewonnen?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ goVergleichen }}" style="justify-content:flex-start;text-align:left;min-height:54px;line-height:1.35">Wer Schulden hatte</button>
+<button class="btn btn--quiet btn--block" onClick="{{ goVergleichen }}" style="justify-content:flex-start;text-align:left;min-height:54px;line-height:1.35">Wer gespart hatte</button>
+<button class="btn btn--quiet btn--block" onClick="{{ goVergleichen }}" style="justify-content:flex-start;text-align:left;min-height:54px;line-height:1.35">Rentner und Beamte</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isVergleichen }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="align-self:flex-end;max-width:85%;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px">Hab ich gesagt</div>
+<div class="card" style="animation:la-rise .25s ease">
+<div class="row" style="margin-bottom:10px"><p class="eyebrow" style="margin:0">So steht es in deinem Heft</p><span class="small" style="font-size:13px">Seite 3</span></div>
+<p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:var(--ink-2)">15.11.1923 Rentenmark – gedeckt durch Grund und Boden. 1 Rentenmark = 1 Billion alte Mark. Inflation gestoppt.</p>
+<div class="chips">
+<span class="chip" style="cursor:default">Deckung</span>
+<span class="chip" style="cursor:default">1 Billion</span>
+<span class="chip" style="cursor:default">15. November</span>
+</div>
+</div>
+<div class="card">
+<p style="margin:0 0 6px;font-size:17px">Und – wie war es?</p>
+<p class="small" style="margin:0 0 14px">Ehrlich reicht. Danach steht es genauso in deinem Verzeichnis.</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ hatteIch }}" style="justify-content:flex-start;min-height:54px">Hatte ich, fast wörtlich</button>
+<button class="btn btn--quiet btn--block" onClick="{{ fast }}" style="justify-content:flex-start;min-height:54px">Ein Teil fehlte</button>
+<button class="btn btn--quiet btn--block" onClick="{{ nichtWirklich }}" style="justify-content:flex-start;min-height:54px">Nicht wirklich</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isFertig }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="card" style="background:{{ endeBg }};border-color:{{ endeRand }};color:{{ endeInk }};animation:la-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">{{ endeSatz }}</p>
+</div>
+<div class="card">
+<div class="row" style="margin-bottom:14px"><h3>Im Verzeichnis steht jetzt</h3><span class="tag">Geschichte</span></div>
+<div class="chips">
+<span class="chip {{ standKlasse }}" style="cursor:default"><span class="chip__dot"></span>Rentenmark – {{ standWort }}</span>
+<span class="chip chip--mint" style="cursor:default"><span class="chip__dot"></span>Ruhrbesetzung – sitzt</span>
+</div>
+</div>
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Noch offen in deinem Lernplan</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;min-height:56px">
+<span style="flex:1;min-width:12rem"><span style="display:block;font-size:16px;line-height:1.35">Zeitstrahl 1923 selbst legen</span><span class="small" style="display:block;font-size:13px">etwa 10 Minuten · ab 3. August</span></span>
+<button class="btn" onClick="{{ goMachen }}" style="min-height:48px;font-size:15px">Üben</button>
+</div>
+<div style="height:1px;background:var(--line)"></div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;min-height:56px">
+<span style="flex:1;min-width:12rem"><span style="display:block;font-size:16px;line-height:1.35">Drei Steigungen aus dem Heft nachrechnen</span><span class="small" style="display:block;font-size:13px">etwa 10 Minuten · Mathematik</span></span>
+<button class="btn" onClick="{{ goMachen }}" style="min-height:48px;font-size:15px">Üben</button>
+</div>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<button class="btn btn--lg" onClick="{{ goMachen }}" style="min-height:54px">Nächsten Punkt üben</button>
+<a class="btn btn--quiet" href="Lernplan.dc.html" style="min-height:54px;text-decoration:none">Mein Lernplan</a>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+</main>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ 402 }}" height="{{ 874 }}" hint-size="402px,874px">
+<div style="height:100%;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:56px 20px 8px">
+<p style="margin:0;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em">lernassi</p>
+<a href="Anmelden.dc.html" aria-label="Mein Konto" style="flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--lavender-2);background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:700;font-size:14px;display:grid;place-items:center;text-decoration:none">bf</a>
+</div>
+
+<div style="flex:1;overflow:auto;padding:8px 20px 24px">
+<div style="padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:16px">
+<div class="row" style="align-items:flex-start">
+<div><p class="eyebrow" style="margin:0 0 4px">Aus meinem Lernplan</p><h1 style="margin:0;font-size:21px">{{ auftrag }}</h1></div>
+<sc-if value="{{ nichtFertig }}" hint-placeholder-val="{{ true }}">
+<a class="btn btn--plain" href="Lernplan.dc.html" style="min-height:44px;font-size:14px;white-space:nowrap;text-decoration:none">Beenden</a>
+</sc-if>
+</div>
+<p class="muted" style="margin:6px 0 0;font-size:15px">Weimarer Republik · {{ dauer }}</p>
+<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:12px">
+<span class="tag" style="font-size:12px;background:{{ p1Bg }};color:{{ p1Ink }}">1 Machen</span>
+<span class="tag" style="font-size:12px;background:{{ p2Bg }};color:{{ p2Ink }}">2 Vergleichen</span>
+<span class="tag" style="font-size:12px;background:{{ p3Bg }};color:{{ p3Ink }}">3 Abhaken</span>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:12px">
+<sc-if value="{{ isMachen }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="card" style="animation:la-rise .25s ease">
+<div class="row" style="margin-bottom:10px"><p class="eyebrow" style="margin:0">Deine Aufgabe</p><span class="tag tag--apricot" style="font-size:12px">wackelt noch</span></div>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Sag es einmal in eigenen Worten: Was war die Rentenmark – und warum hat sie die Inflation gestoppt?</p>
+<p class="small" style="margin:0 0 18px">Laut sagen oder im Kopf. Erst danach vergleichen.</p>
+<div style="display:flex;flex-direction:column;gap:10px">
+<button class="btn btn--lg btn--block" onClick="{{ goVergleichen }}" style="min-height:60px">Hab ich – vergleichen</button>
+<sc-if value="{{ ohneHilfe }}" hint-placeholder-val="{{ true }}">
+<button class="btn btn--quiet btn--block" onClick="{{ hilfe }}" style="min-height:54px">Stützwörter zeigen</button>
+</sc-if>
+</div>
+</div>
+<sc-if value="{{ mitHilfe }}" hint-placeholder-val="{{ false }}">
+<div class="card card--tint" style="animation:la-rise .2s ease">
+<p class="eyebrow" style="margin:0 0 10px">Stützwörter aus deinem Heft</p>
+<div class="chips">
+<span class="chip" style="cursor:default">gedeckt durch Grund und Boden</span>
+<span class="chip" style="cursor:default">15. November 1923</span>
+<span class="chip" style="cursor:default">1 Billion alte Mark</span>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isFragen }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="align-self:flex-end;max-width:85%;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px">Sparbücher wurden wertlos</div>
+<div class="card" style="background:var(--mint);border-color:var(--mint-2);color:var(--mint-ink)">
+<p style="margin:0;font-size:17px;line-height:1.55">Stimmt – genau so steht es in deinem Heft.</p>
+</div>
+<div class="card" style="animation:la-rise .25s ease">
+<p class="eyebrow" style="margin:0 0 8px">Frage 3 von 5</p>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Wer hat bei der Inflation gewonnen?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ goVergleichen }}" style="justify-content:flex-start;text-align:left;min-height:56px;line-height:1.35">Wer Schulden hatte</button>
+<button class="btn btn--quiet btn--block" onClick="{{ goVergleichen }}" style="justify-content:flex-start;text-align:left;min-height:56px;line-height:1.35">Wer gespart hatte</button>
+<button class="btn btn--quiet btn--block" onClick="{{ goVergleichen }}" style="justify-content:flex-start;text-align:left;min-height:56px;line-height:1.35">Rentner und Beamte</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isVergleichen }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="align-self:flex-end;max-width:85%;background:var(--lavender);color:var(--lavender-ink);border-radius:var(--r-lg) var(--r-lg) 4px var(--r-lg);padding:12px 16px;font-size:16px">Hab ich gesagt</div>
+<div class="card" style="animation:la-rise .25s ease">
+<div class="row" style="margin-bottom:10px"><p class="eyebrow" style="margin:0">So steht es in deinem Heft</p><span class="small" style="font-size:13px">Seite 3</span></div>
+<p style="margin:0 0 14px;font-size:16px;line-height:1.7;color:var(--ink-2)">15.11.1923 Rentenmark – gedeckt durch Grund und Boden. 1 Rentenmark = 1 Billion alte Mark. Inflation gestoppt.</p>
+<div class="chips">
+<span class="chip" style="cursor:default">Deckung</span>
+<span class="chip" style="cursor:default">1 Billion</span>
+</div>
+</div>
+<div class="card">
+<p style="margin:0 0 6px;font-size:17px">Und – wie war es?</p>
+<p class="small" style="margin:0 0 14px">Ehrlich reicht.</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ hatteIch }}" style="justify-content:flex-start;min-height:56px">Hatte ich, fast wörtlich</button>
+<button class="btn btn--quiet btn--block" onClick="{{ fast }}" style="justify-content:flex-start;min-height:56px">Ein Teil fehlte</button>
+<button class="btn btn--quiet btn--block" onClick="{{ nichtWirklich }}" style="justify-content:flex-start;min-height:56px">Nicht wirklich</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isFertig }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div class="card" style="background:{{ endeBg }};border-color:{{ endeRand }};color:{{ endeInk }};animation:la-rise .25s ease">
+<p style="margin:0;font-size:17px;line-height:1.55">{{ endeSatz }}</p>
+</div>
+<div class="card">
+<div class="row" style="margin-bottom:14px"><h3>Im Verzeichnis steht jetzt</h3><span class="tag">Geschichte</span></div>
+<div class="chips">
+<span class="chip {{ standKlasse }}" style="cursor:default"><span class="chip__dot"></span>Rentenmark – {{ standWort }}</span>
+</div>
+</div>
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Noch offen in deinem Lernplan</p>
+<div style="display:flex;flex-direction:column;gap:12px">
+<div>
+<span style="display:block;font-size:16px;line-height:1.35">Zeitstrahl 1923 selbst legen</span>
+<span class="small" style="display:block;font-size:13px;margin-bottom:10px">etwa 10 Minuten · ab 3. August</span>
+<button class="btn btn--block" onClick="{{ goMachen }}" style="min-height:52px;font-size:15px">Üben</button>
+</div>
+<div style="height:1px;background:var(--line)"></div>
+<div>
+<span style="display:block;font-size:16px;line-height:1.35">Drei Steigungen aus dem Heft nachrechnen</span>
+<span class="small" style="display:block;font-size:13px;margin-bottom:10px">etwa 10 Minuten · Mathematik</span>
+<button class="btn btn--block" onClick="{{ goMachen }}" style="min-height:52px;font-size:15px">Üben</button>
+</div>
+</div>
+</div>
+<a class="btn btn--quiet btn--block" href="Lernplan.dc.html" style="min-height:54px;text-decoration:none">Mein Lernplan</a>
+</div>
+</sc-if>
+</div>
+</div>
+
+<div style="flex:none;display:flex;gap:4px;padding:8px 10px 34px;background:var(--surface);border-top:1px solid var(--line)">
+<a href="Inhaltsverzeichnis.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:14px;text-decoration:none" style-hover="background:var(--paper-2)">Inhalt</a>
+<a href="Lernplan.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:14px;text-decoration:none" style-hover="background:var(--paper-2)">Plan</a>
+<span style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:600;font-size:14px">Üben</span>
+<a href="Anmelden.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:14px;text-decoration:none" style-hover="background:var(--paper-2)">Ich</a>
+</div>
+</div>
+</x-import>
+
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1780,&quot;height&quot;:1050},&quot;schritt&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Erklären&quot;,&quot;Fragen&quot;,&quot;Vergleichen&quot;,&quot;Abgehakt&quot;],&quot;default&quot;:&quot;Erklären&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;auftrag&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Rentenmark in eigenen Worten erklären&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Karte&quot;}}">
+class Component extends DCLogic {
+  state = { schritt: null, hilfe: false, ergebnis: 'hatte' };
+  renderVals() {
+    const s = this.state;
+    const schritt = s.schritt ?? ({
+      'Erklären': 'machen', 'Fragen': 'fragen', 'Vergleichen': 'vergleichen', 'Abgehakt': 'fertig'
+    }[this.props.schritt] || 'machen');
+    const stufe = schritt === 'machen' || schritt === 'fragen' ? 1
+      : schritt === 'vergleichen' ? 2 : 3;
+    const pille = (n) => stufe === n
+      ? { bg: 'var(--lavender)', ink: 'var(--lavender-ink)' }
+      : stufe > n ? { bg: 'var(--mint)', ink: 'var(--mint-ink)' }
+      : { bg: 'var(--paper-2)', ink: 'var(--ink-2)' };
+    const p1 = pille(1), p2 = pille(2), p3 = pille(3);
+    const notizen = {
+      machen: 'Erst selbst, dann nachsehen',
+      fragen: 'Fragen aus deinem Heft', vergleichen: 'Heft daneben', fertig: 'Punkt ist durch'
+    };
+    const ende = {
+      hatte: {
+        satz: 'Abgehakt. Das saß – Rentenmark steht ab jetzt auf „sitzt".',
+        bg: 'var(--mint)', rand: 'var(--mint-2)', ink: 'var(--mint-ink)',
+        wort: 'sitzt', klasse: 'chip--mint'
+      },
+      fast: {
+        satz: 'Abgehakt. Der Kern war da, ein Teil fehlte – ich lasse Rentenmark auf „wackelt" und frage in der nächsten Runde nochmal.',
+        bg: 'var(--apricot)', rand: 'var(--apricot-2)', ink: 'var(--apricot-ink)',
+        wort: 'wackelt noch', klasse: 'chip--apricot'
+      },
+      nicht: {
+        satz: 'Gut, dass du es ehrlich sagst. Der Punkt bleibt offen und kommt gleich noch einmal – diesmal mit den Stützwörtern.',
+        bg: 'var(--sky)', rand: 'var(--sky-2)', ink: 'var(--sky-ink)',
+        wort: 'neu', klasse: 'chip--sky'
+      }
+    }[s.ergebnis];
+    const go = (v) => () => this.setState({ schritt: v, hilfe: false });
+    const fertig = (e) => () => this.setState({ schritt: 'fertig', ergebnis: e });
+    return {
+      auftrag: this.props.auftrag ?? 'Rentenmark in eigenen Worten erklären',
+      dauer: 'etwa 5 Minuten',
+      isMachen: schritt === 'machen', isFragen: schritt === 'fragen',
+      isVergleichen: schritt === 'vergleichen', isFertig: schritt === 'fertig',
+      nichtFertig: schritt !== 'fertig',
+      notiz: notizen[schritt] || '',
+      p1Bg: p1.bg, p1Ink: p1.ink, p2Bg: p2.bg, p2Ink: p2.ink, p3Bg: p3.bg, p3Ink: p3.ink,
+      goMachen: go('machen'), goFragen: go('fragen'), goVergleichen: go('vergleichen'),
+      goFertig: () => this.setState({ schritt: 'fertig' }),
+      ohneHilfe: !s.hilfe, mitHilfe: s.hilfe,
+      hilfe: () => this.setState({ hilfe: true }),
+      hatteIch: fertig('hatte'), fast: fertig('fast'), nichtWirklich: fertig('nicht'),
+      endeSatz: ende.satz, endeBg: ende.bg, endeRand: ende.rand, endeInk: ende.ink,
+      standWort: ende.wort, standKlasse: ende.klasse
+    };
+  }
+}
+</script>
+</body>
+</html>

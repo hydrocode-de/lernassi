@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/styles.css">
+<script src="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/_ds_bundle.js"></script>
+<style>
+@keyframes la-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+body{margin:0;background:var(--paper-2)}
+a{color:var(--lavender-ink)}
+a:hover{color:oklch(0.38 0.10 285)}
+</style>
+</helmet>
+<div style="width:max-content;display:flex;flex-direction:column;gap:20px;padding:34px 28px 56px;font-family:var(--text)">
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<span class="eyebrow" style="margin-right:4px">Zustand</span>
+<button class="chip" onClick="{{ goVoll }}" aria-pressed="{{ istVoll }}">mit Punkten</button>
+<button class="chip" onClick="{{ goLeer }}" aria-pressed="{{ istLeer }}">noch leer</button>
+</div>
+
+<div style="display:flex;gap:26px;align-items:flex-start">
+
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ 1240 }}" height="{{ 820 }}" url="lernassi.de/schueler/plan" hint-size="1240px,820px">
+<div style="height:100%;display:flex;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<aside style="flex:none;width:268px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;padding:22px 16px 14px">
+<p style="margin:0 0 20px 4px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.01em">lernassi</p>
+<a class="btn btn--block" href="Aufschrieb.dc.html" style="min-height:52px;gap:10px;font-size:15px;white-space:nowrap;text-decoration:none">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h2.6l1.3-2h8.2l1.3 2H20a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13.5" r="3.4"></circle></svg>
+Aufschrieb hinzufügen
+</a>
+<p class="eyebrow" style="margin:26px 0 10px 4px">Meine Fächer</p>
+<div style="display:flex;flex-direction:column;gap:3px">
+<a href="Inhaltsverzeichnis.dc.html" style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--lavender-ink)"></span>Geschichte<span style="font-weight:400;opacity:.7;font-size:14px">12</span>
+</a>
+<a href="Inhaltsverzeichnis.dc.html" style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--mint-ink)"></span>Mathematik<span style="font-weight:400;opacity:.7;font-size:14px">9</span>
+</a>
+</div>
+<span class="btn btn--plain" style="margin:14px 0 0;justify-content:flex-start;min-height:44px;font-size:15px;background:var(--lavender);color:var(--lavender-ink)">Mein Lernplan</span>
+<a class="btn btn--plain" href="Ueben.dc.html" style="margin:2px 0 0;justify-content:flex-start;min-height:44px;font-size:15px;text-decoration:none">Üben</a>
+<div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:grid;grid-template-columns:34px 1fr;align-items:center;gap:11px;padding-bottom:6px">
+<span style="width:34px;height:34px;border-radius:50%;background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:700;font-size:14px;display:grid;place-items:center">bf</span>
+<span><span style="display:block;font-family:var(--display);font-weight:600;font-size:15px">blaufuchs42</span><span class="small" style="display:block;font-size:13px">Klasse 9b</span></span>
+</div>
+</aside>
+
+<main style="flex:1;min-width:0;overflow:auto">
+<div style="max-width:960px;padding:34px 40px 48px">
+<p class="eyebrow" style="margin:0 0 6px">Mein Lernplan</p>
+<h1 style="margin:0">{{ titel }}</h1>
+<p class="muted" style="margin:5px 0 0;font-size:16px">Was du dir selbst vorgenommen hast. Abhaken kannst du auch, wenn du es woanders geübt hast.</p>
+
+<sc-if value="{{ istLeer }}" hint-placeholder-val="{{ false }}">
+<div class="card card--tint" style="margin-top:26px">
+<p style="margin:0;font-size:16px;line-height:1.55">Hier ist noch nichts. Geh in deinem Inhaltsverzeichnis ein Kapitel durch – am Ende suchst du dir selbst aus, was auf deinen Plan kommt.</p>
+<a class="btn btn--quiet" href="Inhaltsverzeichnis.dc.html" style="margin-top:14px;min-height:48px;text-decoration:none">Zum Inhaltsverzeichnis</a>
+</div>
+</sc-if>
+
+<sc-if value="{{ istVoll }}" hint-placeholder-val="{{ true }}">
+<div>
+<section style="margin-top:26px">
+<div class="row" style="margin-bottom:10px">
+<h3>Geschichte</h3>
+<a class="btn btn--plain" href="Inhaltsverzeichnis.dc.html" style="min-height:44px;font-size:14px;text-decoration:none">Verzeichnis</a>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="card" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:{{ p1Bg }};border-color:{{ p1Rand }}">
+<div style="flex:1;min-width:12rem">
+<span style="display:block;font-size:16px;line-height:1.4;text-decoration:{{ p1Strich }};text-decoration-color:var(--line-2)">Rentenmark in eigenen Worten erklären</span>
+<span class="small" style="display:block;font-size:13px">etwa 5 Minuten · Weimarer Republik · sofort</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<sc-if value="{{ p1Offen }}" hint-placeholder-val="{{ true }}">
+<span style="display:flex;gap:8px">
+<a class="btn" href="Ueben.dc.html" style="min-height:44px;font-size:14px;text-decoration:none">Üben</a>
+<button class="btn btn--quiet" onClick="{{ hakeP1 }}" style="min-height:44px;font-size:14px">Abgehakt</button>
+<button class="btn btn--plain" onClick="{{ legeP1 }}" style="min-height:44px;font-size:14px">Weglegen</button>
+</span>
+</sc-if>
+<sc-if value="{{ p1Zu }}" hint-placeholder-val="{{ false }}">
+<span style="display:flex;align-items:center;gap:8px">
+<span class="tag {{ p1TagKlasse }}">{{ p1Status }}</span>
+<button class="btn btn--plain" onClick="{{ oeffneP1 }}" style="min-height:44px;font-size:14px">Wieder offen</button>
+</span>
+</sc-if>
+</div>
+</div>
+<div class="card" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px">
+<div style="flex:1;min-width:12rem">
+<span style="display:block;font-size:16px;line-height:1.4">Zeitstrahl 1923 selbst legen</span>
+<span class="small" style="display:block;font-size:13px">etwa 10 Minuten · Weimarer Republik · ab 3. August</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<a class="btn" href="Ueben.dc.html" style="min-height:44px;font-size:14px;text-decoration:none">Üben</a>
+<button class="btn btn--quiet" style="min-height:44px;font-size:14px">Abgehakt</button>
+<button class="btn btn--plain" style="min-height:44px;font-size:14px">Weglegen</button>
+</div>
+</div>
+</div>
+</section>
+
+<section style="margin-top:26px">
+<div class="row" style="margin-bottom:10px">
+<h3>Mathematik</h3>
+<a class="btn btn--plain" href="Inhaltsverzeichnis.dc.html" style="min-height:44px;font-size:14px;text-decoration:none">Verzeichnis</a>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="card" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--paper-2);border-color:transparent">
+<div style="flex:1;min-width:12rem">
+<span style="display:block;font-size:16px;line-height:1.4;text-decoration:line-through;text-decoration-color:var(--line-2)">Drei Steigungen aus dem Heft nachrechnen</span>
+<span class="small" style="display:block;font-size:13px">etwa 10 Minuten · Lineare Funktionen · sofort</span>
+</div>
+<div style="display:flex;align-items:center;gap:8px">
+<span class="tag tag--mint">erledigt</span>
+<button class="btn btn--plain" style="min-height:44px;font-size:14px">Wieder offen</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</sc-if>
+</div>
+</main>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ 402 }}" height="{{ 874 }}" hint-size="402px,874px">
+<div style="height:100%;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:56px 20px 8px">
+<p style="margin:0;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em">lernassi</p>
+<a href="Anmelden.dc.html" aria-label="Mein Konto" style="flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--lavender-2);background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:700;font-size:14px;display:grid;place-items:center;text-decoration:none">bf</a>
+</div>
+
+<div style="flex:1;overflow:auto;padding:8px 20px 24px">
+<p class="eyebrow" style="margin:0 0 6px">Mein Lernplan</p>
+<h1 style="margin:0">{{ titel }}</h1>
+<p class="muted" style="margin:5px 0 0;font-size:16px">Was du dir selbst vorgenommen hast.</p>
+
+<sc-if value="{{ istLeer }}" hint-placeholder-val="{{ false }}">
+<div class="card card--tint" style="margin-top:22px">
+<p style="margin:0;font-size:16px;line-height:1.55">Hier ist noch nichts. Geh in deinem Inhaltsverzeichnis ein Kapitel durch – am Ende suchst du dir selbst aus, was auf deinen Plan kommt.</p>
+<a class="btn btn--quiet btn--block" href="Inhaltsverzeichnis.dc.html" style="margin-top:14px;min-height:52px;text-decoration:none">Zum Inhaltsverzeichnis</a>
+</div>
+</sc-if>
+
+<sc-if value="{{ istVoll }}" hint-placeholder-val="{{ true }}">
+<div>
+<section style="margin-top:22px">
+<div class="row" style="margin-bottom:10px"><h3>Geschichte</h3><a class="btn btn--plain" href="Inhaltsverzeichnis.dc.html" style="min-height:44px;font-size:14px;text-decoration:none">Verzeichnis</a></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<div class="card" style="padding:14px 16px;background:{{ p1Bg }};border-color:{{ p1Rand }}">
+<span style="display:block;font-size:16px;line-height:1.4;text-decoration:{{ p1Strich }};text-decoration-color:var(--line-2)">Rentenmark in eigenen Worten erklären</span>
+<span class="small" style="display:block;font-size:13px;margin-bottom:12px">etwa 5 Minuten · sofort</span>
+<sc-if value="{{ p1Offen }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;gap:8px">
+<a class="btn" href="Ueben.dc.html" style="min-height:48px;font-size:15px;text-decoration:none">Üben</a>
+<button class="btn btn--quiet" onClick="{{ hakeP1 }}" style="min-height:48px;font-size:15px">Abgehakt</button>
+<button class="btn btn--plain" onClick="{{ legeP1 }}" style="min-height:48px;font-size:15px">Weglegen</button>
+</div>
+</sc-if>
+<sc-if value="{{ p1Zu }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px">
+<span class="tag {{ p1TagKlasse }}">{{ p1Status }}</span>
+<button class="btn btn--plain" onClick="{{ oeffneP1 }}" style="min-height:48px;font-size:15px">Wieder offen</button>
+</div>
+</sc-if>
+</div>
+<div class="card" style="padding:14px 16px">
+<span style="display:block;font-size:16px;line-height:1.4">Zeitstrahl 1923 selbst legen</span>
+<span class="small" style="display:block;font-size:13px;margin-bottom:12px">etwa 10 Minuten · ab 3. August</span>
+<div style="display:flex;gap:8px">
+<a class="btn" href="Ueben.dc.html" style="min-height:48px;font-size:15px;text-decoration:none">Üben</a>
+<button class="btn btn--quiet" style="min-height:48px;font-size:15px">Abgehakt</button>
+<button class="btn btn--plain" style="min-height:48px;font-size:15px">Weglegen</button>
+</div>
+</div>
+</div>
+</section>
+<section style="margin-top:22px">
+<div class="row" style="margin-bottom:10px"><h3>Mathematik</h3><a class="btn btn--plain" href="Inhaltsverzeichnis.dc.html" style="min-height:44px;font-size:14px;text-decoration:none">Verzeichnis</a></div>
+<div class="card" style="padding:14px 16px;background:var(--paper-2);border-color:transparent">
+<span style="display:block;font-size:16px;line-height:1.4;text-decoration:line-through;text-decoration-color:var(--line-2)">Drei Steigungen aus dem Heft nachrechnen</span>
+<span class="small" style="display:block;font-size:13px;margin-bottom:12px">etwa 10 Minuten · sofort</span>
+<div style="display:flex;align-items:center;gap:8px">
+<span class="tag tag--mint">erledigt</span>
+<button class="btn btn--plain" style="min-height:48px;font-size:15px">Wieder offen</button>
+</div>
+</div>
+</section>
+</div>
+</sc-if>
+</div>
+
+<div style="flex:none;display:flex;gap:4px;padding:8px 10px 34px;background:var(--surface);border-top:1px solid var(--line)">
+<a href="Inhaltsverzeichnis.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:15px;text-decoration:none" style-hover="background:var(--paper-2)">Inhalt</a>
+<span style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:600;font-size:14px">Plan</span>
+<a href="Ueben.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:14px;text-decoration:none" style-hover="background:var(--paper-2)">Üben</a>
+<a href="Anmelden.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:14px;text-decoration:none" style-hover="background:var(--paper-2)">Ich</a>
+</div>
+</div>
+</x-import>
+
+</div>
+
+<p class="small" style="margin:0;max-width:700px">Jede Karte startet mit „Üben" direkt die Übung. Abhaken geht auch ohne – wenn du es woanders geübt hast.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1780,&quot;height&quot;:1000},&quot;zustand&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;mit Punkten&quot;,&quot;noch leer&quot;],&quot;default&quot;:&quot;mit Punkten&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;}}">
+class Component extends DCLogic {
+  state = { leer: null, p1: 'offen' };
+  renderVals() {
+    const s = this.state;
+    const leer = s.leer ?? (this.props.zustand === 'noch leer');
+    const p1 = s.p1;
+    return {
+      istLeer: leer, istVoll: !leer,
+      goLeer: () => this.setState({ leer: true }),
+      goVoll: () => this.setState({ leer: false }),
+      titel: leer ? 'Alles abgehakt' : (p1 === 'offen' ? '3 Punkte offen' : '2 Punkte offen'),
+      p1Offen: p1 === 'offen', p1Zu: p1 !== 'offen',
+      p1Status: p1 === 'erledigt' ? 'erledigt' : 'weggelegt',
+      p1TagKlasse: p1 === 'erledigt' ? 'tag--mint' : '',
+      p1Bg: p1 === 'offen' ? 'var(--surface)' : 'var(--paper-2)',
+      p1Rand: p1 === 'offen' ? 'var(--line)' : 'transparent',
+      p1Strich: p1 === 'erledigt' ? 'line-through' : 'none',
+      hakeP1: () => this.setState({ p1: 'erledigt' }),
+      legeP1: () => this.setState({ p1: 'verworfen' }),
+      oeffneP1: () => this.setState({ p1: 'offen' })
+    };
+  }
+}
+</script>
+</body>
+</html>

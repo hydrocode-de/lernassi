@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/styles.css">
+<script src="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/_ds_bundle.js"></script>
+<style>
+@keyframes la-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+body{margin:0;background:var(--paper-2)}
+a{color:var(--lavender-ink)}
+a:hover{color:oklch(0.38 0.10 285)}
+</style>
+</helmet>
+<div style="width:max-content;display:flex;flex-direction:column;gap:20px;padding:34px 28px 56px;font-family:var(--text)">
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<span class="eyebrow" style="margin-right:4px">Route</span>
+<button class="chip" onClick="{{ goListe }}" aria-pressed="{{ isListe }}">/schueler</button>
+<button class="chip" onClick="{{ goBearbeiten }}" aria-pressed="{{ isBearbeiten }}">/schueler?bearbeiten=1</button>
+<button class="chip" onClick="{{ goThema }}" aria-pressed="{{ isThema }}">/schueler/thema/[id]</button>
+<button class="chip" onClick="{{ goKapitel }}" aria-pressed="{{ isKapitel }}">/schueler/kapitel/[id]</button>
+</div>
+
+<div style="display:flex;gap:26px;align-items:flex-start">
+
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ 1240 }}" height="{{ 880 }}" url="{{ url }}" hint-size="1240px,880px">
+<div style="height:100%;display:flex;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<aside style="flex:none;width:268px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;padding:22px 16px 14px">
+<p style="margin:0 0 20px 4px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.01em">lernassi</p>
+<a class="btn btn--block" href="Aufschrieb.dc.html" style="min-height:52px;gap:10px;font-size:15px;white-space:nowrap;text-decoration:none">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h2.6l1.3-2h8.2l1.3 2H20a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13.5" r="3.4"></circle></svg>
+Aufschrieb hinzufügen
+</a>
+<p class="eyebrow" style="margin:26px 0 10px 4px">Meine Fächer</p>
+<div style="display:flex;flex-direction:column;gap:3px">
+<span style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:600;font-size:16px">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--lavender-ink)"></span>Geschichte<span style="font-weight:400;opacity:.7;font-size:14px">12</span>
+</span>
+<a href="#" style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--mint-ink)"></span>Mathematik<span style="font-weight:400;opacity:.7;font-size:14px">9</span>
+</a>
+<a href="#" style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--apricot-ink)"></span>Biologie<span style="font-weight:400;opacity:.7;font-size:14px">6</span>
+</a>
+</div>
+<a class="btn btn--plain" href="Lernplan.dc.html" style="margin:14px 0 0;justify-content:flex-start;min-height:44px;font-size:15px;text-decoration:none">Mein Lernplan</a>
+<a class="btn btn--plain" href="Ueben.dc.html" style="margin:2px 0 0;justify-content:flex-start;min-height:44px;font-size:15px;text-decoration:none">Üben</a>
+
+<div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line);position:relative">
+<sc-if value="{{ menueOffen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;bottom:calc(100% + 8px);left:0;right:0;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-lift);padding:6px;z-index:80;animation:la-rise .18s ease">
+<a class="btn btn--plain" href="Anmelden.dc.html" style="width:100%;justify-content:flex-start;min-height:44px;font-size:15px;text-decoration:none">Mein Konto</a>
+<button class="btn btn--plain" onClick="{{ zuMenue }}" style="width:100%;justify-content:flex-start;min-height:44px;font-size:15px;color:var(--rose-ink)">Abmelden</button>
+</div>
+</sc-if>
+<button onClick="{{ zuMenue }}" aria-expanded="{{ menueOffen }}" style="display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:11px;width:100%;min-height:52px;padding:6px 10px;border:0;border-radius:var(--r);background:transparent;cursor:pointer;text-align:left;font:inherit;color:var(--ink-3)" style-hover="background:var(--paper-2)">
+<span style="width:34px;height:34px;border-radius:50%;background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:700;font-size:14px;display:grid;place-items:center">bf</span>
+<span style="min-width:0"><span style="display:block;font-family:var(--display);font-weight:600;font-size:15px;color:var(--ink)">blaufuchs42</span><span class="small" style="display:block;font-size:13px">Klasse 9b</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"></path></svg>
+</button>
+</div>
+</aside>
+
+<main style="flex:1;min-width:0;overflow:auto">
+<div style="max-width:960px;padding:34px 40px 48px">
+
+<sc-if value="{{ meldung }}" hint-placeholder-val="{{ false }}">
+<div style="background:var(--mint);border:1px solid var(--mint-2);color:var(--mint-ink);border-radius:var(--r);padding:13px 16px;margin-bottom:18px;font-family:var(--display);font-weight:600;font-size:15px;animation:la-rise .3s ease">{{ meldung }}</div>
+</sc-if>
+
+<sc-if value="{{ istVerzeichnis }}" hint-placeholder-val="{{ true }}">
+<div>
+<div class="row" style="align-items:flex-end;margin-bottom:18px">
+<div>
+<p class="eyebrow" style="margin:0 0 6px">Mein Inhaltsverzeichnis</p>
+<h1 style="margin:0">Geschichte</h1>
+<p class="muted" style="margin:5px 0 0;font-size:16px">12 Themen in 3 Kapiteln</p>
+</div>
+<sc-if value="{{ isListe }}" hint-placeholder-val="{{ true }}">
+<a class="btn btn--quiet" onClick="{{ goBearbeiten }}" href="#" style="min-height:48px;white-space:nowrap;text-decoration:none">Verzeichnis bearbeiten</a>
+</sc-if>
+<sc-if value="{{ isBearbeiten }}" hint-placeholder-val="{{ false }}">
+<a class="btn btn--go" onClick="{{ goListe }}" href="#" style="min-height:48px;white-space:nowrap;text-decoration:none">Fertig</a>
+</sc-if>
+</div>
+
+<sc-if value="{{ isListe }}" hint-placeholder-val="{{ true }}">
+<div>
+<div class="card" style="padding:6px 8px">
+<div style="display:grid;grid-template-columns:26px 1fr;align-items:center">
+<button onClick="{{ klappWeimar }}" aria-expanded="{{ weimarOffen }}" aria-label="Weimarer Republik zuklappen" style="width:26px;height:44px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">{{ weimarPfeil }}</button>
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:var(--r);color:var(--ink);text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Weimarer Republik</span>
+<span class="small" style="font-size:13px;white-space:nowrap">3 von 5 saßen · vor 2 Tagen</span>
+<span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+</div>
+<sc-if value="{{ weimarOffen }}" hint-placeholder-val="{{ true }}">
+<div>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr auto 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none" style-hover="background:var(--paper-2);color:var(--ink)">
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span>
+<span style="font-size:16px">Gründung und Verfassung</span><span class="small" style="font-size:13px;white-space:nowrap">vor 3 Wochen</span><span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr auto 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none" style-hover="background:var(--paper-2);color:var(--ink)">
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span>
+<span style="font-size:16px">Ruhrbesetzung</span><span class="small" style="font-size:13px;white-space:nowrap">vor 2 Tagen</span><span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr auto 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none" style-hover="background:var(--paper-2);color:var(--ink)">
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span>
+<span style="font-size:16px">Hyperinflation</span><span class="small" style="font-size:13px;white-space:nowrap">heute</span><span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr auto 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none" style-hover="background:var(--paper-2);color:var(--ink)">
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span>
+<span style="font-size:16px">Hitlerputsch</span><span class="small" style="font-size:13px;white-space:nowrap">heute</span><span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr auto 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none" style-hover="background:var(--paper-2);color:var(--ink)">
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span>
+<span style="font-size:16px">Goldene Zwanziger</span><span class="small" style="font-size:13px;white-space:nowrap">kein Aufschrieb</span><span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+</div>
+</sc-if>
+<div style="display:grid;grid-template-columns:26px 1fr;align-items:center">
+<button onClick="{{ klappKrieg }}" aria-expanded="{{ kriegOffen }}" aria-label="Erster Weltkrieg aufklappen" style="width:26px;height:44px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">{{ kriegPfeil }}</button>
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:var(--r);color:var(--ink);text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Erster Weltkrieg</span>
+<span class="small" style="font-size:13px;white-space:nowrap">4 Themen</span>
+<span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+</div>
+<sc-if value="{{ kriegOffen }}" hint-placeholder-val="{{ false }}">
+<div>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr auto 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none" style-hover="background:var(--paper-2);color:var(--ink)">
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span>
+<span style="font-size:16px">Bündnisse vor 1914</span><span class="small" style="font-size:13px;white-space:nowrap">vor 2 Monaten</span><span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+</div>
+</sc-if>
+<div style="display:grid;grid-template-columns:26px 1fr;align-items:center">
+<button aria-label="Industrialisierung aufklappen" style="width:26px;height:44px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▸</button>
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:var(--r);color:var(--ink);text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Industrialisierung</span>
+<span class="small" style="font-size:13px;white-space:nowrap">3 Themen</span>
+<span style="color:var(--ink-3);font-size:15px;text-align:right">›</span>
+</a>
+</div>
+</div>
+<p class="small" style="margin:10px 2px 0">Tipp ein Kapitel an – dann gehen wir es zusammen durch.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{ isBearbeiten }}" hint-placeholder-val="{{ false }}">
+<div style="animation:la-rise .2s ease">
+<p class="small" style="margin:0 0 10px">Namen antippen und überschreiben, dann auf ✓. Mit ▲ und ▼ verschiebst du eine Zeile.</p>
+<div class="card" style="padding:6px 8px">
+
+<div style="display:grid;grid-template-columns:26px 12px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:58px;padding:6px 8px">
+<span style="display:flex;flex-direction:column">
+<button aria-label="Weimarer Republik nach oben" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▲</button>
+<button aria-label="Weimarer Republik nach unten" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▼</button>
+</span>
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="display:flex;align-items:center;gap:4px;min-width:0">
+<input value="Weimarer Republik" aria-label="Name von Weimarer Republik" style="flex:1;min-width:0;border:1px solid transparent;border-radius:var(--r-sm);padding:9px 10px;background:var(--paper-2);font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink)">
+<button aria-label="Name speichern" style="width:26px;height:34px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">✓</button>
+</span>
+<span class="small" style="font-size:13px;white-space:nowrap">5 Themen</span>
+</div>
+
+<div style="display:grid;grid-template-columns:26px 12px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:58px;padding:6px 8px 6px 34px">
+<span style="display:flex;flex-direction:column">
+<button aria-label="Hyperinflation nach oben" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▲</button>
+<button aria-label="Hyperinflation nach unten" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▼</button>
+</span>
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span>
+<span style="display:flex;align-items:center;gap:4px;min-width:0">
+<input value="Hyperinflation" aria-label="Name von Hyperinflation" style="flex:1;min-width:0;border:1px solid transparent;border-radius:var(--r-sm);padding:9px 10px;background:var(--paper-2);font-family:var(--text);font-size:15px;color:var(--ink)">
+<button aria-label="Name speichern" style="width:26px;height:34px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">✓</button>
+</span>
+<span style="display:flex;align-items:center;gap:2px">
+<button class="btn btn--plain" onClick="{{ toggleEinordnen }}" style="min-height:40px;font-size:14px;white-space:nowrap">Einordnen</button>
+</span>
+</div>
+
+<sc-if value="{{ einordnenOffen }}" hint-placeholder-val="{{ false }}">
+<div class="card card--tint" style="margin:4px 8px 10px 34px;animation:la-rise .2s ease">
+<p style="margin:0 0 12px;font-size:16px">„Hyperinflation" – wohin gehört es?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ verschieben }}" style="justify-content:flex-start;min-height:50px">Erster Weltkrieg</button>
+<button class="btn btn--quiet btn--block" onClick="{{ verschieben }}" style="justify-content:flex-start;min-height:50px">Industrialisierung</button>
+</div>
+<div style="margin-top:12px">
+<label class="field"><span class="field__label">Oder in ein neues Kapitel</span><input placeholder="Name des Kapitels"></label>
+<button class="btn btn--plain" style="margin-top:8px;min-height:40px;font-size:14px">Anlegen und hierhin legen</button>
+</div>
+</div>
+</sc-if>
+
+<div style="display:grid;grid-template-columns:26px 12px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:58px;padding:6px 8px 6px 34px">
+<span style="display:flex;flex-direction:column">
+<button aria-label="Goldene Zwanziger nach oben" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▲</button>
+<button aria-label="Goldene Zwanziger nach unten" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▼</button>
+</span>
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span>
+<span style="display:flex;align-items:center;gap:4px;min-width:0">
+<input value="Goldene Zwanziger" aria-label="Name von Goldene Zwanziger" style="flex:1;min-width:0;border:1px solid transparent;border-radius:var(--r-sm);padding:9px 10px;background:var(--paper-2);font-family:var(--text);font-size:15px;color:var(--ink)">
+<button aria-label="Name speichern" style="width:26px;height:34px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">✓</button>
+</span>
+<span style="display:flex;align-items:center;gap:2px">
+<button class="btn btn--plain" onClick="{{ toggleEinordnen }}" style="min-height:40px;font-size:14px;white-space:nowrap">Einordnen</button>
+<button class="btn btn--plain" style="min-height:40px;font-size:14px;white-space:nowrap">Löschen</button>
+</span>
+</div>
+
+<div style="display:grid;grid-template-columns:26px 12px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:58px;padding:6px 8px">
+<span style="display:flex;flex-direction:column">
+<button aria-label="Industrialisierung nach oben" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▲</button>
+<button aria-label="Industrialisierung nach unten" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">▼</button>
+</span>
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="display:flex;align-items:center;gap:4px;min-width:0">
+<input value="Industrialisierung" aria-label="Name von Industrialisierung" style="flex:1;min-width:0;border:1px solid transparent;border-radius:var(--r-sm);padding:9px 10px;background:var(--paper-2);font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink)">
+<button aria-label="Name speichern" style="width:26px;height:34px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer" style-hover="background:var(--paper-2);color:var(--ink)">✓</button>
+</span>
+<span class="small" style="font-size:13px;white-space:nowrap">3 Themen</span>
+</div>
+</div>
+
+<div class="card" style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px">
+<label class="field" style="flex:1;min-width:12rem"><span class="field__label">Neues Kapitel</span><input placeholder="z. B. Absolutismus"></label>
+<button class="btn btn--quiet" style="min-height:50px">Kapitel anlegen</button>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isThema }}" hint-placeholder-val="{{ false }}">
+<div>
+<a class="btn btn--plain" onClick="{{ goListe }}" href="#" style="margin:0 0 10px;padding-inline:0;min-height:44px;text-decoration:none">Zurück zum Verzeichnis</a>
+<p class="eyebrow" style="margin:0 0 6px">Geschichte · Weimarer Republik</p>
+<h1 style="margin:0">Hyperinflation</h1>
+<p class="muted" style="margin:5px 0 0;font-size:16px">Aufschrieb vom 12. März · 3 Seiten</p>
+
+<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start;gap:18px;margin-top:20px">
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="card">
+<div class="row" style="margin-bottom:10px"><p class="eyebrow" style="margin:0">Darum geht es</p><span class="small">vor 2 Tagen</span></div>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.6">1923 verliert das Geld seinen Wert: aus einem Brot für 250 Mark im Januar werden im November 200 Milliarden. Ursache ist das Gelddrucken für Reparationen und passiven Widerstand. Die Rentenmark beendet die Inflation im November.</p>
+<div class="chips">
+<span class="chip" style="cursor:default">Reparationen</span>
+<span class="chip" style="cursor:default">Gelddrucken</span>
+<span class="chip" style="cursor:default">Rentenmark</span>
+</div>
+</div>
+<div class="card">
+<div class="row" style="margin-bottom:10px"><p class="eyebrow" style="margin:0">Abschrift deiner Seiten</p><span class="small">Seite 1, 2, 3</span></div>
+<p style="margin:0;font-size:16px;line-height:1.7;color:var(--ink-2);white-space:pre-wrap">Inflation 1923 – Preise steigen ins Unendliche. Januar: 1 Brot = 250 M. Juli = 3.465 M. November = 200 Mrd. M. Grund: Reichsbank druckt Geld, um Streikende im Ruhrgebiet zu bezahlen (passiver Widerstand).
+
+Folgen: Sparbücher wertlos, Löhne täglich ausgezahlt, Tauschhandel. Gewinner: Schuldner und Sachwertbesitzer. Verlierer: Sparer, Rentner, Beamte.
+
+15.11.1923 Rentenmark – gedeckt durch Grund und Boden. 1 Rentenmark = 1 Billion alte Mark. Inflation gestoppt.</p>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+<sc-if value="{{ fotosAn }}" hint-placeholder-val="{{ true }}">
+<div class="card">
+<div class="row" style="margin-bottom:12px"><p class="eyebrow" style="margin:0">Deine Heftseiten</p><span class="tag" style="font-size:12px">nur für dich</span></div>
+<div style="display:flex;gap:10px">
+<span style="position:relative;flex:1;aspect-ratio:3/4;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 10px,var(--surface) 10px 20px);overflow:hidden"><span style="position:absolute;left:6px;bottom:6px;padding:2px 7px;border-radius:var(--r-pill);background:var(--surface);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12px">1</span></span>
+<span style="position:relative;flex:1;aspect-ratio:3/4;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 10px,var(--surface) 10px 20px);overflow:hidden"><span style="position:absolute;left:6px;bottom:6px;padding:2px 7px;border-radius:var(--r-pill);background:var(--surface);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12px">2</span></span>
+<span style="position:relative;flex:1;aspect-ratio:3/4;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 10px,var(--surface) 10px 20px);overflow:hidden"><span style="position:absolute;left:6px;bottom:6px;padding:2px 7px;border-radius:var(--r-pill);background:var(--surface);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12px">3</span></span>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ fotosAus }}" hint-placeholder-val="{{ false }}">
+<div class="card card--tint">
+<p class="eyebrow" style="margin:0 0 8px">Deine Heftseiten</p>
+<p style="margin:0;font-size:16px;line-height:1.55">Die Fotos hast du nicht behalten. Zusammenfassung und Abschrift bleiben.</p>
+<a class="btn btn--plain" href="Anmelden.dc.html" style="margin-top:8px;padding-inline:0;min-height:44px;text-decoration:none">Einstellung ändern</a>
+</div>
+</sc-if>
+<a class="btn btn--lg btn--block" onClick="{{ goKapitel }}" href="#" style="text-decoration:none">Weimarer Republik durchgehen</a>
+<button class="btn btn--quiet btn--block" onClick="{{ toggleEinordnen }}" style="min-height:52px">Woanders einordnen</button>
+<sc-if value="{{ einordnenOffen }}" hint-placeholder-val="{{ false }}">
+<div class="card card--tint" style="animation:la-rise .2s ease">
+<p style="margin:0 0 12px;font-size:16px">„Hyperinflation" – wohin gehört es?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ verschieben }}" style="justify-content:flex-start;min-height:50px">Erster Weltkrieg</button>
+<button class="btn btn--quiet btn--block" onClick="{{ verschieben }}" style="justify-content:flex-start;min-height:50px">Industrialisierung</button>
+</div>
+<div style="margin-top:12px">
+<label class="field"><span class="field__label">Oder in ein neues Kapitel</span><input placeholder="Name des Kapitels"></label>
+<button class="btn btn--plain" style="margin-top:8px;min-height:44px">Anlegen und hierhin legen</button>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isKapitel }}" hint-placeholder-val="{{ false }}">
+<div>
+<p style="margin:0 0 10px"><a class="btn btn--plain" onClick="{{ goListe }}" href="#" style="padding-inline:0;min-height:44px;text-decoration:none">Zurück zum Verzeichnis</a></p>
+<p class="eyebrow" style="margin:0 0 6px">Geschichte</p>
+<h1 style="margin:0">Weimarer Republik</h1>
+<p class="muted" style="margin:5px 0 0;font-size:16px">5 Themen in deinem Heft · zuletzt eingeordnet vor 2 Tagen</p>
+
+<div class="card card--tint" style="margin-top:22px">
+<p style="margin:0 0 12px;font-size:17px;line-height:1.55">Du warst heute schon mitten in dieser Runde. Willst du da weitermachen?</p>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<a class="btn btn--go" href="Runde.dc.html" style="min-height:52px;text-decoration:none">Weitermachen</a>
+<a class="btn btn--quiet" href="Runde.dc.html" style="min-height:52px;text-decoration:none">Neu anfangen</a>
+</div>
+</div>
+
+<div class="card" style="margin-top:22px">
+<p class="eyebrow" style="margin:0 0 10px">Das habe ich von dir</p>
+<div class="chips" style="margin-bottom:14px">
+<span class="chip" style="cursor:default">Gründung und Verfassung</span>
+<span class="chip" style="cursor:default">Ruhrbesetzung</span>
+<span class="chip" style="cursor:default">Hyperinflation</span>
+<span class="chip" style="cursor:default">Hitlerputsch</span>
+</div>
+<p style="margin:0;font-size:17px;line-height:1.55">Neu seit dem letzten Mal: Hitlerputsch. Genau darum geht es diesmal – das andere hast du schon eingeordnet.</p>
+<p class="small" style="margin:12px 0 0">Zu Goldene Zwanziger habe ich noch keinen Aufschrieb. Danach frage ich nicht.</p>
+</div>
+
+<div class="card" style="margin-top:14px">
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Hast du zu diesem Kapitel vielleicht noch eine Heftseite, die ich nicht kenne?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<a class="btn btn--quiet btn--block" href="Aufschrieb.dc.html" style="justify-content:flex-start;min-height:54px;text-decoration:none">Ja, die fotografiere ich erst</a>
+<a class="btn btn--lg btn--block" href="Runde.dc.html" style="text-decoration:none">Nein, los geht’s</a>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</main>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ 402 }}" height="{{ 874 }}" hint-size="402px,874px">
+<div style="height:100%;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:56px 20px 8px">
+<p style="margin:0;font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em">lernassi</p>
+<a href="Anmelden.dc.html" aria-label="Mein Konto" style="flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--lavender-2);background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:700;font-size:14px;display:grid;place-items:center;text-decoration:none">bf</a>
+</div>
+
+<div style="flex:1;overflow:auto;padding:8px 20px 24px">
+<sc-if value="{{ meldung }}" hint-placeholder-val="{{ false }}">
+<div style="background:var(--mint);border:1px solid var(--mint-2);color:var(--mint-ink);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-family:var(--display);font-weight:600;font-size:15px;animation:la-rise .3s ease">{{ meldung }}</div>
+</sc-if>
+
+<sc-if value="{{ isListe }}" hint-placeholder-val="{{ true }}">
+<div>
+<p class="eyebrow" style="margin:0 0 6px">Donnerstag, 30. Juli</p>
+<h1 style="margin:0 0 5px">Mein Inhaltsverzeichnis</h1>
+<p class="muted" style="margin:0 0 18px;font-size:16px">Wächst mit jedem Aufschrieb.</p>
+<a class="btn btn--lg btn--block" href="Aufschrieb.dc.html" style="min-height:66px;gap:12px;font-size:20px;text-decoration:none">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h2.6l1.3-2h8.2l1.3 2H20a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13.5" r="3.4"></circle></svg>
+Aufschrieb fotografieren
+</a>
+<p class="small" style="margin:9px 2px 0;text-align:center">Heft aufschlagen, abfotografieren – die Einordnung mache ich.</p>
+
+<section style="margin-top:26px">
+<div class="row" style="margin-bottom:8px">
+<h3 style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>Geschichte</h3>
+<span class="small" style="font-size:13px">12 Themen</span>
+</div>
+<div class="card" style="padding:6px 8px">
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;margin-left:26px;border-radius:var(--r);color:var(--ink);text-decoration:none">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Weimarer Republik</span>
+<span class="small" style="font-size:13px;white-space:nowrap">3 von 5 saßen</span><span style="color:var(--ink-3);font-size:15px">›</span>
+</a>
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;margin-left:26px;border-radius:var(--r);color:var(--ink);text-decoration:none">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Erster Weltkrieg</span>
+<span class="small" style="font-size:13px;white-space:nowrap">4 Themen</span><span style="color:var(--ink-3);font-size:15px">›</span>
+</a>
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;margin-left:26px;border-radius:var(--r);color:var(--ink);text-decoration:none">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Industrialisierung</span>
+<span class="small" style="font-size:13px;white-space:nowrap">3 Themen</span><span style="color:var(--ink-3);font-size:15px">›</span>
+</a>
+<button class="btn btn--plain" onClick="{{ goFach }}" style="width:100%;justify-content:flex-start;min-height:48px;font-size:15px">Alle 12 Themen ansehen</button>
+</div>
+</section>
+
+<section style="margin-top:26px">
+<div class="row" style="margin-bottom:8px">
+<h3 style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:var(--mint-ink)"></span>Mathematik</h3>
+<span class="small" style="font-size:13px">9 Themen</span>
+</div>
+<div class="card" style="padding:6px 8px">
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;margin-left:26px;border-radius:var(--r);color:var(--ink);text-decoration:none">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--mint-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Lineare Funktionen</span>
+<span class="small" style="font-size:13px;white-space:nowrap">5 von 6 saßen</span><span style="color:var(--ink-3);font-size:15px">›</span>
+</a>
+<button class="btn btn--plain" onClick="{{ goFach }}" style="width:100%;justify-content:flex-start;min-height:48px;font-size:15px">Alle 9 Themen ansehen</button>
+</div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{ isFachHandy }}" hint-placeholder-val="{{ false }}">
+<div>
+<button class="btn btn--plain" onClick="{{ goListe }}" style="margin:0 0 10px;padding-inline:0;min-height:44px">Alle Fächer</button>
+<div class="row" style="align-items:flex-end;margin-bottom:18px">
+<div><p class="eyebrow" style="margin:0 0 6px">Mein Inhaltsverzeichnis</p><h1 style="margin:0">Geschichte</h1><p class="muted" style="margin:5px 0 0;font-size:16px">12 Themen</p></div>
+<button class="btn btn--quiet" onClick="{{ goBearbeiten }}" style="min-height:48px;white-space:nowrap">Bearbeiten</button>
+</div>
+<div class="card" style="padding:6px 8px">
+<div style="display:grid;grid-template-columns:26px 1fr;align-items:center">
+<button onClick="{{ klappWeimar }}" aria-expanded="{{ weimarOffen }}" aria-label="Weimarer Republik zuklappen" style="width:26px;height:44px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer">{{ weimarPfeil }}</button>
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:var(--r);color:var(--ink);text-decoration:none">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Weimarer Republik</span>
+<span class="small" style="font-size:13px;white-space:nowrap">3 von 5</span><span style="color:var(--ink-3);font-size:15px">›</span>
+</a>
+</div>
+<sc-if value="{{ weimarOffen }}" hint-placeholder-val="{{ true }}">
+<div>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none"><span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span><span style="font-size:16px">Ruhrbesetzung</span><span style="color:var(--ink-3);font-size:15px">›</span></a>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none"><span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span><span style="font-size:16px">Hyperinflation</span><span style="color:var(--ink-3);font-size:15px">›</span></a>
+<a href="#" onClick="{{ goThema }}" style="display:grid;grid-template-columns:10px 1fr 14px;align-items:center;gap:10px;min-height:46px;padding:6px 10px 6px 46px;border-radius:var(--r);color:var(--ink-2);text-decoration:none"><span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);opacity:.55"></span><span style="font-size:16px">Hitlerputsch</span><span style="color:var(--ink-3);font-size:15px">›</span></a>
+</div>
+</sc-if>
+<div style="display:grid;grid-template-columns:26px 1fr;align-items:center">
+<button style="width:26px;height:44px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer">▸</button>
+<a href="#" onClick="{{ goKapitel }}" style="display:grid;grid-template-columns:12px 1fr auto 14px;align-items:center;gap:10px;min-height:52px;padding:8px 10px;border-radius:var(--r);color:var(--ink);text-decoration:none">
+<span style="width:11px;height:11px;border-radius:3px;background:var(--lavender-ink)"></span>
+<span style="font-family:var(--display);font-weight:700;font-size:17px">Erster Weltkrieg</span>
+<span class="small" style="font-size:13px">4 Themen</span><span style="color:var(--ink-3);font-size:15px">›</span>
+</a>
+</div>
+</div>
+<p class="small" style="margin:10px 2px 0">Tipp ein Kapitel an – dann gehen wir es zusammen durch.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{ isBearbeiten }}" hint-placeholder-val="{{ false }}">
+<div style="animation:la-rise .2s ease">
+<div class="row" style="align-items:flex-end;margin-bottom:14px">
+<div><h1 style="margin:0">Geschichte</h1><p class="muted" style="margin:4px 0 0;font-size:15px">12 Themen</p></div>
+<button class="btn btn--go" onClick="{{ goListe }}" style="min-height:48px;white-space:nowrap">Fertig</button>
+</div>
+<p class="small" style="margin:0 0 10px">Namen antippen und überschreiben, dann auf ✓. Mit ▲ und ▼ verschiebst du eine Zeile.</p>
+<div class="card" style="padding:6px 8px">
+<div style="display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:8px;min-height:58px;padding:6px 4px">
+<span style="display:flex;flex-direction:column">
+<button aria-label="nach oben" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer">▲</button>
+<button aria-label="nach unten" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer">▼</button>
+</span>
+<span style="display:flex;align-items:center;gap:4px;min-width:0">
+<input value="Weimarer Republik" aria-label="Name des Kapitels" style="flex:1;min-width:0;border:1px solid transparent;border-radius:var(--r-sm);padding:9px 10px;background:var(--paper-2);font-family:var(--display);font-weight:700;font-size:16px;color:var(--ink)">
+<button aria-label="speichern" style="width:26px;height:34px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer">✓</button>
+</span>
+</div>
+<div style="display:grid;grid-template-columns:26px minmax(0,1fr);align-items:center;gap:8px;min-height:58px;padding:6px 4px 6px 28px">
+<span style="display:flex;flex-direction:column">
+<button aria-label="nach oben" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer">▲</button>
+<button aria-label="nach unten" style="width:26px;height:24px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:11px;cursor:pointer">▼</button>
+</span>
+<span style="display:flex;align-items:center;gap:4px;min-width:0">
+<input value="Hyperinflation" aria-label="Name des Themas" style="flex:1;min-width:0;border:1px solid transparent;border-radius:var(--r-sm);padding:9px 10px;background:var(--paper-2);font-size:15px;color:var(--ink)">
+<button aria-label="speichern" style="width:26px;height:34px;border:0;border-radius:var(--r-sm);background:transparent;color:var(--ink-3);font-size:13px;cursor:pointer">✓</button>
+</span>
+</div>
+<div style="display:flex;justify-content:flex-end;gap:2px;padding:0 4px 6px 28px">
+<button class="btn btn--plain" onClick="{{ toggleEinordnen }}" style="min-height:40px;font-size:14px">Einordnen</button>
+<button class="btn btn--plain" style="min-height:40px;font-size:14px">Löschen</button>
+</div>
+<sc-if value="{{ einordnenOffen }}" hint-placeholder-val="{{ false }}">
+<div class="card card--tint" style="margin:0 4px 10px 28px;animation:la-rise .2s ease">
+<p style="margin:0 0 12px;font-size:16px">„Hyperinflation" – wohin gehört es?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ verschieben }}" style="justify-content:flex-start;min-height:50px">Erster Weltkrieg</button>
+<button class="btn btn--quiet btn--block" onClick="{{ verschieben }}" style="justify-content:flex-start;min-height:50px">Industrialisierung</button>
+</div>
+</div>
+</sc-if>
+</div>
+<div class="card" style="margin-top:12px;display:flex;flex-direction:column;gap:12px">
+<label class="field"><span class="field__label">Neues Kapitel</span><input placeholder="z. B. Absolutismus"></label>
+<button class="btn btn--quiet btn--block" style="min-height:50px">Kapitel anlegen</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isThema }}" hint-placeholder-val="{{ false }}">
+<div>
+<button class="btn btn--plain" onClick="{{ goListe }}" style="margin:0 0 10px;padding-inline:0;min-height:44px">Zurück zum Verzeichnis</button>
+<p class="eyebrow" style="margin:0 0 6px">Geschichte · Weimarer Republik</p>
+<h1 style="margin:0">Hyperinflation</h1>
+<p class="muted" style="margin:5px 0 0;font-size:16px">Aufschrieb vom 12. März · 3 Seiten</p>
+<div class="card" style="margin-top:20px">
+<div class="row" style="margin-bottom:10px"><p class="eyebrow" style="margin:0">Darum geht es</p><span class="small">vor 2 Tagen</span></div>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.6">1923 verliert das Geld seinen Wert: aus einem Brot für 250 Mark im Januar werden im November 200 Milliarden. Die Rentenmark beendet die Inflation.</p>
+<div class="chips">
+<span class="chip" style="cursor:default">Reparationen</span>
+<span class="chip" style="cursor:default">Rentenmark</span>
+</div>
+</div>
+<sc-if value="{{ fotosAn }}" hint-placeholder-val="{{ true }}">
+<div class="card" style="margin-top:14px">
+<div class="row" style="margin-bottom:12px"><p class="eyebrow" style="margin:0">Deine Heftseiten</p><span class="tag" style="font-size:12px">nur für dich</span></div>
+<div style="display:flex;gap:10px">
+<span style="position:relative;flex:1;aspect-ratio:3/4;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 10px,var(--surface) 10px 20px)"><span style="position:absolute;left:6px;bottom:6px;padding:2px 7px;border-radius:var(--r-pill);background:var(--surface);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12px">1</span></span>
+<span style="position:relative;flex:1;aspect-ratio:3/4;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 10px,var(--surface) 10px 20px)"><span style="position:absolute;left:6px;bottom:6px;padding:2px 7px;border-radius:var(--r-pill);background:var(--surface);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12px">2</span></span>
+<span style="position:relative;flex:1;aspect-ratio:3/4;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 10px,var(--surface) 10px 20px)"><span style="position:absolute;left:6px;bottom:6px;padding:2px 7px;border-radius:var(--r-pill);background:var(--surface);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12px">3</span></span>
+</div>
+</div>
+</sc-if>
+<div class="card" style="margin-top:14px">
+<div class="row" style="margin-bottom:10px"><p class="eyebrow" style="margin:0">Abschrift deiner Seiten</p><span class="small">Seite 1, 2, 3</span></div>
+<p style="margin:0;font-size:16px;line-height:1.7;color:var(--ink-2);white-space:pre-wrap">Inflation 1923 – Preise steigen ins Unendliche. Januar: 1 Brot = 250 M. November = 200 Mrd. M.
+
+15.11.1923 Rentenmark – 1 Rentenmark = 1 Billion alte Mark. Inflation gestoppt.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px">
+<a class="btn btn--lg btn--block" onClick="{{ goKapitel }}" href="#" style="text-decoration:none">Weimarer Republik durchgehen</a>
+<button class="btn btn--quiet btn--block" onClick="{{ toggleEinordnen }}" style="min-height:52px">Woanders einordnen</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isKapitel }}" hint-placeholder-val="{{ false }}">
+<div>
+<button class="btn btn--plain" onClick="{{ goListe }}" style="margin:0 0 10px;padding-inline:0;min-height:44px">Zurück zum Verzeichnis</button>
+<p class="eyebrow" style="margin:0 0 6px">Geschichte</p>
+<h1 style="margin:0">Weimarer Republik</h1>
+<p class="muted" style="margin:5px 0 0;font-size:16px">5 Themen in deinem Heft · zuletzt eingeordnet vor 2 Tagen</p>
+<div class="card" style="margin-top:20px">
+<p class="eyebrow" style="margin:0 0 10px">Das habe ich von dir</p>
+<div class="chips" style="margin-bottom:14px">
+<span class="chip" style="cursor:default">Gründung und Verfassung</span>
+<span class="chip" style="cursor:default">Ruhrbesetzung</span>
+<span class="chip" style="cursor:default">Hyperinflation</span>
+<span class="chip" style="cursor:default">Hitlerputsch</span>
+</div>
+<p style="margin:0;font-size:17px;line-height:1.55">Neu seit dem letzten Mal: Hitlerputsch. Genau darum geht es diesmal.</p>
+<p class="small" style="margin:12px 0 0">Zu Goldene Zwanziger habe ich noch keinen Aufschrieb. Danach frage ich nicht.</p>
+</div>
+<div class="card" style="margin-top:14px">
+<p style="margin:0 0 14px;font-size:17px;line-height:1.55">Hast du zu diesem Kapitel vielleicht noch eine Heftseite, die ich nicht kenne?</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<a class="btn btn--quiet btn--block" href="Aufschrieb.dc.html" style="justify-content:flex-start;min-height:54px;text-decoration:none">Ja, die fotografiere ich erst</a>
+<a class="btn btn--lg btn--block" href="Runde.dc.html" style="text-decoration:none">Nein, los geht’s</a>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+
+<div style="flex:none;display:flex;gap:4px;padding:8px 10px 34px;background:var(--surface);border-top:1px solid var(--line)">
+<button onClick="{{ goListe }}" style="flex:1;min-height:56px;border:0;border-radius:var(--r);background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:600;font-size:14px;cursor:pointer">Inhalt</button>
+<a href="Lernplan.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:15px;text-decoration:none" style-hover="background:var(--paper-2)">Plan</a>
+<a href="Ueben.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:14px;text-decoration:none" style-hover="background:var(--paper-2)">Üben</a>
+<a href="Anmelden.dc.html" style="flex:1;min-height:56px;display:grid;place-items:center;border-radius:var(--r);color:var(--ink-3);font-family:var(--display);font-weight:600;font-size:14px;text-decoration:none" style-hover="background:var(--paper-2)">Ich</a>
+</div>
+</div>
+</x-import>
+
+</div>
+
+<p class="small" style="margin:0;max-width:700px">Gebaut nach <code>src/routes/schueler/+page.svelte</code>, <code>thema/[id]</code> und <code>kapitel/[id]</code>: Fach → Kapitel → Thema, ohne dritte Ebene. Der Kapitel-Kopf ist der Einstieg in eine Runde, Themen sind Anzeige. Bearbeiten läuft über ▲ ▼ und ✓ (Formulare, kein Drag &amp; Drop). Am Handy zuerst alle Fächer, am Rechner genau das Fach aus der Spalte. Navigation wie im Layout: Inhalt · Plan · Ich, „Üben" bleibt grau, bis es das gibt.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1780,&quot;height&quot;:1050},&quot;ansicht&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Verzeichnis&quot;,&quot;Bearbeiten&quot;,&quot;Thema&quot;,&quot;Kapitel&quot;],&quot;default&quot;:&quot;Verzeichnis&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;fotosBehalten&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Einstellung&quot;}}">
+class Component extends DCLogic {
+  state = { view: null, weimar: true, krieg: false, einordnen: false, menue: false, meldung: '' };
+  renderVals() {
+    const s = this.state;
+    const view = s.view ?? (this.props.ansicht === 'Bearbeiten' ? 'bearbeiten'
+      : this.props.ansicht === 'Thema' ? 'thema'
+      : this.props.ansicht === 'Kapitel' ? 'kapitel' : 'liste');
+    const fotos = this.props.fotosBehalten ?? true;
+    const urls = {
+      liste: 'lernassi.de/schueler?fach=geschichte',
+      fach: 'lernassi.de/schueler?fach=geschichte',
+      bearbeiten: 'lernassi.de/schueler?fach=geschichte&bearbeiten=1',
+      thema: 'lernassi.de/schueler/thema/hyperinflation',
+      kapitel: 'lernassi.de/schueler/kapitel/weimarer-republik'
+    };
+    const go = (v) => () => this.setState({ view: v, einordnen: false, menue: false, meldung: '' });
+    return {
+      url: urls[view] || urls.liste,
+      isListe: view === 'liste', isFachHandy: view === 'fach', isBearbeiten: view === 'bearbeiten',
+      isThema: view === 'thema', isKapitel: view === 'kapitel',
+      istVerzeichnis: view === 'liste' || view === 'bearbeiten' || view === 'fach',
+      goListe: go('liste'), goFach: go('fach'), goBearbeiten: go('bearbeiten'),
+      goThema: go('thema'), goKapitel: go('kapitel'),
+      weimarOffen: s.weimar, weimarPfeil: s.weimar ? '▾' : '▸',
+      kriegOffen: s.krieg, kriegPfeil: s.krieg ? '▾' : '▸',
+      klappWeimar: () => this.setState((st) => ({ weimar: !st.weimar })),
+      klappKrieg: () => this.setState((st) => ({ krieg: !st.krieg })),
+      einordnenOffen: s.einordnen,
+      toggleEinordnen: () => this.setState((st) => ({ einordnen: !st.einordnen })),
+      verschieben: () => this.setState({ einordnen: false, meldung: '„Hyperinflation" liegt jetzt in Erster Weltkrieg.' }),
+      meldung: s.meldung,
+      menueOffen: s.menue,
+      zuMenue: () => this.setState((st) => ({ menue: !st.menue })),
+      fotosAn: fotos, fotosAus: !fotos
+    };
+  }
+}
+</script>
+</body>
+</html>

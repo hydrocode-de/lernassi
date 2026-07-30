@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/styles.css">
+<script src="_ds/lernassi-0ef78bc0-645d-416e-8908-d62c9cba5820/_ds_bundle.js"></script>
+<style>
+@keyframes la-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes la-breathe{0%,100%{opacity:.35}50%{opacity:.9}}
+@keyframes la-sweep{0%{transform:translateY(-8%)}100%{transform:translateY(108%)}}
+body{margin:0;background:var(--paper-2)}
+a{color:var(--lavender-ink)}
+a:hover{color:oklch(0.38 0.10 285)}
+</style>
+</helmet>
+<div style="width:max-content;display:flex;flex-direction:column;gap:20px;padding:34px 28px 56px;font-family:var(--text)">
+
+<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+<span class="eyebrow" style="margin-right:4px">Route</span>
+<button class="chip" onClick="{{ goAufnehmen }}" aria-pressed="{{ isAufnehmen }}">/schueler/aufnehmen</button>
+<button class="chip" onClick="{{ goDoppelt }}" aria-pressed="{{ isDoppelt }}">… Seite schon bekannt</button>
+<button class="chip" onClick="{{ goWarten }}" aria-pressed="{{ isWarten }}">… liest</button>
+<button class="chip" onClick="{{ goErgebnis }}" aria-pressed="{{ isErgebnis }}">/schueler/aufnahme/[id]</button>
+</div>
+
+<div style="display:flex;gap:26px;align-items:flex-start">
+
+<x-import component-from-global-scope="ChromeWindow" from="./browser-window.jsx" width="{{ 1240 }}" height="{{ 880 }}" url="{{ url }}" hint-size="1240px,880px">
+<div style="height:100%;display:flex;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<aside style="flex:none;width:268px;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;padding:22px 16px 14px">
+<p style="margin:0 0 20px 4px;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:-.01em">lernassi</p>
+<span class="btn btn--block" style="min-height:52px;gap:10px;font-size:15px;white-space:nowrap;background:var(--lavender-2)">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5h2.6l1.3-2h8.2l1.3 2H20a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z"></path><circle cx="12" cy="13.5" r="3.4"></circle></svg>
+Aufschrieb hinzufügen
+</span>
+<p class="eyebrow" style="margin:26px 0 10px 4px">Meine Fächer</p>
+<div style="display:flex;flex-direction:column;gap:3px">
+<a href="Inhaltsverzeichnis.dc.html" style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--lavender-ink)"></span>Geschichte<span style="font-weight:400;opacity:.7;font-size:14px">12</span>
+</a>
+<a href="Inhaltsverzeichnis.dc.html" style="display:grid;grid-template-columns:9px 1fr auto;align-items:center;gap:11px;min-height:46px;padding:8px 12px;border-radius:var(--r);color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:16px;text-decoration:none" style-hover="background:var(--paper-2)">
+<span style="width:9px;height:9px;border-radius:3px;background:var(--mint-ink)"></span>Mathematik<span style="font-weight:400;opacity:.7;font-size:14px">9</span>
+</a>
+</div>
+<a class="btn btn--plain" href="Lernplan.dc.html" style="margin:14px 0 0;justify-content:flex-start;min-height:44px;font-size:15px;text-decoration:none">Mein Lernplan</a>
+<a class="btn btn--plain" href="Ueben.dc.html" style="margin:2px 0 0;justify-content:flex-start;min-height:44px;font-size:15px;text-decoration:none">Üben</a>
+<div style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:grid;grid-template-columns:34px 1fr;align-items:center;gap:11px;padding-bottom:6px">
+<span style="width:34px;height:34px;border-radius:50%;background:var(--lavender);color:var(--lavender-ink);font-family:var(--display);font-weight:700;font-size:14px;display:grid;place-items:center">bf</span>
+<span><span style="display:block;font-family:var(--display);font-weight:600;font-size:15px">blaufuchs42</span><span class="small" style="display:block;font-size:13px">Klasse 9b</span></span>
+</div>
+</aside>
+
+<main style="flex:1;min-width:0;overflow:auto">
+<div style="max-width:960px;padding:34px 40px 48px">
+
+<sc-if value="{{ isWarten }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;text-align:center">
+<div style="position:relative;width:132px;height:170px;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 13px,var(--surface) 13px 26px);overflow:hidden">
+<div style="position:absolute;inset:0;height:36%;background:linear-gradient(180deg,transparent,var(--lavender),transparent);animation:la-sweep 1.9s ease-in-out infinite"></div>
+</div>
+<div>
+<h1 style="margin:0 0 8px">Ich lese deine Seiten</h1>
+<p class="muted" style="margin:0;font-size:17px;max-width:340px">Dauert meist keine Minute. Du kannst in der Zwischenzeit weiterarbeiten.</p>
+</div>
+<div style="display:flex;gap:8px">
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);animation:la-breathe 1.2s ease-in-out infinite"></span>
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);animation:la-breathe 1.2s ease-in-out .2s infinite"></span>
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);animation:la-breathe 1.2s ease-in-out .4s infinite"></span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ istKamera }}" hint-placeholder-val="{{ true }}">
+<div>
+<a class="btn btn--plain" href="Inhaltsverzeichnis.dc.html" style="margin:0 0 10px;padding-inline:0;min-height:44px;text-decoration:none">Zurück</a>
+<h1 style="margin:0 0 5px">Aufschrieb hinzufügen</h1>
+<p class="muted" style="margin:0 0 24px;font-size:16px">Fach: Geschichte · eine Seite pro Bild, Reihenfolge egal.</p>
+
+<sc-if value="{{ isDoppelt }}" hint-placeholder-val="{{ false }}">
+<div style="background:var(--sky);border:1px solid var(--sky-2);color:var(--sky-ink);border-radius:var(--r);padding:13px 15px;margin-bottom:14px;font-size:16px">
+<p style="margin:0">Seite 2 kenne ich schon – die habe ich am 12. März gelesen.</p>
+<p class="small" style="margin:8px 0 0;color:var(--sky-ink)">Wenn du sie nur schärfer fotografiert hast, lies sie ruhig noch einmal ein. Sonst nimm die Seite unten wieder heraus.</p>
+</div>
+</sc-if>
+
+<label class="field" style="max-width:420px;margin-bottom:18px;display:block">
+<span class="field__label">Fach</span>
+<select style="width:100%;border:0;padding:0;background:transparent;font-family:var(--text);font-size:18px;color:var(--ink)">
+<option>Geschichte</option><option>Mathematik</option><option>Neues Fach …</option>
+</select>
+</label>
+
+<div style="display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);align-items:start;gap:18px">
+<div style="display:flex;flex-direction:column;min-width:0">
+<div style="border:1.5px dashed var(--line-2);border-radius:var(--r-lg);background:repeating-linear-gradient(180deg,var(--paper-2) 0 11px,var(--paper) 11px 22px);min-height:290px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center">
+<p style="margin:0;font-family:var(--display);font-weight:700;font-size:21px">Bilder hierher ziehen</p>
+<p class="small" style="margin:0;max-width:280px">Fotos oder Scans deiner Heftseiten.</p>
+<button class="btn" onClick="{{ waehlen }}" style="min-height:48px">Dateien auswählen</button>
+</div>
+<div style="flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:9px;min-height:54px;margin-top:14px">
+<sc-for list="{{ seiten }}" as="seite" hint-placeholder-count="0">
+<button title="Seite entfernen" style="position:relative;width:40px;height:52px;flex:none;padding:0;overflow:hidden;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 7px,var(--surface) 7px 14px);cursor:pointer;animation:la-rise .25s ease">
+<span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">{{ seite.n }}</span>
+</button>
+</sc-for>
+<span class="small" style="font-size:13px;margin-left:2px">{{ seitenLabel }}</span>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;gap:10px">
+<sc-if value="{{ hatSeiten }}" hint-placeholder-val="{{ false }}">
+<button class="btn btn--go btn--lg btn--block" onClick="{{ goWarten }}" style="max-width:320px;min-height:56px">{{ fertigLabel }}</button>
+</sc-if>
+</div>
+</div>
+
+<aside class="card card--tint">
+<p class="eyebrow" style="margin:0 0 10px">Lieber mit dem Handy?</p>
+<p style="margin:0 0 14px;font-size:16px;line-height:1.55">Öffne lernassi am Handy und fotografiere direkt – die Seiten landen hier im selben Heft.</p>
+<p style="margin:0;padding:10px 12px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--line-2);font-family:var(--display);font-weight:600;font-size:14px;color:var(--ink-2);overflow-wrap:anywhere">lernassi.de/schueler/aufnehmen</p>
+</aside>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isErgebnis }}" hint-placeholder-val="{{ false }}">
+<div>
+<span class="tag tag--mint" style="font-size:13px">Fertig</span>
+<h1 style="margin:12px 0 5px">2 Themen gefunden</h1>
+<p class="muted" style="margin:0 0 24px;font-size:16px">5 Seiten aus deinem Heft · Geschichte</p>
+
+<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start;gap:18px;margin-bottom:22px">
+<div class="card">
+<p class="eyebrow" style="margin:0 0 10px">Darum geht es</p>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.6">1923 kommen mehrere Krisen zusammen: die Ruhrbesetzung im Januar, die Inflation bis zur Billion Mark und der Hitlerputsch im November. Die Rentenmark beruhigt die Lage.</p>
+<div class="chips">
+<span class="chip" style="cursor:default">Ruhrbesetzung</span>
+<span class="chip" style="cursor:default">Hyperinflation</span>
+<span class="chip" style="cursor:default">Rentenmark</span>
+</div>
+<div style="display:flex;gap:10px;margin-top:18px">
+<span style="position:relative;width:52px;height:68px;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 8px,var(--surface) 8px 16px)"><span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">1</span></span>
+<span style="position:relative;width:52px;height:68px;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 8px,var(--surface) 8px 16px)"><span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">2</span></span>
+<span style="position:relative;width:52px;height:68px;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 8px,var(--surface) 8px 16px)"><span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">3</span></span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Hier hab ich es abgelegt</p>
+<div style="display:flex;flex-direction:column;gap:6px">
+<span class="small">Geschichte</span>
+<span style="font-size:16px;color:var(--ink-2)">↳ {{ kapitel }}</span>
+<span style="font-family:var(--display);font-weight:700;font-size:20px;margin-left:18px">↳ Krisenjahr 1923</span>
+</div>
+</div>
+<button class="btn btn--quiet btn--block" onClick="{{ toggleWoanders }}" style="min-height:56px">Woanders einordnen</button>
+<sc-if value="{{ woandersOffen }}" hint-placeholder-val="{{ false }}">
+<div class="card" style="animation:la-rise .22s ease">
+<div class="row" style="margin-bottom:14px"><h3>Wohin gehört es?</h3><button class="btn btn--plain" onClick="{{ toggleWoanders }}" style="min-height:44px">Zurück</button></div>
+<p class="small" style="margin:0 0 14px">Fach Geschichte · Kapitel wählen</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ legeWeimar }}" style="justify-content:flex-start;min-height:52px">Weimarer Republik</button>
+<button class="btn btn--quiet btn--block" onClick="{{ legeKrieg }}" style="justify-content:flex-start;min-height:52px">Erster Weltkrieg</button>
+<button class="btn btn--quiet btn--block" onClick="{{ legeIndustrie }}" style="justify-content:flex-start;min-height:52px">Industrialisierung</button>
+</div>
+<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+<label class="field"><span class="field__label">Neues Kapitel anfangen</span><input placeholder="z. B. Absolutismus"></label>
+<button class="btn btn--plain" style="width:100%;justify-content:flex-start;min-height:48px;font-size:15px;padding-inline:0">Kapitel anlegen und hierhin legen</button>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+
+<div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);align-items:start;gap:18px;margin-bottom:22px">
+<div class="card">
+<p class="eyebrow" style="margin:0 0 10px">Darum geht es</p>
+<p style="margin:0 0 14px;font-size:17px;line-height:1.6">Der Hitlerputsch vom 9. November 1923 scheitert nach wenigen Stunden. Hitler wird verhaftet, kommt aber schon 1924 wieder frei.</p>
+<div class="chips">
+<span class="chip" style="cursor:default">Hitlerputsch</span>
+<span class="chip" style="cursor:default">München</span>
+</div>
+<div style="display:flex;gap:10px;margin-top:18px">
+<span style="position:relative;width:52px;height:68px;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 8px,var(--surface) 8px 16px)"><span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">4</span></span>
+<span style="position:relative;width:52px;height:68px;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 8px,var(--surface) 8px 16px)"><span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">5</span></span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+<div class="card">
+<p class="eyebrow" style="margin:0 0 12px">Hier hab ich es abgelegt</p>
+<div style="display:flex;flex-direction:column;gap:6px">
+<span class="small">Geschichte</span>
+<span style="font-size:16px;color:var(--ink-2)">↳ Weimarer Republik</span>
+<span style="font-family:var(--display);font-weight:700;font-size:20px;margin-left:18px">↳ Hitlerputsch</span>
+</div>
+</div>
+<button class="btn btn--quiet btn--block" style="min-height:56px">Woanders einordnen</button>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:6px;max-width:320px">
+<a class="btn btn--go btn--lg btn--block" href="Inhaltsverzeichnis.dc.html" style="min-height:56px;text-decoration:none">Passt so – speichern</a>
+<button class="btn btn--plain" style="width:100%;min-height:52px;font-size:15px;color:var(--rose-ink)">Alles wieder löschen</button>
+</div>
+</div>
+</sc-if>
+
+</div>
+</main>
+</div>
+</x-import>
+
+<x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" width="{{ 402 }}" height="{{ 874 }}" hint-size="402px,874px">
+<div style="height:100%;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);font-family:var(--text);overflow:hidden">
+
+<sc-if value="{{ isWarten }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:70px 32px 60px;text-align:center">
+<div style="position:relative;width:132px;height:170px;border-radius:var(--r);border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 13px,var(--surface) 13px 26px);overflow:hidden">
+<div style="position:absolute;inset:0;height:36%;background:linear-gradient(180deg,transparent,var(--lavender),transparent);animation:la-sweep 1.9s ease-in-out infinite"></div>
+</div>
+<div><h1 style="margin:0 0 8px">Ich lese deine Seiten</h1><p class="muted" style="margin:0;font-size:17px;max-width:290px">Dauert meist keine Minute. Du kannst das Handy ruhig weglegen.</p></div>
+<div style="display:flex;gap:8px">
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);animation:la-breathe 1.2s ease-in-out infinite"></span>
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);animation:la-breathe 1.2s ease-in-out .2s infinite"></span>
+<span style="width:9px;height:9px;border-radius:50%;background:var(--lavender-ink);animation:la-breathe 1.2s ease-in-out .4s infinite"></span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ istKamera }}" hint-placeholder-val="{{ true }}">
+<div style="height:100%;display:flex;flex-direction:column;padding:56px 20px 0">
+<div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+<a class="btn btn--plain" href="Inhaltsverzeichnis.dc.html" style="min-height:44px;text-decoration:none">Abbrechen</a>
+<span class="tag">Geschichte</span>
+<span></span>
+</div>
+<h1 style="margin:6px 0 4px;font-size:24px">Aufschrieb fotografieren</h1>
+<p class="muted" style="margin:0 0 14px;font-size:16px">Ganze Heftseite ins Bild, möglichst gerade.</p>
+
+<sc-if value="{{ isDoppelt }}" hint-placeholder-val="{{ false }}">
+<div style="background:var(--sky);border:1px solid var(--sky-2);color:var(--sky-ink);border-radius:var(--r);padding:13px 15px;margin-bottom:14px;font-size:16px">
+<p style="margin:0">Seite 2 kenne ich schon – gelesen am 12. März.</p>
+<p class="small" style="margin:8px 0 0;color:var(--sky-ink)">Nur schärfer fotografiert? Dann ruhig nochmal lesen. Sonst die Seite unten herausnehmen.</p>
+</div>
+</sc-if>
+
+<label class="field" style="margin-bottom:10px;display:block">
+<span class="field__label">Fach</span>
+<select style="width:100%;border:0;padding:0;background:transparent;font-family:var(--text);font-size:18px;color:var(--ink)">
+<option>Geschichte</option><option>Mathematik</option><option>Neues Fach …</option>
+</select>
+</label>
+
+<button onClick="{{ waehlen }}" style="position:relative;flex:1;min-height:150px;width:100%;border:0;border-radius:var(--r-lg);background:repeating-linear-gradient(180deg,var(--paper-2) 0 11px,var(--paper) 11px 22px);display:grid;place-items:center;cursor:pointer;margin:4px 0 0">
+<span style="position:absolute;top:14px;left:14px;width:30px;height:30px;border:2px solid var(--lavender-ink);border-right:0;border-bottom:0;border-radius:8px 0 0 0;opacity:.55"></span>
+<span style="position:absolute;top:14px;right:14px;width:30px;height:30px;border:2px solid var(--lavender-ink);border-left:0;border-bottom:0;border-radius:0 8px 0 0;opacity:.55"></span>
+<span style="position:absolute;bottom:14px;left:14px;width:30px;height:30px;border:2px solid var(--lavender-ink);border-right:0;border-top:0;border-radius:0 0 0 8px;opacity:.55"></span>
+<span style="position:absolute;bottom:14px;right:14px;width:30px;height:30px;border:2px solid var(--lavender-ink);border-left:0;border-top:0;border-radius:0 0 8px 0;opacity:.55"></span>
+<span class="small" style="max-width:220px;text-align:center;line-height:1.55">Tippen, um eine Seite aufzunehmen</span>
+</button>
+
+<div style="flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:9px;min-height:54px;margin-top:14px">
+<sc-for list="{{ seiten }}" as="seite" hint-placeholder-count="0">
+<button title="Seite entfernen" style="position:relative;width:40px;height:52px;flex:none;padding:0;overflow:hidden;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 7px,var(--surface) 7px 14px);cursor:pointer;animation:la-rise .25s ease">
+<span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">{{ seite.n }}</span>
+</button>
+</sc-for>
+<span class="small" style="font-size:13px;margin-left:2px">{{ seitenLabel }}</span>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:10px;margin-top:8px;padding-bottom:34px">
+<button class="btn btn--lg btn--block" onClick="{{ waehlen }}" style="min-height:66px">Seite aufnehmen</button>
+<sc-if value="{{ hatSeiten }}" hint-placeholder-val="{{ false }}">
+<button class="btn btn--go btn--lg btn--block" onClick="{{ goWarten }}" style="min-height:60px">{{ fertigLabel }}</button>
+</sc-if>
+<sc-if value="{{ keineSeiten }}" hint-placeholder-val="{{ true }}">
+<p class="small" style="margin:0;text-align:center;min-height:60px;display:grid;place-items:center">Du kannst mehrere Seiten nacheinander aufnehmen.</p>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isErgebnis }}" hint-placeholder-val="{{ false }}">
+<div style="height:100%;display:flex;flex-direction:column;position:relative">
+<div style="flex:1;overflow:auto;padding:56px 20px 20px">
+<span class="tag tag--mint" style="font-size:13px">Fertig</span>
+<h1 style="margin:12px 0 5px">2 Themen gefunden</h1>
+<p class="muted" style="margin:0 0 18px;font-size:16px">5 Seiten aus deinem Heft · Geschichte</p>
+
+<div class="card">
+<p class="eyebrow" style="margin:0 0 10px">Darum geht es</p>
+<p style="margin:0 0 12px;font-size:17px;line-height:1.55">1923 kommen mehrere Krisen zusammen: Ruhrbesetzung, Inflation bis zur Billion Mark und der Hitlerputsch im November.</p>
+<div class="chips">
+<span class="chip" style="cursor:default">Ruhrbesetzung</span>
+<span class="chip" style="cursor:default">Rentenmark</span>
+</div>
+<div style="display:flex;gap:10px;margin-top:18px">
+<span style="position:relative;width:52px;height:68px;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 8px,var(--surface) 8px 16px)"><span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">1</span></span>
+<span style="position:relative;width:52px;height:68px;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 8px,var(--surface) 8px 16px)"><span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">2</span></span>
+<span style="position:relative;width:52px;height:68px;border-radius:7px;border:1px solid var(--line-2);background:repeating-linear-gradient(180deg,var(--paper-2) 0 8px,var(--surface) 8px 16px)"><span style="position:absolute;bottom:-2px;right:-4px;width:19px;height:19px;border-radius:50%;background:var(--mint);color:var(--mint-ink);font-family:var(--display);font-weight:700;font-size:11px;display:grid;place-items:center">3</span></span>
+</div>
+</div>
+
+<div class="card" style="margin-top:12px">
+<p class="eyebrow" style="margin:0 0 12px">Hier hab ich es abgelegt</p>
+<div style="display:flex;flex-direction:column;gap:6px">
+<span class="small">Geschichte</span>
+<span style="font-size:16px;color:var(--ink-2)">↳ {{ kapitel }}</span>
+<span style="font-family:var(--display);font-weight:700;font-size:20px;margin-left:18px">↳ Krisenjahr 1923</span>
+</div>
+</div>
+<button class="btn btn--quiet btn--block" onClick="{{ toggleWoanders }}" style="margin-top:12px;min-height:56px">Woanders einordnen</button>
+
+<div class="card" style="margin-top:20px">
+<p class="eyebrow" style="margin:0 0 10px">Darum geht es</p>
+<p style="margin:0 0 12px;font-size:17px;line-height:1.55">Der Hitlerputsch vom 9. November 1923 scheitert nach wenigen Stunden.</p>
+<div class="chips"><span class="chip" style="cursor:default">Hitlerputsch</span></div>
+</div>
+<div class="card" style="margin-top:12px">
+<p class="eyebrow" style="margin:0 0 12px">Hier hab ich es abgelegt</p>
+<div style="display:flex;flex-direction:column;gap:6px">
+<span class="small">Geschichte</span>
+<span style="font-size:16px;color:var(--ink-2)">↳ Weimarer Republik</span>
+<span style="font-family:var(--display);font-weight:700;font-size:20px;margin-left:18px">↳ Hitlerputsch</span>
+</div>
+</div>
+<button class="btn btn--quiet btn--block" style="margin-top:12px;min-height:56px">Woanders einordnen</button>
+
+<div style="display:flex;flex-direction:column;gap:6px;margin-top:20px">
+<a class="btn btn--go btn--lg btn--block" href="Inhaltsverzeichnis.dc.html" style="min-height:62px;text-decoration:none">Passt so – speichern</a>
+<button class="btn btn--plain" style="width:100%;min-height:52px;font-size:15px;color:var(--rose-ink)">Alles wieder löschen</button>
+</div>
+</div>
+
+<sc-if value="{{ woandersOffen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:70;display:flex;align-items:flex-end;background:oklch(0.3 0.02 60/.28)">
+<div style="width:100%;background:var(--surface);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:22px 20px 40px;animation:la-rise .22s ease">
+<div class="row" style="margin-bottom:14px"><h3>Wohin gehört es?</h3><button class="btn btn--plain" onClick="{{ toggleWoanders }}" style="min-height:48px">Zurück</button></div>
+<p class="small" style="margin:0 0 14px">Fach Geschichte · Kapitel wählen</p>
+<div style="display:flex;flex-direction:column;gap:8px">
+<button class="btn btn--quiet btn--block" onClick="{{ legeWeimar }}" style="justify-content:flex-start;min-height:60px">Weimarer Republik</button>
+<button class="btn btn--quiet btn--block" onClick="{{ legeKrieg }}" style="justify-content:flex-start;min-height:60px">Erster Weltkrieg</button>
+<button class="btn btn--quiet btn--block" onClick="{{ legeIndustrie }}" style="justify-content:flex-start;min-height:60px">Industrialisierung</button>
+</div>
+<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+<label class="field"><span class="field__label">Neues Kapitel anfangen</span><input placeholder="z. B. Absolutismus"></label>
+<button class="btn btn--plain" style="width:100%;justify-content:flex-start;min-height:48px;font-size:15px;padding-inline:0">Kapitel anlegen und hierhin legen</button>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+</div>
+</x-import>
+
+</div>
+
+<p class="small" style="margin:0;max-width:700px">Gebaut nach <code>src/routes/schueler/aufnehmen</code> und <code>aufnahme/[id]</code>: Fach wird im Formular gewählt (auch „Neues Fach …"), Seiten sammeln sich in einem Feld und lassen sich per Antippen wieder entfernen, eine schon bekannte Seite fragt nach. Beim Lesen tritt die Navigation zurück – am Handy gibt es hier keine Tab-Leiste. Ein Aufschrieb kann mehrere Themen ergeben; jedes wird einzeln eingeordnet, gespeichert wird alles zusammen.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1780,&quot;height&quot;:1050},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Aufnehmen&quot;,&quot;Seite schon bekannt&quot;,&quot;Liest&quot;,&quot;Ergebnis&quot;],&quot;default&quot;:&quot;Aufnehmen&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;}}">
+class Component extends DCLogic {
+  state = { view: null, seiten: 0, woanders: false, kapitel: 'Weimarer Republik' };
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    const s = this.state;
+    const view = s.view ?? ({
+      'Aufnehmen': 'kamera', 'Seite schon bekannt': 'doppelt', 'Liest': 'warten', 'Ergebnis': 'ergebnis'
+    }[this.props.screen] || 'kamera');
+    const n = view === 'doppelt' ? Math.max(s.seiten, 2) : s.seiten;
+    const lege = (k) => () => this.setState({ kapitel: k, woanders: false });
+    return {
+      url: view === 'ergebnis' ? 'lernassi.de/schueler/aufnahme/a-31c7' : 'lernassi.de/schueler/aufnehmen',
+      isAufnehmen: view === 'kamera', isDoppelt: view === 'doppelt',
+      isWarten: view === 'warten', isErgebnis: view === 'ergebnis',
+      istKamera: view === 'kamera' || view === 'doppelt',
+      goAufnehmen: () => this.setState({ view: 'kamera', seiten: 0, woanders: false }),
+      goDoppelt: () => this.setState({ view: 'doppelt', seiten: 2, woanders: false }),
+      goWarten: () => {
+        clearTimeout(this._t);
+        this.setState({ view: 'warten', woanders: false });
+        this._t = setTimeout(() => this.setState({ view: 'ergebnis' }), 2600);
+      },
+      goErgebnis: () => this.setState({ view: 'ergebnis', woanders: false }),
+      waehlen: () => this.setState((st) => ({ seiten: Math.min(st.seiten + 1, 9) })),
+      seiten: Array.from({ length: n }, (_, i) => ({ n: i + 1 })),
+      seitenLabel: n === 0 ? 'Noch keine Seite' : (n === 1 ? '1 Seite' : n + ' Seiten'),
+      hatSeiten: n > 0, keineSeiten: n === 0,
+      fertigLabel: view === 'doppelt' ? 'Trotzdem lesen' : 'Fertig – einordnen',
+      woandersOffen: s.woanders, kapitel: s.kapitel,
+      toggleWoanders: () => this.setState((st) => ({ woanders: !st.woanders })),
+      legeWeimar: lege('Weimarer Republik'), legeKrieg: lege('Erster Weltkrieg'), legeIndustrie: lege('Industrialisierung')
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -42,6 +42,9 @@ a:hover{color:oklch(0.38 0.10 285)}
 .btn:hover{background:var(--lavender-2)}
 .btn:active{transform:translateY(1px)}
 .btn:focus-visible{outline:2px solid var(--lavender-ink);outline-offset:2px}
+/* Ein Knopf, der noch nicht dran ist, darf nicht aussehen wie einer, der es ist. */
+.btn:disabled{cursor:not-allowed;opacity:.45}
+.btn:disabled:hover{background:inherit}
 .btn--go{background:var(--mint);color:var(--mint-ink);border-color:var(--mint-2)}
 .btn--go:hover{background:var(--mint-2)}
 .btn--quiet{background:transparent;color:var(--ink-2);border-color:var(--line-2)}
