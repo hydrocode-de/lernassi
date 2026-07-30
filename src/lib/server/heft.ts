@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { notes, questions, responses, rounds, tocEntries } from '$lib/server/db/schema';
+import { notes, questions, responses, roundTopics, rounds, tocEntries } from '$lib/server/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 
 export type Thema = {
@@ -8,6 +8,12 @@ export type Thema = {
 	zuletzt: number | null;
 	/** Wie viele Aufschriebe daran hängen — ohne einen ist das Thema ein Überrest. */
 	aufschriebe: number;
+	/**
+	 * Stand aus der jüngsten Runde, die dieses Thema gefragt hat — rohe Punkte, nicht das Wort.
+	 * Das Wort entsteht erst bei der Anzeige aus der Skala der Klasse. Ein Thema, das nie
+	 * gefragt wurde, bekommt gar keinen Stand — nicht einen grauen.
+	 */
+	stand: { erreicht: number; moeglich: number } | null;
 };
 export type Kapitel = {
 	id: string;
@@ -38,6 +44,7 @@ export async function heftLesen(studentId: string): Promise<Fach[]> {
 	}
 
 	const stand = await kapitelStand(studentId);
+	const themenStand = await themaStand(studentId);
 
 	const kinder = (parentId: string) =>
 		alle
@@ -57,7 +64,8 @@ export async function heftLesen(studentId: string): Promise<Fach[]> {
 						title: t.title,
 						sortOrder: t.sortOrder,
 						zuletzt: zuletztJeThema.get(t.id) ?? null,
-						aufschriebe: anzahlJeThema.get(t.id) ?? 0
+						aufschriebe: anzahlJeThema.get(t.id) ?? 0,
+						stand: themenStand.get(t.id) ?? null
 					}))
 					.sort(
 						(a, b) =>
@@ -85,21 +93,57 @@ export async function heftLesen(studentId: string): Promise<Fach[]> {
 		});
 }
 
+/**
+ * Der Stand je Thema: die jüngste Runde gewinnt. Gelesen aus `roundTopics`, das Einordnung und
+ * Übung gleich abrechnen — deshalb hat ein Thema schon vor der ersten Übung einen Stand.
+ */
+async function themaStand(
+	studentId: string
+): Promise<Map<string, { erreicht: number; moeglich: number }>> {
+	const meine = (await db.select().from(rounds).where(eq(rounds.studentId, studentId))).filter(
+		(r) => r.status === 'abgeschlossen'
+	);
+	if (!meine.length) return new Map();
+
+	const zeilen = await db
+		.select()
+		.from(roundTopics)
+		.where(
+			inArray(
+				roundTopics.roundId,
+				meine.map((r) => r.id)
+			)
+		);
+
+	const wann = new Map(meine.map((r) => [r.id, (r.finishedAt ?? r.startedAt).getTime()]));
+	const jueng = new Map<string, { erreicht: number; moeglich: number; wann: number }>();
+	for (const z of zeilen) {
+		const zeit = wann.get(z.roundId) ?? 0;
+		const da = jueng.get(z.topicId);
+		if (!da || zeit > da.wann)
+			jueng.set(z.topicId, { erreicht: z.erreicht, moeglich: z.moeglich, wann: zeit });
+	}
+	return new Map([...jueng].map(([id, s]) => [id, { erreicht: s.erreicht, moeglich: s.moeglich }]));
+}
+
 /** „3 von 5 saßen" — aus der jüngsten abgeschlossenen Runde je Kapitel. */
 async function kapitelStand(
 	studentId: string
 ): Promise<Map<string, { sassen: number; gefragt: number }>> {
 	const abgeschlossen = (
 		await db.select().from(rounds).where(eq(rounds.studentId, studentId))
-	).filter((r) => r.status === 'abgeschlossen');
+		// Übungen hängen an einer Karte, nicht an einem Kapitel — für den Kapitel-Stand
+		// zählen nur die Einordnungen.
+	).filter((r) => r.status === 'abgeschlossen' && r.chapterId);
 	if (!abgeschlossen.length) return new Map();
 
 	// Pro Kapitel zählt die jüngste Runde.
 	const jueng = new Map<string, (typeof abgeschlossen)[number]>();
 	for (const r of abgeschlossen) {
-		const da = jueng.get(r.chapterId);
+		const kapitelId = r.chapterId!;
+		const da = jueng.get(kapitelId);
 		if (!da || (r.finishedAt?.getTime() ?? 0) > (da.finishedAt?.getTime() ?? 0))
-			jueng.set(r.chapterId, r);
+			jueng.set(kapitelId, r);
 	}
 
 	const rundenIds = [...jueng.values()].map((r) => r.id);

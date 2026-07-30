@@ -1,9 +1,17 @@
-// Der Lernplan: ein Vorrat von Aufgaben pro Fach, kein Objekt mit Deckel. Hier kann das
-// Kind ansehen, manuell abhaken — auch für extern Geübtes — oder verwerfen.
-// Das Abarbeiten mit dem Agenten kommt später.
+// Der Lernplan: die Warteschlange der Lernkarten, angezeigt nach Fach gruppiert. Hier kann das
+// Kind ansehen, üben, manuell abhaken — auch für extern Geübtes — oder verwerfen.
+//
+// Sortiert wird nach der Reihe (`position`), nicht nach dem Termin: der Termin klemmt nur das
+// Einsortieren und löst den Vorschlag zum Umsortieren aus.
 
 import { db } from '$lib/server/db';
 import { planItems, tocEntries } from '$lib/server/db/schema';
+import {
+	nachVorneHolen,
+	offeneKarten,
+	reiheNachziehen,
+	umsortierenVorschlagen
+} from '$lib/server/warteschlange';
 import { and, eq, inArray } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -11,6 +19,9 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user || locals.user.role !== 'student') throw redirect(303, '/anmelden');
 	const studentId = locals.user.id;
+
+	// Karten aus der Zeit vor der Reihe bekommen hier ihre Positionen.
+	await reiheNachziehen(studentId);
 
 	const punkte = await db.select().from(planItems).where(eq(planItems.studentId, studentId));
 	const ids = [
@@ -25,7 +36,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			: []
 	);
 
-	// Nach Fach gruppieren; offene zuerst, innerhalb nach Termin.
+	// Nach Fach gruppieren; offene zuerst in ihrer Reihenfolge, erledigte und weggelegte danach.
 	const faecher = [...new Set(punkte.map((p) => p.subjectId))]
 		.map((fachId) => ({
 			id: fachId,
@@ -38,6 +49,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 					minutes: p.minutes,
 					dueAt: p.dueAt?.getTime() ?? null,
 					status: p.status,
+					position: p.position,
 					kapitel: p.chapterId ? (titel.get(p.chapterId) ?? null) : null,
 					kapitelId: p.chapterId,
 					createdAt: p.createdAt.getTime()
@@ -45,13 +57,19 @@ export const load: PageServerLoad = async ({ locals }) => {
 				.sort(
 					(a, b) =>
 						(a.status === 'offen' ? 0 : 1) - (b.status === 'offen' ? 0 : 1) ||
-						(a.dueAt ?? 0) - (b.dueAt ?? 0) ||
+						a.position - b.position ||
 						b.createdAt - a.createdAt
 				)
 		}))
 		.sort((a, b) => a.title.localeCompare(b.title, 'de'));
 
-	return { faecher, offene: punkte.filter((p) => p.status === 'offen').length };
+	const reihe = await offeneKarten(studentId);
+	return {
+		faecher,
+		offene: reihe.length,
+		naechste: reihe[0]?.id ?? null,
+		vorschlag: await umsortierenVorschlagen(studentId)
+	};
 };
 
 async function setzeStatus(
@@ -88,5 +106,13 @@ export const actions: Actions = {
 		if (!(await setzeStatus(locals.user.id, id, 'offen')))
 			return fail(400, { message: 'Diesen Punkt gibt es nicht mehr.' });
 		return { ok: 'Wieder offen.' };
+	},
+	// Ein Tippen auf den Termin-Vorschlag.
+	vorziehen: async ({ locals, request }) => {
+		if (!locals.user) throw redirect(303, '/anmelden');
+		const ids = (await request.formData()).getAll('id').map(String).filter(Boolean);
+		if (!ids.length) return fail(400, { message: 'Da war nichts zum Vorziehen.' });
+		await nachVorneHolen(locals.user.id, ids);
+		return { ok: 'Steht jetzt vorne.' };
 	}
 };

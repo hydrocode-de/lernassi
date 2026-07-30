@@ -23,7 +23,8 @@ const MODELLE = {
 	pruef: () => env.REQUESTY_MODEL_PRUEF ?? STANDARD,
 	spiegel: () => env.REQUESTY_MODEL_SPIEGEL ?? STANDARD,
 	plan: () => env.REQUESTY_MODEL_PLAN ?? STANDARD,
-	beurteilung: () => env.REQUESTY_MODEL_BEURTEILUNG ?? STANDARD
+	beurteilung: () => env.REQUESTY_MODEL_BEURTEILUNG ?? STANDARD,
+	bewerter: () => env.REQUESTY_MODEL_BEWERTER ?? STANDARD
 };
 
 export class KeinSchluessel extends Error {
@@ -131,8 +132,20 @@ const KIND_TON = [
 // 1. Prüf-Agent
 // ─────────────────────────────────────────────────────────────
 
-export const FRAGE_ARTEN = ['single', 'multi', 'yesno', 'order', 'match'] as const;
+export const FRAGE_ARTEN = ['single', 'multi', 'yesno', 'order', 'match', 'text'] as const;
 export type FrageArt = (typeof FRAGE_ARTEN)[number];
+
+/** Was eine Frage dieser Art an Zeit kostet, in Sekunden — Lesen, Antworten und Rückmeldung
+ *  zusammen. Daraus fällt die Fragenzahl: Budget = Umfang der Karte in Minuten × 60.
+ *  10 Minuten überwiegend Single/Multi ergeben so rund 8 Fragen, 15 Minuten mit Freitext drei. */
+export const SEKUNDEN_JE_ART: Record<FrageArt, number> = {
+	yesno: 40,
+	single: 60,
+	multi: 80,
+	order: 100,
+	match: 110,
+	text: 250
+};
 
 const FrageSchema = z.object({
 	thema: z
@@ -142,14 +155,24 @@ const FrageSchema = z.object({
 		.enum(FRAGE_ARTEN)
 		.describe(
 			'single = eine richtige Antwort; multi = mehrere richtige; yesno = Ja/Nein; ' +
-				'order = Reihenfolge legen; match = Paare zuordnen.'
+				'order = Reihenfolge legen; match = Paare zuordnen; text = das Kind schreibt selbst.'
+		),
+	punkte: z
+		.number()
+		.int()
+		.min(1)
+		.max(3)
+		.describe(
+			'Wie schwer die Frage ist: 1 = auf Anhieb zu wissen, 2 = braucht Nachdenken, ' +
+				'3 = verlangt Verknüpfen oder eigenes Formulieren. Die Zahl ist zugleich das ' +
+				'Kontingent: 2 erlaubt ein Nachfassen, 3 erlaubt zwei. Vergib 3 sparsam.'
 		),
 	frage: z.string().describe('Die Frage an das Kind, ein bis zwei Sätze.'),
 	auswahl: z
 		.array(z.string())
 		.describe(
 			'single/multi: alle Antwortmöglichkeiten (3 bis 4, genau eine bzw. mehrere richtig). ' +
-				'yesno: leer lassen. order: die Elemente in der RICHTIGEN Reihenfolge — gemischt wird ' +
+				'yesno und text: leer lassen. order: die Elemente in der RICHTIGEN Reihenfolge — gemischt wird ' +
 				'später. match: die linken Begriffe.'
 		),
 	partner: z
@@ -159,14 +182,16 @@ const FrageSchema = z.object({
 		.array(z.string())
 		.describe(
 			'single: die eine richtige Möglichkeit, wortgleich aus auswahl. multi: alle richtigen. ' +
-				'yesno: ["Ja"] oder ["Nein"]. order und match: leeres Array.'
+				'yesno: ["Ja"] oder ["Nein"]. order und match: leeres Array. text: die Begriffe, ' +
+				'die in einer richtigen Antwort vorkommen müssen.'
 		),
 	hinweis: z
 		.string()
 		.nullable()
 		.describe(
-			'Optionaler Hinweis für einen zweiten Versuch — zeigt zum eigenen Heft, verrät die ' +
-				'Antwort nicht. null, wenn ein Hinweis nichts brächte (bei Ja/Nein meistens).'
+			'Hinweis fürs Nachfassen — zeigt zum eigenen Heft, verrät die ' +
+				'Antwort nicht. Bei punkte 2 oder 3 nötig, sonst wäre das Nachfassen Raten. ' +
+					'null bei punkte 1 — dort gibt es kein Nachfassen.'
 		)
 });
 
@@ -192,10 +217,13 @@ const PRUEF_SYSTEM = [
 	'',
 	LERNZIEL_HINWEIS,
 	'',
-	'Es gibt kein Textfeld: alle Antworten werden angetippt. Nutze die Arten gemischt, aber',
-	'nur wo sie passen — eine Reihenfolge nur, wenn im Heft wirklich eine Abfolge steht,',
-	'Paare nur bei echten Zuordnungen. Falsche Möglichkeiten müssen plausibel sein und aus',
-	'demselben Zusammenhang kommen, nicht albern.',
+	'Fast alles wird angetippt: bevorzuge Arten, die schnell zu beantworten sind — single,',
+	'multi, yesno, order, match. Freitext (text) kostet ein Kind ein Mehrfaches an Zeit;',
+	'nimm ihn nur, wo Antippen die Sache wirklich verfehlt, etwa wenn das Kind einen',
+	'Zusammenhang selbst formulieren soll. Nutze die Arten gemischt, aber nur wo sie passen —',
+	'eine Reihenfolge nur, wenn im Heft wirklich eine Abfolge steht, Paare nur bei echten',
+	'Zuordnungen. Falsche Möglichkeiten müssen plausibel sein und aus demselben Zusammenhang',
+	'kommen, nicht albern.',
 	'',
 	KIND_TON
 ];
@@ -215,7 +243,9 @@ export async function erzeugeFragen(opts: {
 		opts.welle === 1
 			? [
 					`Stelle ${opts.anzahl} Fragen für den Anfang. Verteile sie über die Themen des Kapitels`,
-					'und fange nicht mit der schwersten an.'
+					'und fange nicht mit der schwersten an.',
+					'',
+					'In dieser Runde wird nur angetippt: kein Freitext (art "text").'
 				]
 			: [
 					`Stelle ${opts.anzahl} weitere Fragen. Nimm gezielt das auf, was gerade gewackelt hat.`,
@@ -224,7 +254,9 @@ export async function erzeugeFragen(opts: {
 					'Wiederholung ist keine neue Frage. Nimm einen anderen Zugang zu derselben Stelle:',
 					'nach dem Warum fragen, mit etwas anderem verknüpfen, in eine Reihenfolge bringen,',
 					'eine Folge abschätzen. Wo alles saß, geh eine Stufe höher: verbinden, einordnen,',
-					'begründen statt abfragen.'
+					'begründen statt abfragen.',
+					'',
+					'In dieser Runde wird nur angetippt: kein Freitext (art "text").'
 				];
 
 	return frage({
@@ -253,6 +285,140 @@ export async function erzeugeFragen(opts: {
 					]
 				: []),
 			...wellenAuftrag
+		]
+	});
+}
+
+/**
+ * Fragen für eine Übung: EINE Welle für GENAU EINE Karte, gegen ein Zeitbudget statt gegen
+ * eine Fragenzahl. Zwei Wellen braucht es hier nicht — das gezielte Nachfassen macht in der
+ * Übung die Frage selbst über ihr Punkte-Kontingent.
+ */
+export async function erzeugeUebungsfragen(opts: {
+	fach: string;
+	kapitel: string;
+	auftrag: string;
+	minuten: number;
+	material: string;
+	lernziel: string | null;
+	beurteilung: string | null;
+	mitschrieb?: Mitschrieb[];
+}): Promise<z.infer<typeof WelleSchema>> {
+	const budget = Math.max(120, Math.round(opts.minuten * 60));
+
+	return frage({
+		agent: 'pruef',
+		schema: WelleSchema,
+		system: PRUEF_SYSTEM,
+		mitschrieb: opts.mitschrieb,
+		eingabe: [
+			`Fach: ${opts.fach}`,
+			`Kapitel: ${opts.kapitel}`,
+			'',
+			'Das Kind hat sich diesen einen Punkt vorgenommen:',
+			opts.auftrag,
+			'',
+			'Lernziel der Lehrkraft für diese Klasse:',
+			opts.lernziel ?? '(keines hinterlegt — richte dich allein am Material aus)',
+			'',
+			'Was du über dieses Kind in diesem Kapitel schon weißt:',
+			opts.beurteilung ?? '(noch nichts)',
+			'',
+			'Material des Kindes:',
+			opts.material,
+			'',
+			`Du hast höchstens ${budget} Sekunden. Rechne mit diesen Kosten je Frage:`,
+			...FRAGE_ARTEN.map((a) => `- ${a}: ${SEKUNDEN_JE_ART[a]} Sekunden`),
+			'',
+			'Das Budget ist eine Obergrenze, kein Soll. Stelle LIEBER WENIGER, DAFÜR VERSCHIEDENE',
+			'Fragen als viele ähnliche — ein halb genutztes Budget ist besser als eine Frage zu viel.',
+			'',
+			'HÖCHSTENS EINE Freitextfrage, und nur wenn Antippen die Sache wirklich verfehlt.',
+			'Freitext ist die seltenste Form, nicht die bequemste.',
+			'',
+			'Prüfe jede Frage vor der Ausgabe gegen sich selbst: Steht unter auswahl mindestens eine',
+			'Möglichkeit, die die Frage WIRKLICH beantwortet? Fragst du nach einem Argument FÜR etwas,',
+			'dürfen nicht alle Möglichkeiten dagegen sprechen. Passt es nicht zusammen, lass die Frage weg.',
+			'',
+			'Eiserne Regel: KEINE ZWEI FRAGEN AUF DENSELBEN SACHVERHALT. Eine umformulierte',
+			'Wiederholung, eine Aufzählung einmal einzeln und einmal als Mehrfachauswahl, dieselbe',
+			'Sache einmal als Frage und einmal als Ja/Nein — alles verboten. Jede Frage muss einen',
+			'anderen Zugang nehmen: nach dem Warum fragen, mit etwas anderem verknüpfen, in eine',
+			'Reihenfolge bringen, eine Folge abschätzen, ein Gegenbeispiel prüfen.',
+			'',
+			'Alle Fragen gehen auf diesen einen Punkt — nicht auf das ganze Kapitel. Fange nicht mit',
+			'der schwersten an.'
+		]
+	});
+}
+
+// ─────────────────────────────────────────────────────────────
+// 1b. Bewerter-Agent — nur für Freitext-Antworten
+// ─────────────────────────────────────────────────────────────
+
+const BewertungSchema = z.object({
+	getroffen: z
+		.boolean()
+		.describe(
+			'true, wenn die Antwort den Kern der erwarteten Antwort trifft. Rechtschreibung, ' +
+				'Ausdruck und Reihenfolge sind egal — es geht um die Sache.'
+		),
+	fehlt: z
+		.array(z.string())
+		.describe('Die erwarteten Begriffe, die in der Antwort NICHT vorkamen. Leer, wenn alles da war.'),
+	satz: z
+		.string()
+		.describe('Ein Satz Rückmeldung an das Kind. Sagt, was saß, und bei Bedarf, was fehlte.')
+});
+
+const BEWERTER_SYSTEM = [
+	'Du prüfst eine getippte Antwort eines Kindes gegen das, was in seinem eigenen Heft steht.',
+	'Du entscheidest nur: trifft die Antwort den Kern, ja oder nein. Wie viel sie wert ist,',
+	'rechnet nicht du.',
+	'',
+	'Sei großzügig bei Form und streng bei der Sache. Ein Kind, das es in eigenen Worten',
+	'richtig sagt, hat es richtig gesagt — auch ohne die Fachbegriffe aus dem Heft. Ein Kind,',
+	'das die Fachbegriffe aufzählt, ohne den Zusammenhang zu treffen, hat es nicht.',
+	'',
+	KIND_TON
+];
+
+/** Bewertet eine Freitext-Antwort. Die Punkte rechnet der Server aus dem Versuch —
+ *  dieser Agent sagt nur, ob es getroffen war. */
+export async function bewerteFreitext(opts: {
+	frage: string;
+	erwartet: string[];
+	antwort: string;
+	material: string;
+	/** Hat das Kind danach noch einen Versuch? Dann darf nichts verraten werden. */
+	darfNochmal: boolean;
+	mitschrieb?: Mitschrieb[];
+}): Promise<z.infer<typeof BewertungSchema>> {
+	return frage({
+		agent: 'bewerter',
+		schema: BewertungSchema,
+		system: [
+			...BEWERTER_SYSTEM,
+			'',
+			opts.darfNochmal
+				? 'Das Kind darf es gleich nochmal versuchen. Nenne deshalb NICHTS, was fehlt — keine ' +
+					'Begriffe, keine Aufzählung, keine Umschreibung davon. Sag nur, dass noch etwas fehlt, ' +
+					'und in welche Richtung es im eigenen Heft schauen kann. Verrate die Antwort nicht.'
+				: 'Das war der letzte Versuch. Jetzt darfst du sagen, was gefehlt hat.'
+		],
+		mitschrieb: opts.mitschrieb,
+		eingabe: [
+			'Frage:',
+			opts.frage,
+			'',
+			'Das sollte vorkommen:',
+			opts.erwartet.length ? opts.erwartet.map((e) => `- ${e}`).join('\n') : '(nichts vorgegeben)',
+			'',
+			'Auszug aus dem Heft des Kindes:',
+			opts.material,
+			'',
+			'Antwort des Kindes:',
+			opts.antwort
 		]
 	});
 }

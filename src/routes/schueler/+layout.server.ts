@@ -1,6 +1,7 @@
 import { db } from '$lib/server/db';
 import { classes, students, user } from '$lib/server/db/schema';
 import { heftLesen } from '$lib/server/heft';
+import { skalaLesen } from '$lib/kategorie';
 import { eq } from 'drizzle-orm';
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
@@ -11,7 +12,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 	const zugehoerigkeit = (
 		await db
-			.select({ klasse: classes.name, lehrkraft: user.name })
+			.select({ klasse: classes.name, lehrkraft: user.name, skala: classes.masteryScale })
 			.from(students)
 			.innerJoin(classes, eq(classes.id, students.classId))
 			.innerJoin(user, eq(user.id, classes.teacherId))
@@ -22,6 +23,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		pseudonym: locals.user.username,
 		klasse: zugehoerigkeit?.klasse ?? null,
 		lehrkraft: zugehoerigkeit?.lehrkraft ?? null,
+		// Die Grenzen der Klasse: aus ihnen entsteht bei der Anzeige das Wort am Thema.
+		skala: skalaLesen(zugehoerigkeit?.skala ?? null),
 		// Die Fächer trägt die Seitenleiste auf jeder Seite, darum hier statt in der Route.
 		faecher: await heftLesen(studentId)
 	};

@@ -40,6 +40,8 @@ async function meineRunde(locals: App.Locals, id: string) {
 			.where(and(eq(rounds.id, id), eq(rounds.studentId, locals.user.id)))
 	)[0];
 	if (!runde) throw error(404, 'Runde nicht gefunden');
+	// Diese Seite führt nur Einordnungen. Übungen laufen unter /schueler/ueben.
+	if (!runde.chapterId) throw redirect(303, `/schueler/ueben/${runde.id}`);
 	const kontext = await kapitelKontext(locals.user.id, runde.chapterId);
 	if (!kontext) throw error(404, 'Kapitel nicht gefunden');
 	return { runde, kontext };
@@ -252,6 +254,7 @@ export const actions: Actions = {
 			return {
 				auftrag: vorschlaege[i].auftrag,
 				minuten: vorschlaege[i].minuten,
+				thema: vorschlaege[i].thema,
 				dueAt: datum && !isNaN(datum.getTime()) ? datum : null
 			};
 		});

@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { fachTon, vorZeit } from '$lib/heft';
 	import type { Fach, Kapitel, Thema } from '$lib/server/heft';
+	import { standAus } from '$lib/kategorie';
 
 	let { data, form } = $props();
 
@@ -10,6 +11,11 @@
 		day: 'numeric',
 		month: 'long'
 	}).format(new Date());
+
+	// Das Wort am Thema entsteht hier, aus rohen Punkten und den Grenzen der Klasse. Ein Thema,
+	// das noch keine Runde gefragt hat, bekommt keins.
+	const themaStand = (thema: Thema) =>
+		thema.stand ? standAus(thema.stand.erreicht, thema.stand.moeglich, data.skala) : null;
 
 	const leer = $derived(data.faecher.length === 0);
 	const gewaehlt = $derived(page.url.searchParams.get('fach'));
@@ -84,8 +90,16 @@
 						<a href="/schueler/thema/{thema.id}" class="zeile zeile--thema">
 							<span class="punkt" style="background:var(--{ton}-ink)"></span>
 							<span class="titel">{thema.title}</span>
-							<span class="small stand">
-								{thema.zuletzt ? vorZeit(thema.zuletzt) : 'kein Aufschrieb'}
+							<!-- Stand und Zeitangabe teilen EINE Spalte — sonst sprengt der zusätzliche
+							     Eintrag das Raster der Zeile und der Pfeil rutscht in die nächste Reihe. -->
+							<span class="rechts">
+								{#if themaStand(thema)}
+									{@const s = themaStand(thema)}
+									<span class="tag tag--{s?.farbe}">{s?.wort}</span>
+								{/if}
+								<span class="small stand">
+									{thema.zuletzt ? vorZeit(thema.zuletzt) : 'kein Aufschrieb'}
+								</span>
 							</span>
 							<span class="pfeil" aria-hidden="true">›</span>
 						</a>
@@ -422,6 +436,11 @@
 	.stand {
 		font-size: 13px;
 		white-space: nowrap;
+	}
+	.rechts {
+		display: flex;
+		align-items: center;
+		gap: 10px;
 	}
 	.pfeil {
 		color: var(--ink-3);

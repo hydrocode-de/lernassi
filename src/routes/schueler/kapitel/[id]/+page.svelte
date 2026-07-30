@@ -39,7 +39,8 @@
 	<p class="eyebrow" style="margin:0 0 10px">Das habe ich von dir</p>
 	{#if data.themen.length}
 		<div class="chips" style="margin-bottom:14px">
-			{#each data.themen as thema (thema)}
+			<!-- Nach Position schlüsseln, nicht nach Titel: zwei Themen dürfen gleich heißen. -->
+			{#each data.themen as thema, i (i)}
 				<span class="chip" style="cursor:default">{thema}</span>
 			{/each}
 		</div>

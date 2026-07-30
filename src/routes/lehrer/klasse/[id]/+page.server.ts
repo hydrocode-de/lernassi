@@ -3,6 +3,10 @@ import { auth } from '$lib/server/auth';
 import { classes, learningGoals, pseudonyms, students, user, account } from '$lib/server/db/schema';
 import { makePseudonym } from '$lib/server/roster';
 import { ZIEL_WARNSCHWELLE } from '$lib/lernziel';
+import { KATEGORIEN, skalaLesen, skalaSchreiben } from '$lib/kategorie';
+import { kindBild, themenblick } from '$lib/server/fortschritt';
+import { SICHERHEIT } from '$lib/server/runde';
+import { RUECKSCHAU } from '$lib/server/uebung';
 import { and, eq, desc } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -24,7 +28,7 @@ function str(v: FormDataEntryValue | null): string | null {
 	return s.length ? s : null;
 }
 
-export const load: PageServerLoad = async ({ params, locals }) => {
+export const load: PageServerLoad = async ({ params, locals, url }) => {
 	const cls = await ownedClass(locals, params.id);
 	const goals = await db
 		.select()
@@ -36,7 +40,25 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.from(pseudonyms)
 		.where(eq(pseudonyms.classId, cls.id))
 		.orderBy(desc(pseudonyms.createdAt));
-	return { cls, goals, pseudonyms: ps, warnschwelle: ZIEL_WARNSCHWELLE };
+
+	// Themenblick zuerst; ein Kind nur, wenn die Lehrkraft eines angetippt hat.
+	const skala = skalaLesen(cls.masteryScale);
+	const { themen, kinder } = await themenblick(cls.id, skala);
+	const gewaehltesKind = url.searchParams.get('kind');
+
+	return {
+		cls,
+		goals,
+		pseudonyms: ps,
+		warnschwelle: ZIEL_WARNSCHWELLE,
+		skala,
+		kategorien: KATEGORIEN,
+		themen,
+		kinder,
+		kind: gewaehltesKind ? await kindBild(cls.id, gewaehltesKind, skala) : null,
+		sicherheiten: SICHERHEIT,
+		rueckschauen: RUECKSCHAU
+	};
 };
 
 export const actions: Actions = {
@@ -76,6 +98,30 @@ export const actions: Actions = {
 					? `Das Lernziel ist mit ${text.length} Zeichen sehr lang. Je knapper die Kompetenzen ` +
 						'formuliert sind, desto gezielter wählt lernassi die Fragen aus.'
 					: null
+		};
+	},
+
+	// Die Grenzen der Skala. Sie wirken RÜCKWIRKEND auf alle Kinder der Klasse — es wird nichts
+	// nachgerechnet, weil nur rohe Punkte gespeichert sind und das Wort immer neu entsteht.
+	speichereSkala: async ({ params, locals, request }) => {
+		const cls = await ownedClass(locals, params.id);
+		const fd = await request.formData();
+		const zahlen = ['eins', 'zwei', 'drei'].map((f) => Number(fd.get(f)));
+		if (zahlen.some((z) => !Number.isFinite(z) || z < 1 || z > 100))
+			return fail(400, { message: 'Bitte drei Grenzen zwischen 1 und 100 angeben.' });
+		if (!(zahlen[0] > zahlen[1] && zahlen[1] > zahlen[2]))
+			return fail(400, {
+				message: 'Die Grenzen müssen fallen: „sitzt" höher als „fast sicher", das höher als „wackelt".'
+			});
+
+		await db
+			.update(classes)
+			.set({
+				masteryScale: skalaSchreiben([{ ab: zahlen[0] }, { ab: zahlen[1] }, { ab: zahlen[2] }])
+			})
+			.where(eq(classes.id, cls.id));
+		return {
+			ok: `Grenzen gespeichert: sitzt ab ${zahlen[0]} %, fast sicher ab ${zahlen[1]} %, wackelt ab ${zahlen[2]} %.`
 		};
 	},
 

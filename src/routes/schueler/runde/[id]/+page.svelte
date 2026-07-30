@@ -298,7 +298,7 @@
 			<div class="card card--tint atmet">
 				<p style="margin:0;font-size:17px;line-height:1.55">
 					{data.danachWarten
-						? 'Gut. Ich schaue mir an, was bisher lief, und schreibe dir die letzten zwei Fragen dazu.'
+						? 'Gut. Die letzten zwei Fragen kommen gleich.'
 						: 'Einen Moment …'}
 				</p>
 			</div>

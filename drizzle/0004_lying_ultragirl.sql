@@ -1,0 +1,1 @@
+ALTER TABLE `plan_items` ADD `topic_id` text REFERENCES toc_entries(id);

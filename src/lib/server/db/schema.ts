@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 const now = () => new Date();
 const id = () => text('id').primaryKey().$defaultFn(() => crypto.randomUUID());
@@ -73,6 +73,10 @@ export const classes = sqliteTable('classes', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	name: text('name').notNull(),
 	joinCode: text('join_code').notNull().unique(),
+	// Die Grenzen, ab denen ein Prozentwert „sitzt" heißt. JSON, vier Einträge.
+	// null = Standardskala aus dem Code. An der Klasse, nicht an der Lehrkraft: was in
+	// Klasse 6 „sitzt" heißt, heißt in Klasse 10 nicht dasselbe.
+	masteryScale: text('mastery_scale'),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
@@ -198,23 +202,63 @@ export const consents = sqliteTable('consents', {
 // Lern-Session: Material NUTZEN (M3)
 // ─────────────────────────────────────────────────────────────
 
-// Eine Einordnungs-Runde über GENAU EIN Kapitel. Heißt nicht `session`:
-// diesen Namen belegt Better Auth.
+// Eine Runde. Zwei Arten: `einordnung` läuft über GENAU EIN Kapitel und füllt den Plan
+// (M3), `uebung` arbeitet GENAU EINE Karte ab und räumt ihn ab (M4). Bewusst eine Tabelle:
+// Fragen, Antworten, Mitschrieb und Abrechnung sind für beide dasselbe, und das Dashboard
+// hätte sonst zwei Quellen zusammenzurechnen.
+// Heißt nicht `session`: diesen Namen belegt Better Auth.
 export const rounds = sqliteTable('rounds', {
 	id: id(),
 	studentId: text('student_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
-	chapterId: text('chapter_id')
-		.notNull()
-		.references(() => tocEntries.id, { onDelete: 'cascade' }),
+	kind: text('kind').notNull().default('einordnung'), // 'einordnung' | 'uebung'
+	// Bei einer Übung kann die Karte fachweit sein — dann gibt es kein Kapitel.
+	chapterId: text('chapter_id').references(() => tocEntries.id, { onDelete: 'cascade' }),
+	// Nur bei kind='uebung': die Karte, die abgearbeitet wird. Die Rückrichtung
+	// (planItems.createdInRoundId) zeigt hierher — bei sich gegenseitig referenzierenden
+	// Tabellen braucht Drizzle die ausgeschriebene Spaltentype, sonst kann TypeScript den
+	// Ring nicht auflösen.
+	planItemId: text('plan_item_id').references((): AnySQLiteColumn => planItems.id, {
+		onDelete: 'set null'
+	}),
 	startedAt: integer('started_at', { mode: 'timestamp' }).notNull().$defaultFn(now),
 	finishedAt: integer('finished_at', { mode: 'timestamp' }),
 	status: text('status').notNull().default('laufend'), // 'laufend' | 'abgeschlossen' | 'verworfen'
 	confidenceBefore: integer('confidence_before'), // 1–4, vor der ersten Frage
 	mirrorReaction: text('mirror_reaction'), // 'kommt-hin' | 'dachte-mehr' | 'kann-mehr'
+	// Rückschau des Kindes nach den Fragen, ABER VOR der Zahl — sonst antwortet es über die
+	// Zahl statt über sich. Die Differenz zum Ergebnis ist das Selbstwirksamkeits-Signal.
+	selfAfter: text('self_after'), // 'hatte-ich' | 'teil-fehlte' | 'nicht-wirklich'
+	// Beim Abschluss gerechnet: erreichte Punkte, mögliche Punkte, Prozentwert.
+	// Das WORT dazu wird nie gespeichert — es entsteht bei der Anzeige aus der Klassen-Skala,
+	// damit ein Verschieben der Grenzen nichts nachrechnen muss.
+	erreicht: integer('erreicht'),
+	moeglich: integer('moeglich'),
+	wert: integer('wert'), // 0–100
 	// Nur das Neue einordnen: ab hier zählt Material als neu (= Kapitel-Zeitstempel beim Start).
 	sinceAt: integer('since_at', { mode: 'timestamp' })
+});
+
+// Abrechnung einer Runde je Thema — rohe Summen, keine Bewertung. Eine Zeile pro Thema,
+// das in dieser Runde Fragen hatte. Gleich für Einordnung und Übung, damit ein Thema schon
+// vor der ersten Übung einen Stand hat.
+//
+// Daraus fällt alles: Kartenlabel (Summe über die Runde), Verzeichnis-Chip am Thema
+// (jüngste Zeile), Dashboard (Zeilen über alle Kinder der Klasse). Wegschrieben statt bei
+// jeder Anzeige aus `responses` gerechnet, weil das Dashboard über eine ganze Klasse und
+// alle Runden aggregiert.
+export const roundTopics = sqliteTable('round_topics', {
+	id: id(),
+	roundId: text('round_id')
+		.notNull()
+		.references(() => rounds.id, { onDelete: 'cascade' }),
+	topicId: text('topic_id')
+		.notNull()
+		.references(() => tocEntries.id, { onDelete: 'cascade' }),
+	erreicht: integer('erreicht').notNull(),
+	moeglich: integer('moeglich').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
 // Eine Frage der Runde. `kind='control'` ist eine Steuer-Frage (Nachfrage ohne Bewertung),
@@ -231,6 +275,10 @@ export const questions = sqliteTable('questions', {
 	options: text('options'), // JSON: string[] bzw. bei 'match' {links,rechts}[]
 	// Bleibt serverseitig. Der Client bekommt sie nie zu sehen.
 	correctAnswer: text('correct_answer'), // JSON
+	// Die Frage trägt ihre Schwierigkeit selbst: der Prüf-Agent setzt 1–3. Die Zahl ist
+	// zugleich das Versuchs-Kontingent — 2 Punkte = ein Nachfassen, 3 = zwei. Auf Anhieb
+	// richtig gibt die volle Zahl, jedes Nachfassen einen Punkt weniger, nie richtig 0.
+	punkte: integer('punkte').notNull().default(1),
 	hint: text('hint'), // optional; bei Ja/Nein meist leer
 	topicId: text('topic_id').references(() => tocEntries.id, { onDelete: 'set null' }),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
@@ -274,11 +322,23 @@ export const planItems = sqliteTable('plan_items', {
 		.notNull()
 		.references(() => tocEntries.id, { onDelete: 'cascade' }),
 	chapterId: text('chapter_id').references(() => tocEntries.id, { onDelete: 'set null' }),
+	// Das Thema, aus dem der Plan-Agent diesen Punkt gebaut hat. Damit die Übung nur DIESES
+	// Material vor sich hat statt des ganzen Kapitels — schärfere Fragen und knapp halb so
+	// viel Eingabe. Leer bei Karten aus der Zeit davor: dann gilt weiter das ganze Kapitel.
+	topicId: text('topic_id').references(() => tocEntries.id, { onDelete: 'set null' }),
 	auftrag: text('auftrag').notNull(), // in Worten, keine vorgefertigte Frage
-	minutes: integer('minutes'),
-	dueAt: integer('due_at', { mode: 'timestamp' }), // null = „sofort"
+	minutes: integer('minutes'), // Umfang — daraus fällt die Fragenzahl der Übung
+	// Die Warteschlange: eine einzige Reihe pro Kind über ALLE Fächer. Sonst könnte das Kind
+	// der wackelnden Karte durch Fachwechsel ausweichen, und genau die soll wiederkommen.
+	// Angezeigt wird weiter nach Fach gruppiert, sortiert nach dieser Zahl.
+	// Lücken sind egal — verglichen wird nur die Ordnung.
+	position: integer('position').notNull().default(0),
+	// Termin, KEINE Sortierung: der Umzug auf `position` hat das getrennt. Steht eine Karte
+	// mit nahem Termin zu weit hinten, wird das Umsortieren vorgeschlagen; und beim
+	// Einsortieren rutscht eine Karte nie hinter eine mit späterem oder ohne Termin.
+	dueAt: integer('due_at', { mode: 'timestamp' }),
 	status: text('status').notNull().default('offen'), // 'offen' | 'erledigt' | 'verworfen'
-	createdInRoundId: text('created_in_round_id').references(() => rounds.id, {
+	createdInRoundId: text('created_in_round_id').references((): AnySQLiteColumn => rounds.id, {
 		onDelete: 'set null'
 	}),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now),

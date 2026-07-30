@@ -8,6 +8,7 @@
 	const angemeldet = $derived(Boolean(data.pseudonym) && aktiv !== '/schueler/aufnehmen');
 	const aufKonto = $derived(aktiv.startsWith('/schueler/konto'));
 	const aufPlan = $derived(aktiv.startsWith('/schueler/plan'));
+	const aufUeben = $derived(aktiv.startsWith('/schueler/ueben'));
 	// Ohne Angabe steht das erste Fach offen — die Spalte markiert dasselbe wie die Seite.
 	const gewaehltesFach = $derived(
 		page.url.searchParams.get('fach') ?? data.faecher[0]?.id ?? null
@@ -58,8 +59,8 @@
 		{/if}
 
 		<a href="/schueler/plan" class="btn btn--plain uebenSpalte" class:an={aufPlan}>Mein Lernplan</a>
-		<!-- „Üben" heißt den Plan abarbeiten — das kommt später. -->
-		<span class="btn btn--plain spaeter uebenSpalte">Üben</span>
+		<!-- „Üben" nimmt die nächste Karte der Warteschlange, ohne Fachwahl. -->
+		<a href="/schueler/ueben/neu" class="btn btn--plain uebenSpalte" class:an={aufUeben}>Üben</a>
 
 		<div class="konto">
 			{#if menueOffen}
@@ -118,6 +119,7 @@
 			<nav class="tabs">
 				<a href="/schueler" class:an={aktiv === '/schueler'}>Inhalt</a>
 				<a href="/schueler/plan" class:an={aufPlan}>Plan</a>
+				<a href="/schueler/ueben/neu" class:an={aufUeben}>Üben</a>
 				<a href="/schueler/konto" class:an={aufKonto}>Ich</a>
 			</nav>
 		{/if}
@@ -207,10 +209,6 @@
 		background: var(--lavender);
 		color: var(--lavender-ink);
 	}
-	.spaeter {
-		color: var(--ink-3);
-		opacity: 0.45;
-	}
 
 	/* ---------- Fächer-Spalte: nur am Rechner ---------- */
 	.spalte {
@@ -221,6 +219,14 @@
 		background: var(--surface);
 		flex-direction: column;
 		padding: 22px 16px 14px;
+		/* Bleibt stehen, während der Inhalt scrollt: die Navigation ist kein Seiteninhalt.
+		   `align-self` verhindert, dass die Spalte auf die Höhe des Inhalts mitwächst. */
+		position: sticky;
+		top: 0;
+		align-self: flex-start;
+		height: 100vh;
+		box-sizing: border-box;
+		overflow-y: auto;
 	}
 	.spalte .marke {
 		margin: 0 0 20px 4px;

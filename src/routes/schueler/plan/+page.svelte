@@ -3,8 +3,11 @@
 
 	const wann = (dueAt: number | null) =>
 		dueAt
-			? `ab ${new Date(dueAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })}`
-			: 'sofort';
+			? `bis ${new Date(dueAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'long' })}`
+			: 'ohne Termin';
+
+	const tag = (ms: number) =>
+		new Date(ms).toLocaleDateString('de-DE', { day: 'numeric', month: 'long' });
 </script>
 
 <p class="eyebrow" style="margin:0 0 6px">Mein Lernplan</p>
@@ -17,6 +20,31 @@
 
 {#if form?.message}<div class="meldung meldung--fehler">{form.message}</div>{/if}
 {#if form?.ok}<div class="meldung meldung--ok">{form.ok}</div>{/if}
+
+{#if data.naechste}
+	<a class="btn btn--lg" href="/schueler/ueben/neu" style="margin-top:18px">Üben</a>
+{/if}
+
+{#if data.vorschlag}
+	<div class="card card--tint" style="margin-top:18px">
+		<p style="margin:0 0 4px;font-size:16px;line-height:1.55">
+			Am {tag(data.vorschlag.dueAt)} ist es soweit.
+			{data.vorschlag.karten.length === 1 ? 'Ein Punkt dafür steht' : `${data.vorschlag.karten.length} Punkte dafür stehen`}
+			weit hinten.
+		</p>
+		<ul class="vorschlagsliste">
+			{#each data.vorschlag.karten as k (k.id)}
+				<li>{k.auftrag}</li>
+			{/each}
+		</ul>
+		<form method="POST" action="?/vorziehen">
+			{#each data.vorschlag.karten as k (k.id)}
+				<input type="hidden" name="id" value={k.id} />
+			{/each}
+			<button class="btn">Nach vorne holen</button>
+		</form>
+	</div>
+{/if}
 
 {#if !data.faecher.length}
 	<div class="card card--tint" style="margin-top:26px">
@@ -46,6 +74,7 @@
 						</div>
 						<div class="punkt__knoepfe">
 							{#if p.status === 'offen'}
+								<a class="btn klein" href="/schueler/ueben/karte/{p.id}">Üben</a>
 								<form method="POST" action="?/abhaken">
 									<input type="hidden" name="id" value={p.id} />
 									<button class="btn btn--go klein">Abgehakt</button>
@@ -119,5 +148,11 @@
 	.klein {
 		min-height: 44px;
 		font-size: 14px;
+	}
+	.vorschlagsliste {
+		margin: 8px 0 14px;
+		padding-left: 20px;
+		font-size: 15px;
+		line-height: 1.5;
 	}
 </style>

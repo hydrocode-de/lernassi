@@ -10,13 +10,16 @@ import {
 	planItems,
 	questions,
 	responses,
+	roundTopics,
 	rounds,
 	students,
 	tocEntries
 } from '$lib/server/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import {
+	bewerteFreitext,
 	erzeugeFragen,
+	erzeugeUebungsfragen,
 	materialAlsText,
 	planVorschlaege,
 	schreibeBeurteilung,
@@ -25,10 +28,15 @@ import {
 	type Mitschrieb,
 	type RohFrage
 } from '$lib/server/lernen';
+import { wertAus } from '$lib/kategorie';
+import { naechstePosition } from '$lib/server/warteschlange';
 
 export const WELLE_1 = 3;
 export const WELLE_2 = 2;
 export const FRAGEN_JE_RUNDE = WELLE_1 + WELLE_2;
+
+/** Längenbegrenzung für getippte Antworten. Ein paar Sätze, kein Aufsatz. */
+export const FREITEXT_MAX = 600;
 
 export const SICHERHEIT = [
 	'Gar nicht sicher',
@@ -55,6 +63,10 @@ export type FrageAnsicht = {
 	prompt: string;
 	optionen: Optionen;
 	hatHinweis: boolean;
+	/** Volle Punktzahl der Frage — zugleich ihr Versuchs-Kontingent. */
+	punkte: number;
+	/** Was sie jetzt noch wert ist: jedes Nachfassen kostet einen Punkt. */
+	nochWert: number;
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -324,7 +336,7 @@ function mische<T>(xs: T[]): T[] {
 }
 
 /** Aus der Modellantwort wird eine Zeile: Anzeigeform gemischt, Lösung serverseitig. */
-function alsZeile(roh: RohFrage, themaId: string | null) {
+export function alsZeile(roh: RohFrage, themaId: string | null) {
 	let optionen: Optionen;
 	let loesung: string[];
 
@@ -332,6 +344,12 @@ function alsZeile(roh: RohFrage, themaId: string | null) {
 		case 'yesno':
 			optionen = { auswahl: ['Ja', 'Nein'] };
 			loesung = [roh.richtig[0]?.toLowerCase().startsWith('j') ? 'Ja' : 'Nein'];
+			break;
+		case 'text':
+			// Kein Antippen: das Kind schreibt. `richtig` trägt die Begriffe, die vorkommen
+			// müssen — bewertet wird von einem eigenen Agenten, nicht durch Vergleichen.
+			optionen = { auswahl: [] };
+			loesung = roh.richtig;
 			break;
 		case 'order':
 			// Das Modell liefert die richtige Reihenfolge; angezeigt wird gemischt.
@@ -347,19 +365,59 @@ function alsZeile(roh: RohFrage, themaId: string | null) {
 			loesung = roh.richtig;
 	}
 
+	// Punkte = Versuchs-Kontingent. Ohne Hinweis gibt es kein Nachfassen, also ist eine Frage
+	// ohne Hinweis immer 1 Punkt wert — sonst wäre ein Kontingent verschenkt, das niemand
+	// einlösen kann. Freitext braucht keinen Hinweis fürs Nachfassen: dort ist schon die
+	// Rückmeldung des Bewerters der Anstoß.
+	const hinweis = roh.hinweis?.trim() || null;
+	const kontingent = Math.min(3, Math.max(1, Math.round(roh.punkte ?? 1)));
+	const punkte = hinweis || roh.art === 'text' ? kontingent : 1;
+
 	return {
 		kind: roh.art,
 		prompt: roh.frage,
 		options: JSON.stringify(optionen),
 		correctAnswer: JSON.stringify(loesung),
-		hint: roh.hinweis?.trim() || null,
+		punkte,
+		hint: hinweis,
 		topicId: themaId
 	};
 }
 
+/** Inhaltswörter einer Frage — für den Doppel-Vergleich. Kurze Wörter tragen nichts bei. */
+function kern(text: string): Set<string> {
+	return new Set(
+		text
+			.toLowerCase()
+			.replace(/[^a-zäöüß\s]/g, ' ')
+			.split(/\s+/)
+			.filter((w) => w.length > 4)
+	);
+}
+
+/**
+ * Wirft Fragen weg, die eine frühere nur umformulieren. Der Prüf-Agent bekommt die Regel auch
+ * gesagt, hält sie aber nicht zuverlässig ein — und zwei Fragen auf denselben Sachverhalt sind
+ * für das Kind Zeitverschwendung und verzerren die Punktzahl.
+ */
+export function entdoppelt(fragen: RohFrage[], schwelle = 0.6): RohFrage[] {
+	const behalten: { roh: RohFrage; woerter: Set<string> }[] = [];
+	for (const roh of fragen) {
+		const woerter = kern(`${roh.frage} ${roh.richtig.join(' ')}`);
+		if (!woerter.size) continue;
+		const doppelt = behalten.some(({ woerter: andere }) => {
+			const gemeinsam = [...woerter].filter((w) => andere.has(w)).length;
+			return gemeinsam / Math.min(woerter.size, andere.size) >= schwelle;
+		});
+		if (!doppelt) behalten.push({ roh, woerter });
+	}
+	return behalten.map((b) => b.roh);
+}
+
 /** Prüft, ob eine Modellfrage überhaupt spielbar ist. Halbe Fragen fliegen raus. */
-function brauchbar(roh: RohFrage): boolean {
+export function brauchbar(roh: RohFrage): boolean {
 	if (!roh.frage?.trim()) return false;
+	if (roh.art === 'text') return roh.richtig.length > 0;
 	if (roh.art === 'yesno') return roh.richtig.length === 1;
 	if (roh.art === 'match')
 		return roh.auswahl.length >= 2 && roh.auswahl.length === roh.partner.length;
@@ -404,8 +462,12 @@ async function welleErzeugen(
 			mitschrieb: mitschriebFuer(roundId)
 		});
 
+		// Einordnung bleibt reines Antippen — Freitext gibt es nur in der Übung.
 		const nach = welle === 1 ? 0 : WELLE_1;
-		const gut = ergebnis.fragen.filter(brauchbar).slice(0, welle === 1 ? WELLE_1 : WELLE_2);
+		const gut = ergebnis.fragen
+			.filter((f) => f.art !== 'text')
+			.filter(brauchbar)
+			.slice(0, welle === 1 ? WELLE_1 : WELLE_2);
 		for (const [i, roh] of gut.entries()) {
 			const thema = genutzt.find(
 				(t) => t.titel.localeCompare(roh.thema, 'de', { sensitivity: 'base' }) === 0
@@ -470,8 +532,16 @@ async function themenTitel(ids: (string | null)[]): Promise<Map<string, string>>
 	return new Map(rows.map((r) => [r.id, r.title]));
 }
 
-/** Nächste unbeantwortete Frage der Runde plus laufender Zähler. */
-export async function naechsteFrage(roundId: string): Promise<{
+/**
+ * Nächste unbeantwortete Frage der Runde plus laufender Zähler.
+ *
+ * `wellen` sagt, wie viele Wellen diese Runde überhaupt hat: die Einordnung hat zwei, die
+ * Übung eine. Ohne das würde am Ende einer Übung eine zweite Welle angefordert, die es nie gibt.
+ */
+export async function naechsteFrage(
+	roundId: string,
+	wellen: 1 | 2 = 2
+): Promise<{
 	frage: FrageAnsicht | null;
 	zweiterVersuch: boolean;
 	hinweis: string | null;
@@ -497,11 +567,13 @@ export async function naechsteFrage(roundId: string): Promise<{
 				)
 		: [];
 
+	// Fertig, sobald sie getroffen war oder das Kontingent der Frage aufgebraucht ist.
+	// Das Kontingent ist die Punktzahl: 1 = ein Versuch, 2 = ein Nachfassen, 3 = zwei.
 	const fertig = (id: string) => {
+		const frage = fragen.find((f) => f.id === id);
 		const meine = antworten.filter((r) => r.questionId === id);
 		if (!meine.length) return false;
-		// Fertig, sobald eine Antwort richtig war oder der zweite Versuch durch ist.
-		return meine.some((r) => r.outcome !== 'falsch') || meine.some((r) => r.attempt >= 2);
+		return meine.some((r) => r.outcome !== 'falsch') || meine.length >= (frage?.punkte ?? 1);
 	};
 
 	const beantwortet = fragen.filter((f) => fertig(f.id)).length;
@@ -509,8 +581,9 @@ export async function naechsteFrage(roundId: string): Promise<{
 
 	if (!offen) {
 		// Fehlt noch eine Welle? Dann ist die Runde nicht durch, sondern es wird geschrieben.
-		const welle2 = fragen.some((f) => f.wave === 2);
-		const welleFehlt = fragen.length && !welle2 ? (2 as const) : fragen.length ? null : (1 as const);
+		const welle2 = wellen === 2 && fragen.some((f) => f.wave === 2);
+		const welleFehlt =
+			fragen.length && wellen === 2 && !welle2 ? (2 as const) : fragen.length ? null : (1 as const);
 		return {
 			frage: null,
 			zweiterVersuch: false,
@@ -522,10 +595,11 @@ export async function naechsteFrage(roundId: string): Promise<{
 	}
 
 	const versuche = antworten.filter((r) => r.questionId === offen.id).length;
-	const zweiteWelleFehlt = !fragen.some((f) => f.wave === 2);
+	const zweiteWelleFehlt = wellen === 2 && !fragen.some((f) => f.wave === 2);
 	// Solange die zweite Welle fehlt, ist die geplante Zahl die ehrlichere Ansage; sobald
-	// sie da ist, zählt, was wirklich zustande kam.
-	const von = fragen.some((f) => f.wave === 2) ? fragen.length : FRAGEN_JE_RUNDE;
+	// sie da ist, zählt, was wirklich zustande kam. Die Übung hat nur eine Welle — dort
+	// steht die Zahl von Anfang an fest.
+	const von = wellen === 1 || fragen.some((f) => f.wave === 2) ? fragen.length : FRAGEN_JE_RUNDE;
 	return {
 		frage: {
 			id: offen.id,
@@ -534,7 +608,10 @@ export async function naechsteFrage(roundId: string): Promise<{
 			art: offen.kind,
 			prompt: offen.prompt,
 			optionen: JSON.parse(offen.options ?? '{"auswahl":[]}') as Optionen,
-			hatHinweis: Boolean(offen.hint)
+			hatHinweis: Boolean(offen.hint),
+			punkte: offen.punkte,
+			// Wie viel diese Frage jetzt noch wert ist — jedes Nachfassen kostet einen Punkt.
+			nochWert: Math.max(0, offen.punkte - versuche)
 		},
 		zweiterVersuch: versuche > 0,
 		hinweis: versuche > 0 ? offen.hint : null,
@@ -582,17 +659,24 @@ function trefferquote(art: string, loesung: string[], gegeben: string[]): number
 
 export type Bewertung = {
 	art: string;
+	// Beschreibung, nicht Rechengrundlage: 'richtig' = auf Anhieb, 'teilweise' = erst nach
+	// Nachfassen. Gerechnet wird mit Punkten.
 	outcome: 'richtig' | 'teilweise' | 'falsch';
 	perfekt: boolean;
 	nochEinVersuch: boolean;
 	hinweis: string | null;
 	loesung: string[] | null;
+	/** Erreichte Punkte dieser Frage, sobald sie durch ist. null, solange nachgefasst wird. */
+	punkte: number | null;
+	/** Rückmeldung des Bewerters — nur bei Freitext. */
+	satz: string | null;
 };
 
 export async function antwortSpeichern(
 	roundId: string,
 	questionId: string,
-	gegeben: string[]
+	gegeben: string[],
+	material?: string
 ): Promise<Bewertung | null> {
 	const frage = (
 		await db
@@ -604,22 +688,41 @@ export async function antwortSpeichern(
 
 	const bisherige = await db.select().from(responses).where(eq(responses.questionId, questionId));
 	const versuch = bisherige.length + 1;
-	if (versuch > 2) return null;
+	// Die Punktzahl der Frage IST ihr Versuchs-Kontingent.
+	if (versuch > frage.punkte) return null;
 
 	const loesung = JSON.parse(frage.correctAnswer ?? '[]') as string[];
-	const quote = trefferquote(frage.kind, loesung, gegeben);
-	const perfekt = quote === 1;
 
-	// Ein zweiter Versuch nur, wenn ein Hinweis existiert — ohne Hinweis wäre er Raten.
-	const nochEinVersuch = !perfekt && versuch === 1 && Boolean(frage.hint);
+	// Freitext kann keine Trefferquote haben — das entscheidet der Bewerter-Agent.
+	let perfekt: boolean;
+	let satz: string | null = null;
+	if (frage.kind === 'text') {
+		const urteil = await bewerteFreitext({
+			frage: frage.prompt,
+			erwartet: loesung,
+			antwort: gegeben.join(' ').slice(0, FREITEXT_MAX),
+			material: material ?? '',
+			// Solange ein Versuch übrig ist, darf die Rückmeldung nichts verraten.
+			darfNochmal: versuch < frage.punkte,
+			mitschrieb: mitschriebFuer(roundId)
+		});
+		perfekt = urteil.getroffen;
+		satz = urteil.satz;
+	} else {
+		// Halbe Treffer sind nicht richtig: der Versuch ist verbraucht, es geht ins Nachfassen.
+		perfekt = trefferquote(frage.kind, loesung, gegeben) === 1;
+	}
+
+	// Nachgefasst wird, solange das Kontingent reicht. Bei Antippfragen braucht es dafür einen
+	// Hinweis, sonst wäre der zweite Versuch Raten; bei Freitext ist die Rückmeldung der Anstoß.
+	const nochEinVersuch =
+		!perfekt && versuch < frage.punkte && (frage.kind === 'text' || Boolean(frage.hint));
 
 	const outcome: Bewertung['outcome'] = perfekt
 		? versuch === 1
 			? 'richtig'
 			: 'teilweise'
-		: quote >= 0.5 && !nochEinVersuch
-			? 'teilweise'
-			: 'falsch';
+		: 'falsch';
 
 	await db.insert(responses).values({
 		questionId,
@@ -628,13 +731,18 @@ export async function antwortSpeichern(
 		outcome
 	});
 
+	// Auf Anhieb die volle Zahl, jedes Nachfassen einen Punkt weniger, nie getroffen 0.
+	const punkte = perfekt ? Math.max(1, frage.punkte - (versuch - 1)) : nochEinVersuch ? null : 0;
+
 	return {
 		art: frage.kind,
 		outcome,
 		perfekt,
 		nochEinVersuch,
 		hinweis: nochEinVersuch ? frage.hint : null,
-		loesung: nochEinVersuch ? null : loesung
+		loesung: nochEinVersuch ? null : loesung,
+		punkte,
+		satz
 	};
 }
 
@@ -677,19 +785,106 @@ export async function planBauen(
 	});
 }
 
+/**
+ * Rechnet eine Runde ab: erreichte und mögliche Punkte, je Thema und für die ganze Runde.
+ * Gleich für Einordnung und Übung, damit ein Thema schon vor der ersten Übung einen Stand hat.
+ *
+ * Geschrieben werden nur rohe Summen. Das WORT dazu entsteht bei der Anzeige aus der Skala der
+ * Klasse — verschiebt die Lehrkraft die Grenzen, muss hier nichts nachgerechnet werden.
+ */
+export async function rundeAbrechnen(roundId: string): Promise<{
+	erreicht: number;
+	moeglich: number;
+	wert: number | null;
+}> {
+	const fragen = (
+		await db.select().from(questions).where(eq(questions.roundId, roundId))
+	).filter((f) => f.kind !== 'control');
+
+	if (!fragen.length) {
+		await db.update(rounds).set({ erreicht: 0, moeglich: 0, wert: null }).where(eq(rounds.id, roundId));
+		return { erreicht: 0, moeglich: 0, wert: null };
+	}
+
+	const antworten = await db
+		.select()
+		.from(responses)
+		.where(
+			inArray(
+				responses.questionId,
+				fragen.map((f) => f.id)
+			)
+		);
+
+	/** Auf Anhieb die volle Zahl, jedes Nachfassen einen Punkt weniger, nie getroffen 0. */
+	const punkteFuer = (frage: (typeof fragen)[number]) => {
+		const meine = antworten
+			.filter((r) => r.questionId === frage.id)
+			.sort((a, b) => a.attempt - b.attempt);
+		const treffer = meine.find((r) => r.outcome !== 'falsch');
+		if (!treffer) return 0;
+		return Math.max(1, frage.punkte - (treffer.attempt - 1));
+	};
+
+	// Je Thema summieren. Fragen ohne Thema zählen für die Runde, aber für kein Thema —
+	// sonst entstünde ein Sammel-Eintrag, der im Verzeichnis nirgends hingehört.
+	const jeThema = new Map<string, { erreicht: number; moeglich: number }>();
+	let erreicht = 0;
+	let moeglich = 0;
+	for (const f of fragen) {
+		const p = punkteFuer(f);
+		erreicht += p;
+		moeglich += f.punkte;
+		if (!f.topicId) continue;
+		const stand = jeThema.get(f.topicId) ?? { erreicht: 0, moeglich: 0 };
+		stand.erreicht += p;
+		stand.moeglich += f.punkte;
+		jeThema.set(f.topicId, stand);
+	}
+
+	// Neu rechnen heißt neu schreiben: eine Runde hat genau einen Stand je Thema.
+	await db.delete(roundTopics).where(eq(roundTopics.roundId, roundId));
+	if (jeThema.size) {
+		await db.insert(roundTopics).values(
+			[...jeThema].map(([topicId, s]) => ({
+				roundId,
+				topicId,
+				erreicht: s.erreicht,
+				moeglich: s.moeglich
+			}))
+		);
+	}
+
+	const wert = wertAus(erreicht, moeglich);
+	await db.update(rounds).set({ erreicht, moeglich, wert }).where(eq(rounds.id, roundId));
+	return { erreicht, moeglich, wert };
+}
+
 export async function planpunkteAnlegen(
 	runde: typeof rounds.$inferSelect,
 	kontext: KapitelKontext,
-	punkte: { auftrag: string; minuten: number; dueAt: Date | null }[]
+	punkte: { auftrag: string; minuten: number; dueAt: Date | null; thema?: string }[]
 ) {
 	if (!punkte.length) return;
+	// Das Thema des Vorschlags festhalten: die Übung braucht später genau dieses Material.
+	const themaId = (titel?: string) =>
+		titel
+			? (kontext.themen.find(
+					(t) => t.titel.localeCompare(titel, 'de', { sensitivity: 'base' }) === 0
+				)?.themaId ?? null)
+			: null;
+	// Neue Karten kommen ans Ende der Reihe — in der Reihenfolge, in der der Plan-Agent sie
+	// vorgeschlagen hat.
+	const ab = await naechstePosition(runde.studentId);
 	await db.insert(planItems).values(
-		punkte.map((p) => ({
+		punkte.map((p, i) => ({
 			studentId: runde.studentId,
 			subjectId: kontext.fachId,
 			chapterId: kontext.kapitelId,
+			topicId: themaId(p.thema),
 			auftrag: p.auftrag,
 			minutes: p.minuten,
+			position: ab + i,
 			dueAt: p.dueAt,
 			createdInRoundId: runde.id
 		}))
@@ -715,6 +910,9 @@ export async function rundeAbschliessen(
 		.update(tocEntries)
 		.set({ lastAssessedAt: jetzt })
 		.where(eq(tocEntries.id, kontext.kapitelId));
+
+	// Vor der Beurteilung: der Stand je Thema soll stehen, sobald die Runde durch ist.
+	await rundeAbrechnen(runde.id);
 
 	const punkte = await db
 		.select({ auftrag: planItems.auftrag })
