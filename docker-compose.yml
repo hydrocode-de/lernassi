@@ -1,0 +1,28 @@
+# Gehört auf dem Server nach /apps/lernassi/docker-compose.yml
+# Nginx (lernassi.conf): lernassi.hydrocode.cloud -> 127.0.0.1:8030
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8030:3000'
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Datenbank und Bilder liegen auf /data/lernassi, nicht im Container.
+      DATABASE_URL: /data/db/lernassi.db
+      UPLOAD_DIR: /data/uploads
+      # Hinter dem Proxy muss SvelteKit wissen, wie es von außen heißt.
+      ORIGIN: https://lernassi.hydrocode.cloud
+      PROTOCOL_HEADER: x-forwarded-proto
+      HOST_HEADER: x-forwarded-host
+      BETTER_AUTH_URL: https://lernassi.hydrocode.cloud
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET fehlt in .env}
+      REQUESTY_API_KEY: ${REQUESTY_API_KEY:-}
+      REQUESTY_BASE_URL: ${REQUESTY_BASE_URL:-https://router.eu.requesty.ai/v1}
+      REQUESTY_MODEL: ${REQUESTY_MODEL:-anthropic/claude-sonnet-4-5}
+    volumes:
+      - /data/lernassi:/data
