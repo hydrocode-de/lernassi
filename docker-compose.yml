@@ -21,6 +21,10 @@ services:
       HOST_HEADER: x-forwarded-host
       BETTER_AUTH_URL: https://lernassi.hydrocode.cloud
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET fehlt in .env}
+      # Einmalcode für Lehrkraft-Konten. Bewusst im Klartext: er sperrt das freie
+      # Registrieren, schützt aber nichts, was schon angelegt ist. Zum Ändern hier
+      # ersetzen (oder in der .env überschreiben) und neu hochfahren.
+      TEACHER_SIGNUP_CODE: ${TEACHER_SIGNUP_CODE:-L3RNassiRocks}
       REQUESTY_BASE_URL: ${REQUESTY_BASE_URL:-https://router.eu.requesty.ai/v1}
       REQUESTY_MODEL: ${REQUESTY_MODEL:-anthropic/claude-sonnet-4-5}
       # Ohne Wert heißt: nur weitergeben, wenn im .env gesetzt. Eine leere

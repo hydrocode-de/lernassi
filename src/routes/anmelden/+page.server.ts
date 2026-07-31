@@ -1,4 +1,5 @@
 import { auth } from '$lib/server/auth';
+import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
 import { classes, pseudonyms, students, user } from '$lib/server/db/schema';
 import { errMsg } from '$lib/server/util';
@@ -117,7 +118,16 @@ export const actions: Actions = {
 			.trim()
 			.toLowerCase();
 		const password = String(fd.get('password') ?? '');
+		const code = String(fd.get('code') ?? '').trim();
 		const back = { ansicht, name, email };
+
+		// Wer ein Lehrkraft-Konto hat, sieht die Aufschriebe von Kindern. Darum kein freies
+		// Anlegen: der Code kommt aus der Umgebung. Fehlt er dort, ist das Anlegen zu.
+		const erwartet = (env.TEACHER_SIGNUP_CODE ?? '').trim();
+		if (!erwartet)
+			return fail(400, { ...back, message: 'Konten anlegen ist gerade nicht möglich.' });
+		if (code !== erwartet)
+			return fail(400, { ...back, message: 'Der Code stimmt nicht.' });
 
 		if (!name || !email || password.length < 6)
 			return fail(400, {

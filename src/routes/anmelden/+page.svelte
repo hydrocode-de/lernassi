@@ -206,9 +206,16 @@
 				<div class="ansicht">
 					<h2 class="titel">Konto anlegen</h2>
 					<p class="muted unterzeile">
-						Danach legst du deine erste Klasse an und verteilst Pseudonyme.
+						Danach legst du deine erste Klasse an und verteilst Zugänge.
 					</p>
 					<form method="POST" action="?/lehrer-konto" class="stack">
+						<div>
+							<label class="field">
+								<span class="field__label">Code</span>
+								<input name="code" autocomplete="off" required />
+							</label>
+							<p class="field__hint">Den Code bekommst du von uns.</p>
+						</div>
 						<label class="field">
 							<span class="field__label">Name</span>
 							<input name="name" value={form?.name ?? ''} placeholder="Frau Brandt" required />
