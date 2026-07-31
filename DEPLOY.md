@@ -23,8 +23,13 @@ Migrationen laufen beim Containerstart mit (`node scripts/migrate.mjs`).
 Voraussetzung: `lernassi.hydrocode.cloud` zeigt auf 95.217.79.15.
 
 ```bash
-# 1. Ablage für Datenbank und Bilder
+# 1. Ablage für Datenbank und Bilder.
+#    Der Docker auf camels-de läuft mit userns-remap auf "camel": Container-Root
+#    ist auf dem Wirt uid 1000. Gehört die Ablage root, sieht der Container sie
+#    als nobody und kann nicht schreiben — die Migration stirbt mit
+#    SQLITE_CANTOPEN und der Container läuft im Kreis.
 mkdir -p /data/lernassi/db /data/lernassi/uploads
+chown -R camel:camel /data/lernassi
 
 # 2. Checkout
 git clone git@github.com:hydrocode-de/lernassi.git /apps/lernassi
