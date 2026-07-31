@@ -1,11 +1,12 @@
 // Das Fortschrittsbild für die Lehrkraft. Zwei Bilder, in dieser Reihenfolge:
 //
-//   1. Themenblick der Klasse — je Thema die Verteilung der Kinder über die vier Kategorien.
-//   2. Ein Kind, nach Klick auf sein Pseudonym.
+//   1. Die Kinder der Klasse — je Kind, wie viele seiner Themen wo stehen.
+//   2. Ein Kind im Einzelnen, nach Klick.
 //
-// Warum so: die Lehrkraft handelt in der Klasse. Was sie aus dem Bild zieht, ist „das Thema
-// muss ich nochmal machen" — das steht in der Verteilung, nicht in 25 Einzelzeilen. Eine
-// Kind-mal-Thema-Matrix wäre eine Rangliste und auf keinem Bildschirm lesbar.
+// Warum NICHT über Themen aggregiert: die Gliederung entsteht aus dem Heft jedes Kindes.
+// Zwei Kinder haben fast nie dasselbe Thema unter demselben Titel, und eine Klassenliste
+// aus 25 Themen mit je „1 wackelt" sagt nichts. Gemeinsam ist der Klasse das Lernziel,
+// nicht die Themenliste.
 //
 // Die Kinder werden NIE nach Leistung sortiert, nirgends.
 
@@ -26,15 +27,20 @@ type Stand = {
 
 async function staendeDerKlasse(classId: string): Promise<{ staende: Stand[]; kinder: Kind[] }> {
 	const kinderZeilen = await db
-		.select({ id: students.userId, pseudonym: user.username })
+		.select({ id: students.userId, pseudonym: user.username, rufname: user.firstName })
 		.from(students)
 		.innerJoin(user, eq(user.id, students.userId))
 		.where(eq(students.classId, classId));
 
-	// Alphabetisch nach Pseudonym — die Reihenfolge sagt nichts über Leistung.
+	// Alphabetisch nach dem Namen, unter dem das Kind hier steht — die Reihenfolge sagt
+	// nichts über Leistung. Ohne Rufnamen bleibt das Pseudonym stehen.
 	const kinder: Kind[] = kinderZeilen
-		.map((k) => ({ id: k.id, pseudonym: k.pseudonym ?? '—' }))
-		.sort((a, b) => a.pseudonym.localeCompare(b.pseudonym, 'de'));
+		.map((k) => ({
+			id: k.id,
+			pseudonym: k.pseudonym ?? '—',
+			name: k.rufname?.trim() || k.pseudonym || '—'
+		}))
+		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
 	if (!kinder.length) return { staende: [], kinder };
 
 	const runden = (
@@ -93,47 +99,35 @@ async function staendeDerKlasse(classId: string): Promise<{ staende: Stand[]; ki
 	return { staende: [...jueng.values()], kinder };
 }
 
-export type Kind = { id: string; pseudonym: string };
+export type Kind = { id: string; pseudonym: string; name: string };
 
-export type ThemenZeile = {
-	topicId: string;
-	titel: string;
-	/** Wie viele Kinder in Kategorie 1 bis 4 stehen. */
+export type KindZeile = Kind & {
+	/** Wie viele Themen dieses Kindes in Kategorie 1 bis 4 stehen. */
 	verteilung: [number, number, number, number];
-	/** Wie viele Kinder das Thema überhaupt schon hatten. */
-	kinder: number;
+	/** Wie viele Themen es überhaupt schon geübt hat. */
+	themen: number;
 };
 
-/** Der Themenblick: Wackelndes oben. */
-export async function themenblick(
+/** Die Klassenliste: jedes Kind mit seinem eigenen Stand. Alphabetisch, nie nach Leistung. */
+export async function klassenblick(
 	classId: string,
 	skala: [Stufe, Stufe, Stufe]
-): Promise<{ themen: ThemenZeile[]; kinder: Kind[] }> {
+): Promise<KindZeile[]> {
 	const { staende, kinder } = await staendeDerKlasse(classId);
 
-	const jeThema = new Map<string, ThemenZeile>();
-	for (const s of staende) {
-		if (!s.moeglich) continue;
-		const zeile =
-			jeThema.get(s.topicId) ??
-			({ topicId: s.topicId, titel: s.titel, verteilung: [0, 0, 0, 0], kinder: 0 } as ThemenZeile);
-		const kategorie = kategorieAus(Math.round((s.erreicht / s.moeglich) * 100), skala);
-		zeile.verteilung[kategorie - 1] += 1;
-		zeile.kinder += 1;
-		jeThema.set(s.topicId, zeile);
-	}
-
-	// „Wackelndes oben" heißt: der Anteil in den unteren zwei Kategorien entscheidet.
-	const themen = [...jeThema.values()].sort((a, b) => {
-		const unten = (z: ThemenZeile) => (z.verteilung[2] + z.verteilung[3]) / z.kinder;
-		return unten(b) - unten(a) || b.kinder - a.kinder || a.titel.localeCompare(b.titel, 'de');
+	return kinder.map((kind) => {
+		const zeile: KindZeile = { ...kind, verteilung: [0, 0, 0, 0], themen: 0 };
+		for (const s of staende) {
+			if (s.studentId !== kind.id || !s.moeglich) continue;
+			const kategorie = kategorieAus(Math.round((s.erreicht / s.moeglich) * 100), skala);
+			zeile.verteilung[kategorie - 1] += 1;
+			zeile.themen += 1;
+		}
+		return zeile;
 	});
-
-	return { themen, kinder };
 }
 
-export type KindBild = {
-	pseudonym: string;
+export type KindBild = Kind & {
 	themen: {
 		topicId: string;
 		titel: string;
@@ -188,7 +182,7 @@ export async function kindBild(
 		}));
 
 	return {
-		pseudonym: kind.pseudonym,
+		...kind,
 		themen,
 		uebungen,
 		plan: {

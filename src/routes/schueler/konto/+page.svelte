@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { initialen } from '$lib/heft';
+	import { RUFNAME_MAX } from '$lib/rufname';
 	import {
 		alleLesen,
 		alleLoeschen,
@@ -9,7 +10,7 @@
 		type Einstellung
 	} from '$lib/mitschrieb';
 
-	let { data } = $props();
+	let { data, form } = $props();
 	const an = $derived(data.behalten);
 
 	// Was bei einer Runde überlegt wurde, liegt auf diesem Gerät — nicht bei uns.
@@ -29,23 +30,52 @@
 
 	const fristLabel = (tage: number) =>
 		tage === 0 ? 'bis ich es lösche' : tage === 1 ? '1 Tag' : tage === 7 ? '1 Woche' : '1 Monat';
-	const zugehoerigkeit = $derived(
-		[data.klasse && `Klasse ${data.klasse}`, data.lehrkraft && `bei ${data.lehrkraft}`]
-			.filter(Boolean)
-			.join(' ')
+	const faecher = $derived(
+		data.kurse
+			.map((k) => [k.fach, k.lehrkraft && `bei ${k.lehrkraft}`].filter(Boolean).join(' '))
+			.join(' · ')
 	);
 </script>
 
-<a href="/schueler" class="btn btn--plain zurueck nurHandy">Zurück</a>
-
 <div class="kennung">
-	<span class="avatar">{initialen(data.pseudonym)}</span>
+	<span class="avatar">{initialen(data.anzeigename)}</span>
 	<span>
-		<span class="name">{data.pseudonym}</span>
-		{#if zugehoerigkeit}
-			<span class="small zeile2">{zugehoerigkeit}</span>
+		<span class="name">{data.anzeigename}</span>
+		{#if faecher}
+			<span class="small zeile2">{faecher}</span>
 		{/if}
 	</span>
+</div>
+
+{#if form?.message}<div class="meldung meldung--fehler">{form.message}</div>{/if}
+{#if form?.ok}<div class="meldung meldung--ok">{form.ok}</div>{/if}
+
+<div class="card">
+	<p class="frage" style="margin:0 0 4px">Wie du hier heißt</p>
+	<p class="small" style="margin:0 0 14px">
+		Deine Lehrerin sieht diesen Namen. Lässt du das Feld leer, heißt du wieder {data.pseudonym}.
+	</p>
+	<form method="POST" action="?/rufname" class="row" style="gap:10px;align-items:flex-end">
+		<label class="field" style="flex:1;min-width:9rem">
+			<span class="field__label">Vorname</span>
+			<input name="rufname" maxlength={RUFNAME_MAX} value={data.rufname ?? ''} />
+		</label>
+		<button class="btn btn--quiet">Speichern</button>
+	</form>
+</div>
+
+<div class="card" style="margin-top:12px">
+	<p class="frage" style="margin:0 0 4px">Noch ein Fach dazunehmen</p>
+	<p class="small" style="margin:0 0 14px">
+		Den Code bekommst du von der Lehrerin, die das Fach unterrichtet.
+	</p>
+	<form method="POST" action="?/beitreten" class="row" style="gap:10px;align-items:flex-end">
+		<label class="field" style="flex:1;min-width:9rem">
+			<span class="field__label">Klassencode</span>
+			<input name="code" class="mono" maxlength="6" autocapitalize="characters" />
+		</label>
+		<button class="btn btn--quiet">Dazunehmen</button>
+	</form>
 </div>
 
 <div class="card">
@@ -147,11 +177,6 @@
 </div>
 
 <style>
-	.zurueck {
-		margin: 0 0 12px;
-		padding-inline: 0;
-		min-height: 48px;
-	}
 	.kennung {
 		display: flex;
 		align-items: center;
@@ -233,9 +258,6 @@
 	}
 
 	@media (min-width: 860px) {
-		.nurHandy {
-			display: none;
-		}
 		.card--knoepfe {
 			max-width: 420px;
 		}

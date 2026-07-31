@@ -20,14 +20,19 @@ export const actions: Actions = {
 		if (!locals.user || locals.user.role !== 'teacher') throw redirect(303, '/anmelden?ansicht=lehrer-anmelden');
 		const fd = await request.formData();
 		const name = String(fd.get('name') ?? '').trim();
-		if (!name) return fail(400, { message: 'Bitte einen Klassennamen angeben.' });
+		const grade = String(fd.get('grade') ?? '').trim();
+		const subject = String(fd.get('subject') ?? '').trim();
+		if (!name) return fail(400, { message: 'Bitte einen Namen angeben.', name, grade, subject });
+		if (!subject) return fail(400, { message: 'Bitte das Fach angeben.', name, grade, subject });
 		let code = makeJoinCode();
 		for (let i = 0; i < 6; i++) {
 			const ex = await db.select().from(classes).where(eq(classes.joinCode, code));
 			if (ex.length === 0) break;
 			code = makeJoinCode();
 		}
-		await db.insert(classes).values({ teacherId: locals.user.id, name, joinCode: code });
+		await db
+			.insert(classes)
+			.values({ teacherId: locals.user.id, name, grade, subject, joinCode: code });
 		return { ok: 'Klasse angelegt.' };
 	}
 };

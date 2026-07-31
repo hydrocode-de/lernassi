@@ -86,7 +86,8 @@ export const actions: Actions = {
 		}
 		await db.update(pseudonyms).set({ claimed: true, userId: res.user.id }).where(eq(pseudonyms.id, ps.id));
 		await db.insert(students).values({ userId: res.user.id, classId: cls.id });
-		throw redirect(303, '/schueler');
+		// Der Rufname kommt als eigener Schritt danach — freiwillig, darum nicht im Formular.
+		throw redirect(303, '/schueler/name');
 	},
 
 	'lehrer-anmelden': async ({ request }) => {

@@ -223,26 +223,23 @@ export async function kapitelKontext(
 	};
 }
 
-/** Das aktuelle Lernziel der Klasse für dieses Fach. Freitext, ungeschnitten. */
+/**
+ * Das aktuelle Lernziel für dieses Fach. Freitext, ungeschnitten.
+ * Ein Kind sitzt in mehreren Klassen, je eine pro Fach — gesucht ist die, deren Fach zum
+ * Fach im Heft passt. Fächer, für die es keine Klasse gibt, laufen ohne Lernziel.
+ */
 export async function lernzielFuer(studentId: string, fach: string): Promise<string | null> {
-	const klasse = (
-		await db
-			.select({ classId: students.classId })
-			.from(students)
-			.innerJoin(classes, eq(classes.id, students.classId))
-			.where(eq(students.userId, studentId))
-	)[0];
-	if (!klasse) return null;
+	const zeilen = await db
+		.select({ fach: classes.subject, ziel: learningGoals.description })
+		.from(students)
+		.innerJoin(classes, eq(classes.id, students.classId))
+		.leftJoin(learningGoals, eq(learningGoals.classId, classes.id))
+		.where(eq(students.userId, studentId));
 
-	const ziele = await db
-		.select()
-		.from(learningGoals)
-		.where(eq(learningGoals.classId, klasse.classId));
-	const passend =
-		ziele.find(
-			(z) => z.subject && z.subject.localeCompare(fach, 'de', { sensitivity: 'base' }) === 0
-		) ?? ziele.find((z) => !z.subject);
-	const text = passend?.description?.trim();
+	const passend = zeilen.find(
+		(z) => z.fach && z.fach.localeCompare(fach, 'de', { sensitivity: 'base' }) === 0
+	);
+	const text = passend?.ziel?.trim();
 	return text?.length ? text : null;
 }
 

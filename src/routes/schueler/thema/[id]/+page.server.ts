@@ -77,6 +77,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		.map((k) => ({ id: k.id, title: k.title }));
 
 	return {
+		zurueck: { href: `/schueler?fach=${fach.id}`, text: fach.title },
 		thema: { id: thema.id, title: thema.title },
 		kapitel: { id: kapitel.id, title: kapitel.title },
 		fach: { id: fach.id, title: fach.title },

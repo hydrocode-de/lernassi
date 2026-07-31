@@ -4,94 +4,73 @@ import { classes, learningGoals, pseudonyms, students, user, account } from '$li
 import { makePseudonym } from '$lib/server/roster';
 import { ZIEL_WARNSCHWELLE } from '$lib/lernziel';
 import { KATEGORIEN, skalaLesen, skalaSchreiben } from '$lib/kategorie';
-import { kindBild, themenblick } from '$lib/server/fortschritt';
-import { SICHERHEIT } from '$lib/server/runde';
-import { RUECKSCHAU } from '$lib/server/uebung';
+import { klassenblick } from '$lib/server/fortschritt';
+import { ownedClass } from '$lib/server/lehrer';
 import { and, eq, desc } from 'drizzle-orm';
-import { error, fail, redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-
-async function ownedClass(locals: App.Locals, id: string) {
-	if (!locals.user || locals.user.role !== 'teacher') throw redirect(303, '/anmelden?ansicht=lehrer-anmelden');
-	const cls = (
-		await db
-			.select()
-			.from(classes)
-			.where(and(eq(classes.id, id), eq(classes.teacherId, locals.user.id)))
-	)[0];
-	if (!cls) throw error(404, 'Klasse nicht gefunden');
-	return cls;
-}
 
 function str(v: FormDataEntryValue | null): string | null {
 	const s = String(v ?? '').trim();
 	return s.length ? s : null;
 }
 
-export const load: PageServerLoad = async ({ params, locals, url }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
 	const cls = await ownedClass(locals, params.id);
-	const goals = await db
-		.select()
-		.from(learningGoals)
-		.where(eq(learningGoals.classId, cls.id))
-		.orderBy(desc(learningGoals.createdAt));
+	const ziel = (
+		await db.select().from(learningGoals).where(eq(learningGoals.classId, cls.id))
+	)[0] ?? null;
 	const ps = await db
 		.select()
 		.from(pseudonyms)
 		.where(eq(pseudonyms.classId, cls.id))
 		.orderBy(desc(pseudonyms.createdAt));
 
-	// Themenblick zuerst; ein Kind nur, wenn die Lehrkraft eines angetippt hat.
+	// Die Klassenliste. Ein Kind im Einzelnen ist eine eigene Seite — kein Aufklappen.
 	const skala = skalaLesen(cls.masteryScale);
-	const { themen, kinder } = await themenblick(cls.id, skala);
-	const gewaehltesKind = url.searchParams.get('kind');
+	const kinder = await klassenblick(cls.id, skala);
+
+	// Am eingelösten Zugang steht, wer ihn genommen hat — sonst weiß die Lehrkraft beim
+	// Zurücksetzen des Passworts nicht, wessen Passwort sie zurücksetzt.
+	const namen = new Map(kinder.map((k) => [k.id, k.name] as const));
 
 	return {
+		zurueck: { href: '/lehrer', text: 'Meine Klassen' },
 		cls,
-		goals,
-		pseudonyms: ps,
+		ziel,
+		pseudonyms: ps.map((p) => ({ ...p, name: p.userId ? (namen.get(p.userId) ?? null) : null })),
 		warnschwelle: ZIEL_WARNSCHWELLE,
 		skala,
 		kategorien: KATEGORIEN,
-		themen,
-		kinder,
-		kind: gewaehltesKind ? await kindBild(cls.id, gewaehltesKind, skala) : null,
-		sicherheiten: SICHERHEIT,
-		rueckschauen: RUECKSCHAU
+		kinder
 	};
 };
 
 export const actions: Actions = {
-	// Ein aktuelles Lernziel pro Fach, fortgeschrieben statt ergänzt.
+	// Ein Lernziel je Klasse, fortgeschrieben statt ergänzt.
 	speichereZiel: async ({ params, locals, request }) => {
 		const cls = await ownedClass(locals, params.id);
 		const fd = await request.formData();
-		const subject = str(fd.get('subject'));
 		const text = String(fd.get('text') ?? '').trim();
-		if (!subject) return fail(400, { message: 'Bitte das Fach angeben.' });
 		if (!text) return fail(400, { message: 'Bitte das Lernziel eintragen.' });
 
 		const vorhanden = (
 			await db.select().from(learningGoals).where(eq(learningGoals.classId, cls.id))
-		).find((z) => z.subject?.localeCompare(subject, 'de', { sensitivity: 'base' }) === 0);
+		)[0];
 
 		if (vorhanden) {
 			await db
 				.update(learningGoals)
-				.set({ title: subject, subject, description: text, updatedAt: new Date() })
+				.set({ description: text, updatedAt: new Date() })
 				.where(eq(learningGoals.id, vorhanden.id));
 		} else {
-			await db.insert(learningGoals).values({
-				classId: cls.id,
-				title: subject,
-				subject,
-				description: text,
-				updatedAt: new Date()
-			});
+			await db
+				.insert(learningGoals)
+				.values({ classId: cls.id, description: text, updatedAt: new Date() });
 		}
 
 		return {
-			ok: `Lernziel für ${subject} gespeichert.`,
+			ok: 'Lernziel gespeichert.',
 			// Warnen, nicht blockieren: zu viel Kontext verwässert die Fragenauswahl.
 			warnung:
 				text.length > ZIEL_WARNSCHWELLE
@@ -99,6 +78,25 @@ export const actions: Actions = {
 						'formuliert sind, desto gezielter wählt lernassi die Fragen aus.'
 					: null
 		};
+	},
+
+	// Name, Klasse und Fach. Das Fach steuert, welcher Zweig im Heft eines Kindes zu dieser
+	// Klasse gehört — es umzubenennen trennt die Klasse von den Aufschrieben. Darum nur hier,
+	// bewusst, und nicht nebenbei.
+	speichereKlasse: async ({ params, locals, request }) => {
+		const cls = await ownedClass(locals, params.id);
+		const fd = await request.formData();
+		const name = str(fd.get('name'));
+		const grade = str(fd.get('grade'));
+		const subject = str(fd.get('subject'));
+		if (!name) return fail(400, { message: 'Bitte einen Namen angeben.' });
+		if (!subject) return fail(400, { message: 'Bitte das Fach angeben.' });
+
+		await db
+			.update(classes)
+			.set({ name, grade: grade ?? '', subject })
+			.where(eq(classes.id, cls.id));
+		return { ok: 'Gespeichert.' };
 	},
 
 	// Die Grenzen der Skala. Sie wirken RÜCKWIRKEND auf alle Kinder der Klasse — es wird nichts

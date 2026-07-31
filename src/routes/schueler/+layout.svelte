@@ -4,8 +4,12 @@
 
 	let { children, data } = $props();
 	const aktiv = $derived(page.url.pathname);
-	// Während des Fotografierens tritt die Navigation zurück.
-	const angemeldet = $derived(Boolean(data.pseudonym) && aktiv !== '/schueler/aufnehmen');
+	// Während des Fotografierens und beim ersten Einrichten tritt die Navigation zurück.
+	const angemeldet = $derived(
+		Boolean(data.pseudonym) && aktiv !== '/schueler/aufnehmen' && aktiv !== '/schueler/name'
+	);
+	// Der Zurück-Weg gehört zur Seite, nicht zum Inhalt: die Seiten geben ihn im load mit.
+	const zurueck = $derived(page.data.zurueck as { href: string; text: string } | undefined);
 	const aufKonto = $derived(aktiv.startsWith('/schueler/konto'));
 	const aufPlan = $derived(aktiv.startsWith('/schueler/plan'));
 	const aufUeben = $derived(aktiv.startsWith('/schueler/ueben'));
@@ -40,6 +44,25 @@
 			</svg>
 			Aufschrieb hinzufügen
 		</a>
+
+		{#if zurueck}
+			<a href={zurueck.href} class="btn btn--plain zurueckSpalte">
+				<svg
+					width="18"
+					height="18"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="m15 18-6-6 6-6" />
+				</svg>
+				{zurueck.text}
+			</a>
+		{/if}
 
 		{#if data.faecher.length}
 			<p class="eyebrow faecher__titel">Meine Fächer</p>
@@ -79,10 +102,9 @@
 				onclick={() => (menueOffen = !menueOffen)}
 				aria-expanded={menueOffen}
 			>
-				<span class="avatar avatar--klein">{initialen(data.pseudonym)}</span>
+				<span class="avatar avatar--klein">{initialen(data.anzeigename)}</span>
 				<span class="kontoknopf__text">
-					<span class="kontoknopf__name">{data.pseudonym}</span>
-					{#if data.klasse}<span class="small kontoknopf__klasse">Klasse {data.klasse}</span>{/if}
+					<span class="kontoknopf__name">{data.anzeigename}</span>
 				</span>
 				<svg
 					width="16"
@@ -104,9 +126,27 @@
 	<div class="haupt">
 		{#if angemeldet}
 			<div class="kopf">
-				<a href="/schueler" class="marke">lernassi</a>
+				{#if zurueck}
+					<a href={zurueck.href} class="kopfZurueck" aria-label={zurueck.text}>
+						<svg
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="m15 18-6-6 6-6" />
+						</svg>
+					</a>
+				{:else}
+					<a href="/schueler" class="marke">lernassi</a>
+				{/if}
 				<a href="/schueler/konto" class="avatar avatar--knopf" aria-label="Mein Konto">
-					{initialen(data.pseudonym)}
+					{initialen(data.anzeigename)}
 				</a>
 			</div>
 		{/if}
@@ -179,6 +219,19 @@
 		border: 1px solid var(--lavender-2);
 		text-decoration: none;
 	}
+	.kopfZurueck {
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		margin-left: -10px;
+		border-radius: 50%;
+		color: var(--ink);
+		text-decoration: none;
+	}
+	.kopfZurueck:hover {
+		background: var(--paper-2);
+	}
 	.tabs {
 		position: sticky;
 		bottom: 0;
@@ -237,6 +290,13 @@
 		gap: 10px;
 		font-size: 15px;
 		white-space: nowrap;
+	}
+	.zurueckSpalte {
+		justify-content: flex-start;
+		gap: 6px;
+		min-height: 44px;
+		margin-top: 14px;
+		font-size: 15px;
 	}
 	.faecher__titel {
 		margin: 26px 0 10px 4px;
@@ -354,10 +414,6 @@
 		font-weight: 600;
 		font-size: 15px;
 		color: var(--ink);
-	}
-	.kontoknopf__klasse {
-		display: block;
-		font-size: 13px;
 	}
 
 	@media (min-width: 860px) {

@@ -10,8 +10,6 @@
 		new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long' }).format(new Date(wann));
 </script>
 
-<a href="/schueler?fach={data.fach.id}" class="btn btn--plain zurueck">Zurück zum Verzeichnis</a>
-
 {#if form?.message}<div class="meldung meldung--fehler">{form.message}</div>{/if}
 {#if form?.ok}<div class="meldung meldung--ok">{form.ok}</div>{/if}
 
@@ -131,11 +129,6 @@
 </div>
 
 <style>
-	.zurueck {
-		margin: 0 0 10px;
-		padding-inline: 0;
-		min-height: 44px;
-	}
 	.raster {
 		display: flex;
 		flex-direction: column;

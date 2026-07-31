@@ -22,6 +22,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const themenTitel = [...new Set(kontext.themen.map((t) => t.titel))];
 
 	return {
+		zurueck: { href: `/schueler?fach=${kontext.fachId}`, text: kontext.fach },
 		kapitelId: kontext.kapitelId,
 		kapitel: kontext.kapitel,
 		fach: kontext.fach,

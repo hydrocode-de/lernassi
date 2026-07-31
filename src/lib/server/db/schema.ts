@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, unique, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 const now = () => new Date();
 const id = () => text('id').primaryKey().$defaultFn(() => crypto.randomUUID());
@@ -18,6 +18,9 @@ export const user = sqliteTable('user', {
 	displayUsername: text('display_username'),
 	// unser Zusatzfeld: 'teacher' | 'student'
 	role: text('role').notNull().default('student'),
+	// Rufname des Kindes, freiwillig und jederzeit änderbar. Nichts hängt daran: angemeldet
+	// wird mit dem Pseudonym, und intern bleibt das Kind der emsige Marder.
+	firstName: text('first_name'),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now),
 	updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
@@ -71,7 +74,12 @@ export const classes = sqliteTable('classes', {
 	teacherId: text('teacher_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
+	// Eine Klasse ist immer ein Fach in einer Lerngruppe: der Name ist, wie die Lehrkraft sie
+	// nennt („Geschichte 9b", „Leistungskurs Geschichte JG 2007"), `grade` die Klassenstufe
+	// dahinter („9b", „11") und `subject` das Fach („Geschichte"). Das Kind sieht nur das Fach.
 	name: text('name').notNull(),
+	grade: text('grade').notNull().default(''),
+	subject: text('subject').notNull().default(''),
 	joinCode: text('join_code').notNull().unique(),
 	// Die Grenzen, ab denen ein Prozentwert „sitzt" heißt. JSON, vier Einträge.
 	// null = Standardskala aus dem Code. An der Klasse, nicht an der Lehrkraft: was in
@@ -80,33 +88,39 @@ export const classes = sqliteTable('classes', {
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
-// Dünnes Profil: verknüpft Auth-User (role=student) mit einer Klasse.
-// KEIN Klarname-Feld — Zuordnung Pseudonym→Kind bleibt off-system bei der Lehrkraft.
-export const students = sqliteTable('students', {
-	id: id(),
-	userId: text('user_id')
-		.notNull()
-		.unique()
-		.references(() => user.id, { onDelete: 'cascade' }),
-	classId: text('class_id')
-		.notNull()
-		.references(() => classes.id, { onDelete: 'cascade' }),
-	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
-});
+// Zugehörigkeit: welches Kind in welcher Klasse sitzt. Eine Zeile je Klasse — ein Kind hat
+// Geschichte 9b UND Mathe 9b, mit demselben Konto und demselben Pseudonym.
+// Identität bleibt das Pseudonym — Anmeldung, Dateinamen, alles Interne läuft darüber.
+// `firstName` ist nur der Rufname, den das Kind sich selbst gibt: freiwillig, jederzeit
+// änderbar, und nichts hängt daran. Die Lehrkraft sieht ihn, weil sie das Kind ohnehin kennt.
+// Er hängt am Kind, nicht an der Zugehörigkeit — darum steht er am Auth-User.
+export const students = sqliteTable(
+	'students',
+	{
+		id: id(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		classId: text('class_id')
+			.notNull()
+			.references(() => classes.id, { onDelete: 'cascade' }),
+		createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+	},
+	(t) => [unique('students_user_class').on(t.userId, t.classId)]
+);
 
-// Ein aktuelles Lernziel pro Klasse und Fach, von der Lehrkraft fortgeschrieben.
+// Ein aktuelles Lernziel pro Klasse, von der Lehrkraft fortgeschrieben. Das Fach steht an
+// der Klasse, nicht am Ziel — eine Klasse IST ein Fach.
 // Freitext (Kompetenzformulierungen, wie Lehrkräfte sie real schreiben) — bewusst NICHT
 // zerlegt: es ist Kontext für die Agenten, und genau dafür ist Kontext da.
-// `description` trägt diesen Freitext; `title` bleibt aus M1 und führt nur noch das Fach.
 export const learningGoals = sqliteTable('learning_goals', {
 	id: id(),
 	classId: text('class_id')
 		.notNull()
+		.unique()
 		.references(() => classes.id, { onDelete: 'cascade' }),
-	title: text('title').notNull(),
 	description: text('description'),
 	contextPrompt: text('context_prompt'), // Satz für die Schüler-KI (M2)
-	subject: text('subject'),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now),
 	updatedAt: integer('updated_at', { mode: 'timestamp' })
 });

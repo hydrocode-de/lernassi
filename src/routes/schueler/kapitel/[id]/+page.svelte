@@ -8,10 +8,6 @@
 	const nochmal = $derived(data.schonEingeordnet && !data.nurNeues);
 </script>
 
-<p style="margin:0 0 10px">
-	<a href="/schueler?fach={data.fachId}" class="btn btn--plain zurueck">Zurück zum Verzeichnis</a>
-</p>
-
 <p class="eyebrow" style="margin:0 0 6px">{data.fach}</p>
 <h1 style="margin:0">{data.kapitel}</h1>
 <p class="muted" style="margin:5px 0 0;font-size:16px">
@@ -105,10 +101,6 @@
 </div>
 
 <style>
-	.zurueck {
-		padding-inline: 0;
-		min-height: 44px;
-	}
 	.stapel {
 		display: flex;
 		flex-direction: column;

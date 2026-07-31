@@ -1,108 +1,77 @@
 <script lang="ts">
 	import type { Kategorie } from '$lib/kategorie';
-	import type { Rueckschau } from '$lib/server/uebung';
 
 	let { data, form } = $props();
 
 	const KATEGORIEN: Kategorie[] = [1, 2, 3, 4];
-	const rueckschau = (wert: string) => data.rueckschauen[wert as Rueckschau] ?? '–';
+	const fortgeschrieben = $derived(
+		data.ziel?.updatedAt ? new Date(data.ziel.updatedAt).toLocaleDateString('de-DE') : null
+	);
 </script>
 
-<p style="margin:0 0 10px"><a href="/lehrer">← Meine Klassen</a></p>
-<h1 style="margin:0 0 8px">{data.cls.name}</h1>
-<p class="muted" style="margin:0 0 4px">
+<h1 style="margin:0 0 6px">{data.cls.name}</h1>
+<p class="muted" style="margin:0 0 26px">
 	Klassencode <span class="tag mono">{data.cls.joinCode}</span>
-</p>
-<p class="small" style="margin:6px 0 0">
-	Code und Pseudonym an die Kinder austeilen. Wer zu welchem Pseudonym gehört, bleibt auf deiner
-	eigenen Liste.
 </p>
 
 {#if form?.message}<div class="meldung meldung--fehler">{form.message}</div>{/if}
 {#if form?.ok}<div class="meldung meldung--ok">{form.ok}</div>{/if}
+{#if form?.warnung}<div class="meldung meldung--fehler">{form.warnung}</div>{/if}
 
-<h2 style="margin:28px 0 6px">Wie es läuft</h2>
-{#if !data.themen.length}
-	<p class="small" style="margin:0 0 12px">Noch keine Ergebnisse.</p>
-{:else}
-	<p class="small" style="margin:0 0 12px">Je Thema, wie viele Kinder wo stehen.</p>
-	<div class="stapel">
-		{#each data.themen as t (t.topicId)}
-			<div class="card themenzeile">
-				<span class="themenzeile__titel">{t.titel}</span>
-				<span class="verteilung">
-					{#each KATEGORIEN as k (k)}
-						{@const anzahl = t.verteilung[k - 1]}
-						{#if anzahl}
-							<span class="tag tag--{data.kategorien[k].farbe}">
-								{anzahl}&nbsp;{data.kategorien[k].wort}
-							</span>
-						{/if}
-					{/each}
-				</span>
-			</div>
-		{/each}
+<div class="card">
+	<div class="row" style="margin-bottom:12px">
+		<h2 style="margin:0">Lernziel</h2>
+		{#if fortgeschrieben}
+			<span class="small">fortgeschrieben am {fortgeschrieben}</span>
+		{/if}
 	</div>
-{/if}
+	<p class="small" style="margin:0 0 14px">
+		Es steuert, welche Fragen lernassi aus dem Heft eines Kindes auswählt und wie tief sie gehen.
+		Die Kinder sehen es nicht.
+	</p>
+	<form method="POST" action="?/speichereZiel" class="stack">
+		<label class="field">
+			<span class="field__label">Für {data.cls.subject || 'diese Klasse'}</span>
+			<textarea
+				name="text"
+				rows="8"
+				maxlength="8000"
+				placeholder={'Fachwissen: … \nAnalysekompetenz: … \nUrteilskompetenz: … \nMethodenkompetenz: …'}
+				>{data.ziel?.description ?? ''}</textarea
+			>
+		</label>
+		<button class="btn">{data.ziel ? 'Fortschreiben' : 'Speichern'}</button>
+	</form>
+</div>
 
-{#if data.kinder.length}
-	<h3 style="margin:22px 0 8px">Einzelne Kinder</h3>
-	<div class="pseudonyme">
-		{#each data.kinder as k (k.id)}
-			<a class="btn btn--quiet klein" href="?kind={k.id}" class:an={data.kind?.pseudonym === k.pseudonym}>
-				{k.pseudonym}
+<h2 style="margin:32px 0 12px">Kinder</h2>
+{#if !data.kinder.length}
+	<p class="muted" style="margin:0">Noch niemand angemeldet.</p>
+{:else}
+	<div class="stapel">
+		{#each data.kinder as kind (kind.id)}
+			<a class="card kindzeile" href="/lehrer/klasse/{data.cls.id}/kind/{kind.id}">
+				<span class="kindzeile__name">{kind.name}</span>
+				<span class="verteilung">
+					{#if kind.themen}
+						{#each KATEGORIEN as k (k)}
+							{@const anzahl = kind.verteilung[k - 1]}
+							{#if anzahl}
+								<span class="tag tag--{data.kategorien[k].farbe}">
+									{anzahl}&nbsp;{data.kategorien[k].wort}
+								</span>
+							{/if}
+						{/each}
+					{:else}
+						<span class="small">noch nichts geübt</span>
+					{/if}
+				</span>
 			</a>
 		{/each}
 	</div>
 {/if}
 
-{#if data.kind}
-	<div class="card" style="margin-top:14px">
-		<div class="row" style="margin-bottom:12px">
-			<h3 style="margin:0">{data.kind.pseudonym}</h3>
-			<a class="btn btn--plain klein" href="?">Zumachen</a>
-		</div>
-		<p class="small" style="margin:0 0 14px">
-			{data.kind.plan.offen} offen · {data.kind.plan.erledigt} abgehakt
-		</p>
-
-		{#if data.kind.themen.length}
-			<div class="chips" style="margin-bottom:16px">
-				{#each data.kind.themen as t (t.topicId)}
-					<span class="chip chip--{data.kategorien[t.kategorie].farbe}">
-						<span class="chip__dot"></span>{t.titel} – {data.kategorien[t.kategorie].wort}
-					</span>
-				{/each}
-			</div>
-		{/if}
-
-		{#if data.kind.uebungen.length}
-			<p class="eyebrow" style="margin:0 0 8px">Selbsteinschätzung und Ergebnis</p>
-			<table class="verlauf">
-				<thead>
-					<tr><th>Wann</th><th>Vorher</th><th>Hinterher</th><th>Ergebnis</th></tr>
-				</thead>
-				<tbody>
-					{#each data.kind.uebungen as u (u.wann)}
-						<tr>
-							<td>{new Date(u.wann).toLocaleDateString('de-DE')}</td>
-							<td>{u.vorher ? data.sicherheiten[u.vorher - 1] : '–'}</td>
-							<td>{u.nachher ? rueckschau(u.nachher) : '–'}</td>
-							<td>{u.kategorie ? data.kategorien[u.kategorie].wort : '–'}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		{:else}
-			<p class="small" style="margin:0">Noch keine Übung abgeschlossen.</p>
-		{/if}
-	</div>
-{/if}
-
-<h2 style="margin:32px 0 6px">Was „sitzt" heißen soll</h2>
-<p class="small" style="margin:0 0 12px">
-	Gilt für diese Klasse und wirkt rückwirkend auf alle Kinder.
-</p>
+<h2 style="margin:32px 0 12px">Was „sitzt" heißen soll</h2>
 <form method="POST" action="?/speichereSkala" class="card grenzen">
 	<label class="field">
 		<span class="field__label">sitzt ab</span>
@@ -119,67 +88,14 @@
 	<button class="btn">Grenzen speichern</button>
 </form>
 
-<h2 style="margin:28px 0 6px">Lernziele</h2>
-<p class="small" style="margin:0 0 12px">
-	Ein aktuelles Lernziel pro Fach, so formuliert wie im Bildungsplan – gerne nach Fachwissen,
-	Analyse, Urteils- und Methodenkompetenz gruppiert. Es steuert, welche Fragen lernassi aus dem
-	Heft eines Kindes auswählt und wie tief sie gehen. Die Kinder sehen es nicht.
-</p>
-
-{#if form?.warnung}<div class="meldung meldung--fehler">{form.warnung}</div>{/if}
-
-{#each data.goals.filter((z) => z.subject) as ziel (ziel.id)}
-	<div class="card" style="margin-bottom:12px">
-		<form method="POST" action="?/speichereZiel" class="stack">
-			<input type="hidden" name="subject" value={ziel.subject} />
-			<div class="row">
-				<h3>{ziel.subject}</h3>
-				<span class="small">
-					{#if ziel.updatedAt}
-						fortgeschrieben am {new Date(ziel.updatedAt).toLocaleDateString('de-DE')}
-					{/if}
-				</span>
-			</div>
-			<label class="field">
-				<span class="field__label">Lernziel</span>
-				<textarea name="text" rows="8" maxlength="8000">{ziel.description ?? ''}</textarea>
-			</label>
-			<button class="btn">Fortschreiben</button>
-		</form>
-	</div>
-{/each}
-
-<div class="card">
-	<form method="POST" action="?/speichereZiel" class="stack">
-		<label class="field" style="max-width:280px">
-			<span class="field__label">Fach</span>
-			<input name="subject" required placeholder="z. B. Geschichte" />
-		</label>
-		<label class="field">
-			<span class="field__label">Lernziel</span>
-			<textarea
-				name="text"
-				rows="6"
-				maxlength="8000"
-				placeholder={'Fachwissen: … \nAnalysekompetenz: … \nUrteilskompetenz: … \nMethodenkompetenz: …'}
-			></textarea>
-		</label>
-		<p class="small" style="margin:0">
-			Länger als {data.warnschwelle} Zeichen wird es unschärfer – die Anwendung sagt dann Bescheid,
-			hält dich aber nicht auf.
-		</p>
-		<button class="btn">Lernziel anlegen</button>
-	</form>
-</div>
-
-<h2 style="margin:32px 0 12px">Pseudonyme</h2>
+<h2 style="margin:32px 0 12px">Zugänge</h2>
 <div class="card">
 	<form method="POST" action="?/generatePseudonyms" class="stack">
 		<label class="field" style="max-width:200px">
 			<span class="field__label">Wie viele Kinder</span>
 			<input name="count" type="number" min="1" max="40" value="12" />
 		</label>
-		<button class="btn btn--quiet">Pseudonyme erzeugen</button>
+		<button class="btn btn--quiet">Zugänge erzeugen</button>
 	</form>
 </div>
 
@@ -187,7 +103,10 @@
 	<ul class="liste" style="margin-top:16px">
 		{#each data.pseudonyms as eintrag (eintrag.id)}
 			<li>
-				<span class="mono" style="font-size:16px">{eintrag.value}</span>
+				<span>
+					<span class="mono" style="font-size:16px">{eintrag.value}</span>
+					{#if eintrag.name}<span class="small" style="margin-left:10px">{eintrag.name}</span>{/if}
+				</span>
 				{#if eintrag.claimed && eintrag.userId}
 					<form method="POST" action="?/resetPassword" class="row" style="gap:8px">
 						<input type="hidden" name="userId" value={eintrag.userId} />
@@ -204,43 +123,55 @@
 	</ul>
 {/if}
 
+<h2 style="margin:32px 0 12px">Diese Klasse</h2>
+<form method="POST" action="?/speichereKlasse" class="card stack">
+	<label class="field">
+		<span class="field__label">Name</span>
+		<input name="name" value={data.cls.name} required />
+	</label>
+	<div class="zweispaltig">
+		<label class="field">
+			<span class="field__label">Klasse</span>
+			<input name="grade" value={data.cls.grade} placeholder="z. B. 9b" />
+		</label>
+		<label class="field">
+			<span class="field__label">Fach</span>
+			<input name="subject" value={data.cls.subject} placeholder="z. B. Geschichte" required />
+		</label>
+	</div>
+	<button class="btn btn--quiet">Speichern</button>
+</form>
+
 <style>
 	.stapel {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
 	}
-	.themenzeile {
+	.kindzeile {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
 		padding: 12px 16px;
+		color: inherit;
+		text-decoration: none;
 	}
-	.themenzeile__titel {
+	.kindzeile:hover {
+		border-color: var(--line-2);
+	}
+	.kindzeile__name {
 		flex: 1;
-		min-width: 12rem;
+		min-width: 10rem;
+		font-family: var(--display);
+		font-weight: 600;
 		font-size: 16px;
-		line-height: 1.4;
 	}
 	.verteilung {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
-	}
-	.pseudonyme {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-	.klein {
-		min-height: 44px;
-		font-size: 14px;
-	}
-	.pseudonyme .an {
-		background: var(--lavender);
-		color: var(--lavender-ink);
 	}
 	.grenzen {
 		display: flex;
@@ -251,21 +182,13 @@
 	.grenzen .field {
 		max-width: 11rem;
 	}
-	.verlauf {
-		width: 100%;
-		border-collapse: collapse;
-		font-size: 15px;
+	.zweispaltig {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
 	}
-	.verlauf th,
-	.verlauf td {
-		text-align: left;
-		padding: 7px 10px 7px 0;
-		border-bottom: 1px solid var(--line);
-	}
-	.verlauf th {
-		font-family: var(--display);
-		font-weight: 600;
-		font-size: 13px;
-		color: var(--ink-3);
+	.zweispaltig .field {
+		flex: 1;
+		min-width: 10rem;
 	}
 </style>
