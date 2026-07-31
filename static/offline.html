@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="de">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>lernassi – gerade keine Verbindung</title>
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<meta name="theme-color" content="#fbfaf7" />
+		<style>
+			/* Eigenständige Seite: keine Schriften und keine Bilder von außen,
+			   sonst wäre sie genau dann kaputt, wenn man sie braucht. */
+			* {
+				box-sizing: border-box;
+			}
+			body {
+				margin: 0;
+				min-height: 100dvh;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+				gap: 24px;
+				padding: 32px;
+				text-align: center;
+				background: #fbfaf7;
+				color: #362c24;
+				font-family: ui-rounded, system-ui, sans-serif;
+				font-size: 17px;
+				line-height: 1.5;
+				-webkit-font-smoothing: antialiased;
+			}
+			.karte {
+				width: 96px;
+				height: 96px;
+			}
+			h1 {
+				margin: 0;
+				font-size: 28px;
+				font-weight: 700;
+				letter-spacing: -0.01em;
+			}
+			p {
+				margin: 0;
+				max-width: 34ch;
+				color: #6a615b;
+			}
+			button {
+				font: inherit;
+				font-weight: 600;
+				color: #fbfaf7;
+				background: #362c24;
+				border: 0;
+				border-radius: 999px;
+				padding: 12px 28px;
+				cursor: pointer;
+			}
+			button:hover {
+				background: #6a615b;
+			}
+		</style>
+	</head>
+	<body>
+		<img class="karte" src="/icon.svg" alt="" />
+		<h1>Gerade kein Netz</h1>
+		<p>
+			Dein Heft liegt sicher da, wo es hingehört. Sobald du wieder Verbindung hast, geht es genau
+			dort weiter, wo du aufgehört hast.
+		</p>
+		<button type="button" onclick="location.reload()">Nochmal versuchen</button>
+	</body>
+</html>
