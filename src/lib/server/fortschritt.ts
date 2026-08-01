@@ -25,7 +25,9 @@ type Stand = {
 	wann: number;
 };
 
-async function staendeDerKlasse(classId: string): Promise<{ staende: Stand[]; kinder: Kind[] }> {
+async function staendeDerKlasse(
+	classId: string
+): Promise<{ staende: Stand[]; kinder: Kind[]; letzteAktivitaet: Map<string, number> }> {
 	const kinderZeilen = await db
 		.select({ id: students.userId, pseudonym: user.username, rufname: user.firstName })
 		.from(students)
@@ -41,7 +43,7 @@ async function staendeDerKlasse(classId: string): Promise<{ staende: Stand[]; ki
 			name: k.rufname?.trim() || k.pseudonym || '—'
 		}))
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'));
-	if (!kinder.length) return { staende: [], kinder };
+	if (!kinder.length) return { staende: [], kinder, letzteAktivitaet: new Map() };
 
 	const runden = (
 		await db
@@ -54,7 +56,17 @@ async function staendeDerKlasse(classId: string): Promise<{ staende: Stand[]; ki
 				)
 			)
 	).filter((r) => r.status === 'abgeschlossen');
-	if (!runden.length) return { staende: [], kinder };
+
+	// Zuletzt aktiv: die jüngste abgeschlossene Runde eines Kindes, egal ob Einordnung oder
+	// Übung — beides ist gelernte Arbeit. Kein Login-Zeitpunkt: der sagt nichts übers Lernen.
+	const letzteAktivitaet = new Map<string, number>();
+	for (const r of runden) {
+		const wann = (r.finishedAt ?? r.startedAt).getTime();
+		const bisher = letzteAktivitaet.get(r.studentId);
+		if (bisher === undefined || wann > bisher) letzteAktivitaet.set(r.studentId, wann);
+	}
+
+	if (!runden.length) return { staende: [], kinder, letzteAktivitaet };
 
 	const zeilen = await db
 		.select()
@@ -65,7 +77,7 @@ async function staendeDerKlasse(classId: string): Promise<{ staende: Stand[]; ki
 				runden.map((r) => r.id)
 			)
 		);
-	if (!zeilen.length) return { staende: [], kinder };
+	if (!zeilen.length) return { staende: [], kinder, letzteAktivitaet };
 
 	const titel = new Map(
 		(
@@ -96,7 +108,7 @@ async function staendeDerKlasse(classId: string): Promise<{ staende: Stand[]; ki
 		});
 	}
 
-	return { staende: [...jueng.values()], kinder };
+	return { staende: [...jueng.values()], kinder, letzteAktivitaet };
 }
 
 export type Kind = { id: string; pseudonym: string; name: string };
@@ -106,6 +118,8 @@ export type KindZeile = Kind & {
 	verteilung: [number, number, number, number];
 	/** Wie viele Themen es überhaupt schon geübt hat. */
 	themen: number;
+	/** Wann die jüngste abgeschlossene Runde dieses Kindes war. null = noch nie. */
+	zuletztAktiv: number | null;
 };
 
 /** Die Klassenliste: jedes Kind mit seinem eigenen Stand. Alphabetisch, nie nach Leistung. */
@@ -113,10 +127,15 @@ export async function klassenblick(
 	classId: string,
 	skala: [Stufe, Stufe, Stufe]
 ): Promise<KindZeile[]> {
-	const { staende, kinder } = await staendeDerKlasse(classId);
+	const { staende, kinder, letzteAktivitaet } = await staendeDerKlasse(classId);
 
 	return kinder.map((kind) => {
-		const zeile: KindZeile = { ...kind, verteilung: [0, 0, 0, 0], themen: 0 };
+		const zeile: KindZeile = {
+			...kind,
+			verteilung: [0, 0, 0, 0],
+			themen: 0,
+			zuletztAktiv: letzteAktivitaet.get(kind.id) ?? null
+		};
 		for (const s of staende) {
 			if (s.studentId !== kind.id || !s.moeglich) continue;
 			const kategorie = kategorieAus(Math.round((s.erreicht / s.moeglich) * 100), skala);
