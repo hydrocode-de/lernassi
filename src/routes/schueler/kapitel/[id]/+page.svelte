@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { vorZeit } from '$lib/heft';
+	import { KI_EINORDNUNG, KI_MARKE } from '$lib/ki';
 
 	let { data } = $props();
 
@@ -64,6 +65,11 @@
 			Zu {data.ohneAufschrieb.join(', ')} habe ich noch keinen Aufschrieb. Danach frage ich nicht.
 		</p>
 	{/if}
+
+	<p class="ki-hinweis" style="margin:14px 0 0">
+		<span class="ki-hinweis__marke">{KI_MARKE}</span>
+		<span>{KI_EINORDNUNG}</span>
+	</p>
 </div>
 
 {#if nochmal}

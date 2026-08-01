@@ -4,28 +4,34 @@ Begleitliste zu [`AI-ACT.md`](AI-ACT.md). Was ab **2.8.2026** zu kennzeichnen is
 das im Code hängt. Zeilennummern sind Stand `c338e45` und wandern — die Datei ist der
 verlässliche Teil, die Zeile nur der Einstieg.
 
-**Befund vorweg:** In der gesamten Oberfläche steht derzeit **an keiner Stelle**, dass
-lernassi eine KI ist. Weder für das Kind noch für die Lehrkraft. Geprüft mit einer Suche
-nach „KI", „künstlich", „Computer" über alle `.svelte`-Dateien — kein Treffer.
+**Ausgangsbefund:** In der gesamten Oberfläche stand **an keiner Stelle**, dass lernassi
+eine KI ist — weder für das Kind noch für die Lehrkraft. Ein Teil davon ist inzwischen
+umgesetzt; die Tabellen führen den Stand mit (**✓ steht**, **offen**).
+
+Die Sätze selbst stehen zentral in [`src/lib/ki.ts`](src/lib/ki.ts) — dieselbe Überlegung
+wie bei den Lernstands-Wörtern in `kategorie.ts`: ein Wortlaut, viele Stellen. Die beiden
+Darstellungsformen (`.ki-hinweis` für den Satz, `.tag--ki` für das Abzeichen) stehen in
+`src/app.css`.
 
 ---
 
 ## K1 · Art. 50 Abs. 1 + Abs. 5 — Hinweis vor der ersten Interaktion
 
-Fehlt vollständig. Muss **spätestens bei der ersten Interaktion** stehen, klar,
-laienverständlich und screenreader-zugänglich — nicht in AGB oder Untermenü.
+Muss **spätestens bei der ersten Interaktion** stehen, klar, laienverständlich und
+screenreader-zugänglich — nicht in AGB oder Untermenü.
 
 ### Kind-Seite
 
-| Stelle | Warum hier |
-|---|---|
-| `src/routes/anmelden/+page.svelte` | Allererster Kontakt überhaupt. Registrierung und Anmeldung des Kindes. Der Hinweis gehört sichtbar aufs Formular, nicht in eine Fußzeile. |
-| `src/routes/schueler/name/+page.svelte` | Onboarding-Schritt direkt nach der Registrierung — die natürliche Stelle für einen ruhigen Satz, was lernassi ist. |
-| `src/routes/schueler/+layout.svelte` | Schale um alle Kind-Seiten. Trägt den dauerhaften, unaufdringlichen Hinweis, der die „jede erste Interaktion"-Regel auch für später hinzukommende Personen erfüllt. |
-| `src/routes/schueler/aufnehmen/+page.svelte` | **Wichtigste Stelle.** Hier verlässt zum ersten Mal etwas vom Kind das Gerät Richtung Modell (Foto → Vision-Aufruf). Vor dem Auslösen muss klar sein, dass eine KI das Heft liest. |
-| `src/routes/schueler/kapitel/[id]/+page.svelte` | Vorspann vor der Einordnungsrunde — letzter Punkt vor der ersten Fragerunde. |
-| `src/routes/schueler/runde/[id]/+page.svelte` | Die Runde selbst; Frage ab Z. 196, Rückmeldungen Z. 157–174. |
-| `src/routes/schueler/ueben/[id]/+page.svelte` | Übung; Frage Z. 195, Hinweis Z. 198, Rückmeldungen Z. 159–171. |
+| Stelle | Stand | Warum hier |
+|---|---|---|
+| `src/routes/schueler/aufnehmen/+page.svelte` | **✓ steht** | **Wichtigste Stelle.** Hier verlässt zum ersten Mal etwas vom Kind das Gerät Richtung Modell (Foto → Vision-Aufruf). Der Hinweis steht vor dem Auslösen, in beiden Varianten (Handy und Rechner). |
+| `src/routes/schueler/kapitel/[id]/+page.svelte` | **✓ steht** | Vorspann vor der Einordnungsrunde, am Ende der Karte „Das habe ich von dir". |
+| `src/routes/schueler/ueben/[id]/+page.svelte` | **✓ steht** | Übung hat **keinen** Vorspann — der Hinweis steht darum auf der Seite selbst, unter dem Kopf und vor der Selbsteinschätzung. |
+| `src/routes/schueler/aufnahme/[id]/+page.svelte` | **✓ steht** | Ergebnis der Fotosession: dort ist jeder Text maschinell, nur die Fotos nicht. Eine Markierung für die ganze Seite statt eine je Absatz. |
+| `src/routes/schueler/thema/[id]/+page.svelte` | **✓ steht** | Dasselbe für die Seite eines Aufschriebs — Zusammenfassung, Begriffe und Abschrift. |
+| `src/routes/anmelden/+page.svelte` | offen | Allererster Kontakt überhaupt. Registrierung und Anmeldung des Kindes. |
+| `src/routes/schueler/name/+page.svelte` | offen | Onboarding-Schritt direkt nach der Registrierung. |
+| `src/routes/schueler/+layout.svelte` | offen | Schale um alle Kind-Seiten. Achtung: blendet sich auf `aufnehmen` und `name` bewusst aus (Z. 8–10) — kann die dortigen Hinweise also **nicht** ersetzen. |
 
 ### Lehrkraft-Seite
 
@@ -76,15 +82,20 @@ Entscheidung: bleibt ein vom Kind umbenanntes Kapitel KI-erzeugt?
 
 ### Anzeigestellen (hier wird es ausgegeben)
 
-| Stelle | Was |
-|---|---|
-| `src/routes/schueler/aufnahme/[id]/+page.svelte:23,27` | Zusammenfassung und Begriffe nach dem Einlesen |
-| `src/routes/schueler/thema/[id]/+page.svelte:34,37` | Zusammenfassung und Begriffe am Thema |
-| `src/routes/schueler/plan/+page.svelte:37,68` | Auftrag der Lernkarte |
-| `src/routes/schueler/runde/[id]/+page.svelte:196` | Fragetext; Rückmeldungen Z. 157–174 |
-| `src/routes/schueler/ueben/[id]/+page.svelte:195,198` | Fragetext und Hinweis; Rückmeldungen Z. 159–171 |
-| `src/routes/schueler/kapitel/[id]/+page.svelte:39` | Themen-Chips im Vorspann |
-| `src/routes/schueler/+page.svelte` | Inhaltsverzeichnis — Kapitel- und Themen-Titel |
+`kiErzeugt` aus `$lib/ki` setzt `data-ki-erzeugt="true"` — das ist die maschinenlesbare
+Hälfte. Sichtbar wird es entweder über das Abzeichen `.tag--ki` (an der Frage) oder über
+den Abschnittshinweis (auf den Aufschrieb-Seiten).
+
+| Stelle | Stand | Was |
+|---|---|---|
+| `schueler/runde/[id]/+page.svelte` | **✓ Abzeichen + Attribut** | Fragetext, Abzeichen in der Kopfzeile der Fragekarte |
+| `schueler/ueben/[id]/+page.svelte` | **✓ Abzeichen + Attribut** | Fragetext und der Auftrag in der Überschrift |
+| `schueler/aufnahme/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Kapitel/Thema im Ablage-Pfad |
+| `schueler/thema/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Abschrift |
+| `schueler/plan/+page.svelte` | **✓ nur Attribut** | Aufträge der Lernkarten. Bewusst ohne Abzeichen: der Plan ist eine Liste, ein Abzeichen je Zeile wäre Lärm. |
+| `schueler/runde/[id]` + `ueben/[id]`, Rückmeldungen | offen | Die Rückmeldungssätze nach einer Antwort sind ebenfalls erzeugt. Die Fragekarte trägt das Abzeichen, die Rückmeldung steht in einer eigenen Blase. |
+| `schueler/kapitel/[id]/+page.svelte:39` | offen | Themen-Chips im Vorspann (Titel stammen vom Modell) |
+| `schueler/+page.svelte` | offen | Inhaltsverzeichnis — Kapitel- und Themen-Titel. Hier hängt die Entscheidung dran, ob ein vom Kind umbenanntes Kapitel KI-erzeugt bleibt. |
 
 ---
 

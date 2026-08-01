@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { KI_MARKE, kiErzeugt } from '$lib/ki';
 	import { enhance } from '$app/forms';
 	import { rundeAblegen } from '$lib/mitschrieb';
 
@@ -190,10 +191,11 @@
 			}}
 		>
 			<input type="hidden" name="frage" value={frage.id} />
-			<p class="eyebrow" style="margin:0 0 8px">
-				Frage {frage.nummer} von {frage.von}{data.zweiterVersuch ? ' · zweiter Versuch' : ''}
+			<p class="eyebrow fragenkopf" style="margin:0 0 8px">
+				<span>Frage {frage.nummer} von {frage.von}{data.zweiterVersuch ? ' · zweiter Versuch' : ''}</span>
+				<span class="tag tag--ki">{KI_MARKE}</span>
 			</p>
-			<p style="margin:0 0 14px;font-size:17px;line-height:1.55">{frage.prompt}</p>
+			<p style="margin:0 0 14px;font-size:17px;line-height:1.55" {...kiErzeugt}>{frage.prompt}</p>
 
 			<!-- Nach der Rückmeldung steht der Hinweis schon dort — hier nur beim Neuladen. -->
 			{#if data.zweiterVersuch && data.hinweis && !rueckmeldung}
@@ -495,6 +497,13 @@
 </div>
 
 <style>
+	/* Fragenkopf trägt jetzt zwei Dinge: die Zählung und die Herkunftsmarke. */
+	.fragenkopf {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
 	.kopf {
 		padding-bottom: 14px;
 		border-bottom: 1px solid var(--line);

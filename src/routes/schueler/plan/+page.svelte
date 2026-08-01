@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { kiErzeugt } from '$lib/ki';
 	let { data, form } = $props();
 
 	const wann = (dueAt: number | null) =>
@@ -34,7 +35,7 @@
 		</p>
 		<ul class="vorschlagsliste">
 			{#each data.vorschlag.karten as k (k.id)}
-				<li>{k.auftrag}</li>
+				<li {...kiErzeugt}>{k.auftrag}</li>
 			{/each}
 		</ul>
 		<form method="POST" action="?/vorziehen">
@@ -65,7 +66,7 @@
 				{#each fach.punkte as p (p.id)}
 					<div class="card punkt" class:erledigt={p.status === 'erledigt'} class:weg={p.status === 'verworfen'}>
 						<div class="punkt__text">
-							<span class="auftrag">{p.auftrag}</span>
+							<span class="auftrag" {...kiErzeugt}>{p.auftrag}</span>
 							<span class="small">
 								{p.minutes ? `etwa ${p.minutes} Minuten` : 'kurz'}
 								{#if p.kapitel}· {p.kapitel}{/if}
