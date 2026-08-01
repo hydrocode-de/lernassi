@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { seitenLabel } from '$lib/heft';
+	import { KI_AUFNEHMEN, KI_MARKE } from '$lib/ki';
 
 	let { data, form } = $props();
 
@@ -80,12 +81,20 @@
 	</div>
 	<h1 class="titel nurHandy">Aufschrieb fotografieren</h1>
 	<p class="muted hinweistext nurHandy">Ganze Heftseite ins Bild, möglichst gerade.</p>
+	<p class="ki-hinweis nurHandy" style="margin:0 0 14px">
+		<span class="ki-hinweis__marke">{KI_MARKE}</span>
+		<span>{KI_AUFNEHMEN}</span>
+	</p>
 
 	<div class="nurRechner">
 		<a href="/schueler" class="btn btn--plain zurueck">Zurück</a>
 		<h1 style="margin:0 0 5px">Aufschrieb hinzufügen</h1>
-		<p class="muted" style="margin:0 0 24px;font-size:16px">
+		<p class="muted" style="margin:0 0 14px;font-size:16px">
 			{gewaehltesFach ? `Fach: ${gewaehltesFach} · ` : ''}eine Seite pro Bild, Reihenfolge egal.
+		</p>
+		<p class="ki-hinweis" style="margin:0 0 24px">
+			<span class="ki-hinweis__marke">{KI_MARKE}</span>
+			<span>{KI_AUFNEHMEN}</span>
 		</p>
 	</div>
 

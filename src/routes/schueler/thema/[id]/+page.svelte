@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { seitenLabel, vorZeit } from '$lib/heft';
+	import { KI_AUFSCHRIEB, KI_MARKE, kiErzeugt } from '$lib/ki';
 
 	let { data, form } = $props();
 
@@ -23,6 +24,11 @@
 	{/if}
 </p>
 
+<p class="ki-hinweis" style="margin:16px 0 0">
+	<span class="ki-hinweis__marke">{KI_MARKE}</span>
+	<span>{KI_AUFSCHRIEB}</span>
+</p>
+
 <div class="raster">
 	<div class="stapel">
 		{#each data.aufschriebe as a (a.id)}
@@ -31,9 +37,9 @@
 					<p class="eyebrow" style="margin:0">Darum geht es</p>
 					<span class="small">{vorZeit(a.geaendert ?? a.wann)}</span>
 				</div>
-				<p class="text">{a.zusammenfassung}</p>
+				<p class="text" {...kiErzeugt}>{a.zusammenfassung}</p>
 				{#if a.begriffe.length}
-					<div class="chips">
+					<div class="chips" {...kiErzeugt}>
 						{#each a.begriffe as begriff (begriff)}
 							<span class="chip" style="cursor:default">{begriff}</span>
 						{/each}
@@ -49,7 +55,7 @@
 							{a.seiten.length ? `Seite ${a.seiten.map((s) => s.nummer).join(', ')}` : ''}
 						</span>
 					</div>
-					<p class="text abschrift">{a.abschrift}</p>
+					<p class="text abschrift" {...kiErzeugt}>{a.abschrift}</p>
 				</div>
 			{/if}
 		{/each}

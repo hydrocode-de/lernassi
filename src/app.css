@@ -256,6 +256,36 @@ a:hover {
 	background: var(--sky);
 	color: var(--sky-ink);
 }
+/* Herkunftsmarke, kein Lernstand: lavendel, weil mint/sky/apricot/rose für „sitzt" bis
+   „noch nicht" reserviert sind. Ein KI-Abzeichen darf nicht aussehen wie eine Bewertung. */
+.tag--ki {
+	background: var(--lavender);
+	color: var(--lavender-ink);
+	letter-spacing: 0.04em;
+}
+
+/* ---------- Herkunftshinweis: „hier spricht eine KI" ---------- */
+/* Ruhig, aber nicht versteckt — Art. 50 Abs. 5 verlangt klar und unterscheidbar, und
+   zwar dort, wo die Interaktion stattfindet, nicht in einer Fußzeile. */
+.ki-hinweis {
+	display: flex;
+	align-items: baseline;
+	gap: 9px;
+	margin: 0;
+	padding: 11px 14px;
+	border-radius: var(--r);
+	background: var(--lavender);
+	color: var(--lavender-ink);
+	font-size: 14.5px;
+	line-height: 1.45;
+}
+.ki-hinweis__marke {
+	flex: none;
+	font-family: var(--display);
+	font-weight: 700;
+	font-size: 12px;
+	letter-spacing: 0.08em;
+}
 
 /* ---------- Felder: gefüllt, Label als Teil des Feldes ---------- */
 .field {

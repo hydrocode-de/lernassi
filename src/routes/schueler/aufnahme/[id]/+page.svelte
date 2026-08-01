@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { KI_AUFSCHRIEB, KI_MARKE, kiErzeugt } from '$lib/ki';
 	let { data } = $props();
 	let offen = $state<string | null>(null);
 
@@ -12,18 +13,22 @@
 <h1 style="margin:12px 0 5px">
 	{#if anzahl === 1}Erkannt &amp; eingeordnet{:else}{anzahl} Themen gefunden{/if}
 </h1>
-<p class="muted" style="margin:0 0 24px;font-size:16px">
+<p class="muted" style="margin:0 0 14px;font-size:16px">
 	{seitenText} aus deinem Heft · {data.fach}
+</p>
+<p class="ki-hinweis" style="margin:0 0 24px">
+	<span class="ki-hinweis__marke">{KI_MARKE}</span>
+	<span>{KI_AUFSCHRIEB}</span>
 </p>
 
 {#each data.themen as thema (thema.id)}
 	<div class="raster">
 		<div class="card">
 			<p class="eyebrow" style="margin:0 0 10px">Darum geht es</p>
-			<p class="text">{thema.zusammenfassung}</p>
+			<p class="text" {...kiErzeugt}>{thema.zusammenfassung}</p>
 
 			{#if thema.begriffe.length}
-				<div class="chips">
+				<div class="chips" {...kiErzeugt}>
 					{#each thema.begriffe as begriff (begriff)}
 						<span class="chip" style="cursor:default">{begriff}</span>
 					{/each}
@@ -50,8 +55,8 @@
 				<p class="eyebrow" style="margin:0 0 12px">Hier hab ich es abgelegt</p>
 				<div class="pfad">
 					<span class="small">{data.fach}</span>
-					<span class="pfad__kapitel">↳ {thema.kapitel}</span>
-					<span class="pfad__thema">↳ {thema.thema}</span>
+					<span class="pfad__kapitel" {...kiErzeugt}>↳ {thema.kapitel}</span>
+					<span class="pfad__thema" {...kiErzeugt}>↳ {thema.thema}</span>
 				</div>
 			</div>
 

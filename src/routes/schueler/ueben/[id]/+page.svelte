@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { KI_MARKE, KI_UEBEN, kiErzeugt } from '$lib/ki';
 	import { enhance } from '$app/forms';
 	import { rundeAblegen } from '$lib/mitschrieb';
 
@@ -73,7 +74,7 @@
 	<div class="row" style="align-items:flex-start">
 		<div>
 			<p class="eyebrow" style="margin:0 0 4px">Aus meinem Lernplan</p>
-			<h1 style="margin:0;font-size:24px">{data.auftrag}</h1>
+			<h1 style="margin:0;font-size:24px" {...kiErzeugt}>{data.auftrag}</h1>
 			<p class="muted" style="margin:5px 0 0;font-size:16px">
 				{#if data.fach}{data.fach}{/if}{#if data.kapitel} · {data.kapitel}{/if}{#if data.minuten}
 					· etwa {data.minuten} Minuten{/if}
@@ -102,6 +103,11 @@
 		{/if}
 	</div>
 </div>
+
+<p class="ki-hinweis" style="margin:18px 0 0">
+	<span class="ki-hinweis__marke">{KI_MARKE}</span>
+	<span>{KI_UEBEN}</span>
+</p>
 
 {#if form && 'message' in form && form.message}
 	<div class="meldung meldung--fehler">{form.message}</div>
@@ -187,12 +193,15 @@
 			}}
 		>
 			<input type="hidden" name="questionId" value={frage.id} />
-			<p class="eyebrow" style="margin:0 0 8px">
-				Frage {frage.nummer} von {frage.von}{data.nachgefasst ? ' · noch ein Versuch' : ''} ·
-				{frage.nochWert}
-				{frage.nochWert === 1 ? 'Punkt' : 'Punkte'}
+			<p class="eyebrow fragenkopf" style="margin:0 0 8px">
+				<span>
+					Frage {frage.nummer} von {frage.von}{data.nachgefasst ? ' · noch ein Versuch' : ''} ·
+					{frage.nochWert}
+					{frage.nochWert === 1 ? 'Punkt' : 'Punkte'}
+				</span>
+				<span class="tag tag--ki">{KI_MARKE}</span>
 			</p>
-			<p style="margin:0 0 14px;font-size:17px;line-height:1.55">{frage.prompt}</p>
+			<p style="margin:0 0 14px;font-size:17px;line-height:1.55" {...kiErzeugt}>{frage.prompt}</p>
 
 			{#if data.nachgefasst && data.hinweis && !rueckmeldung}
 				<p class="card card--tint hinweis">{data.hinweis}</p>
@@ -353,6 +362,13 @@
 </div>
 
 <style>
+	/* Fragenkopf trägt jetzt zwei Dinge: die Zählung und die Herkunftsmarke. */
+	.fragenkopf {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
 	/* Der Kopf bleibt stehen, der Verlauf scrollt darunter durch — sonst verliert das Kind bei
 	   langen Übungen aus dem Blick, worum es geht und wie weit es ist. Die seitliche Polsterung
 	   der Schale wird hier aufgehoben und wieder angelegt, damit der Balken bis an den Rand geht. */
