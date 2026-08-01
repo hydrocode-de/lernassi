@@ -23,6 +23,12 @@ export const KI_EINORDNUNG =
 export const KI_UEBEN =
 	'Die Fragen kommen von mir als KI – einem Computerprogramm. Manchmal liege ich daneben.';
 
+/** Oben im Gespräch. Hier ist der Hinweis am wenigsten verzichtbar: ein Gespräch ist genau
+ *  die Form, bei der die Ausnahme „ist doch offensichtlich" am ehesten versucht würde — und
+ *  bei Kindern legen die Kommissions-Leitlinien sie besonders eng aus. */
+export const KI_GESPRAECH =
+	'Ich bin eine KI – ein Computerprogramm. Ich stelle dir Fragen und gehe auf deine Antworten ein. Manchmal liege ich daneben.';
+
 /** Über den Ergebnissen einer Fotosession und auf der Seite eines Aufschriebs. */
 export const KI_AUFSCHRIEB =
 	'Diesen Text hat eine KI aus deinen Seiten gelesen und geschrieben. Die Fotos sind deine.';

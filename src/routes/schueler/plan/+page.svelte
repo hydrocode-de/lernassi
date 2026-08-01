@@ -76,6 +76,9 @@
 						<div class="punkt__knoepfe">
 							{#if p.status === 'offen'}
 								<a class="btn klein" href="/schueler/ueben/karte/{p.id}">Üben</a>
+							{#if data.gespraech}
+								<a class="btn klein" href="/schueler/gespraech/karte/{p.id}">Im Gespräch</a>
+							{/if}
 								<form method="POST" action="?/abhaken">
 									<input type="hidden" name="id" value={p.id} />
 									<button class="btn btn--go klein">Abgehakt</button>

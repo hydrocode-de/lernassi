@@ -14,6 +14,8 @@ import {
 } from '$lib/server/warteschlange';
 import { and, eq, inArray } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
+import { env } from '$env/dynamic/private';
+import { gespraechAn } from '$lib/server/gespraech';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -68,7 +70,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 		faecher,
 		offene: reihe.length,
 		naechste: reihe[0]?.id ?? null,
-		vorschlag: await umsortierenVorschlagen(studentId)
+		vorschlag: await umsortierenVorschlagen(studentId),
+		// Solange der Gesprächsmodus erprobt wird, steht er als zweiter Knopf neben dem
+		// gewohnten — nicht an seiner Stelle. Vergleichen kann man nur, was nebeneinander läuft.
+		gespraech: gespraechAn(env)
 	};
 };
 

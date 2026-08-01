@@ -227,6 +227,11 @@ export const rounds = sqliteTable('rounds', {
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
 	kind: text('kind').notNull().default('einordnung'), // 'einordnung' | 'uebung'
+	// WOFÜR die Runde da ist, steht in `kind`. WIE sie geführt wird, steht hier: `klassisch`
+	// ist die Welle fertiger Fragen, `gespraech` der Zug-um-Zug-Verlauf (siehe gespraech.ts).
+	// Zwei Spalten statt einer dritten Art, damit `fortschritt.ts` und die Warteschlange
+	// unverändert weiterrechnen — für die Abrechnung ist ein Gespräch eine Übung wie jede andere.
+	modus: text('modus').notNull().default('klassisch'), // 'klassisch' | 'gespraech'
 	// Bei einer Übung kann die Karte fachweit sein — dann gibt es kein Kapitel.
 	chapterId: text('chapter_id').references(() => tocEntries.id, { onDelete: 'cascade' }),
 	// Nur bei kind='uebung': die Karte, die abgearbeitet wird. Die Rückrichtung
@@ -295,6 +300,45 @@ export const questions = sqliteTable('questions', {
 	punkte: integer('punkte').notNull().default(1),
 	hint: text('hint'), // optional; bei Ja/Nein meist leer
 	topicId: text('topic_id').references(() => tocEntries.id, { onDelete: 'set null' }),
+	// Im Gespräch: gehörte diese Frage zur Abschlussprüfung oder lief sie im Verlauf mit?
+	// Beides zählt in dieselbe Summe — getrennt wird nur beim Anzeigen, weil die Prüfung
+	// ohne Nachfassen und ohne Vorrede lief und darum anders zu lesen ist.
+	pruefung: integer('pruefung', { mode: 'boolean' }).notNull().default(false),
+	// Steht die Frage im Heft dieses Kindes, oder geht sie bewusst darüber hinaus? Das Heft
+	// ist Bias, kein Zaun — aber wo der Agent darüber hinausgeht, darf er hinterher nicht
+	// „schau nochmal in dein Heft" sagen. Und die Lehrkraft soll es beim Prüfen sehen.
+	bezug: text('bezug'), // 'heft' | 'darueber-hinaus' | null (klassische Runden)
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
+// Ein Zug im Gespräch (M5). Die Runde ist damit kein Stapel fertiger Fragen mehr, sondern
+// eine Folge: lernassi sagt etwas, das Kind antwortet, lernassi geht darauf ein.
+//
+// Warum eine eigene Tabelle und nicht `questions` mit einem Flag: ein Zug muss auch dann
+// existieren, wenn er keine Frage trägt („Das trifft es. Und wie hängt das mit X zusammen?"),
+// und die Reihenfolge des Gesprächs ist eine andere Ordnung als die der bewerteten Fragen.
+// Trägt ein Zug eine Frage, zeigt `questionId` dorthin — bewertet und gerechnet wird
+// weiterhin ausschließlich in `questions`/`responses`.
+//
+// `text` ist bei Kind-Zügen NULLABLE, und zwar absichtlich: beim Abschluss der Runde wird der
+// Wortlaut des Kindes gelöscht (siehe `gespraechAbschliessen`). Was ein Kind frei geschrieben
+// hat, bleibt so wenig liegen wie die Fotos — das Gerüst des Gesprächs bleibt, der Wortlaut
+// nicht. Dass es einen offenen Kanal gibt, ist der teuerste Teil dieser Richtung; das hier
+// ist der Preis, den wir dafür zahlen wollen.
+export const turns = sqliteTable('turns', {
+	id: id(),
+	roundId: text('round_id')
+		.notNull()
+		.references(() => rounds.id, { onDelete: 'cascade' }),
+	sortOrder: integer('sort_order').notNull().default(0),
+	rolle: text('rolle').notNull(), // 'lernassi' | 'kind'
+	// lernassi: 'reden' | 'frage' | 'schluss' — Kind: 'antwort' (getippt) | 'wahl' (getippt=angetippt)
+	art: text('art').notNull(),
+	text: text('text'),
+	questionId: text('question_id').references((): AnySQLiteColumn => questions.id, {
+		onDelete: 'set null'
+	}),
+	bezug: text('bezug'), // wie questions.bezug, für Züge ohne Frage
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 

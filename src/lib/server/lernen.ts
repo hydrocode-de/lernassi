@@ -10,7 +10,7 @@
 // Aufnehmen und Lernen bleiben getrennt.
 
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateObject } from 'ai';
+import { generateObject, streamObject } from 'ai';
 import { z } from 'zod';
 import { env } from '$env/dynamic/private';
 
@@ -24,8 +24,22 @@ const MODELLE = {
 	spiegel: () => env.REQUESTY_MODEL_SPIEGEL ?? STANDARD,
 	plan: () => env.REQUESTY_MODEL_PLAN ?? STANDARD,
 	beurteilung: () => env.REQUESTY_MODEL_BEURTEILUNG ?? STANDARD,
-	bewerter: () => env.REQUESTY_MODEL_BEWERTER ?? STANDARD
+	bewerter: () => env.REQUESTY_MODEL_BEWERTER ?? STANDARD,
+	gespraech: () => env.REQUESTY_MODEL_GESPRAECH ?? STANDARD
 };
+
+function modell(agent: keyof typeof MODELLE) {
+	const apiKey = env.REQUESTY_API_KEY;
+	if (!apiKey) throw new KeinSchluessel();
+	const requesty = createOpenAICompatible({
+		name: 'requesty',
+		baseURL: BASE_URL,
+		apiKey,
+		// Erzwingt json_schema statt json_object — siehe ingest.ts.
+		supportsStructuredOutputs: true
+	});
+	return requesty(MODELLE[agent]());
+}
 
 export class KeinSchluessel extends Error {
 	constructor() {
@@ -42,6 +56,10 @@ export type Mitschrieb = {
 	system: string;
 	eingabe: string;
 	antwort: unknown;
+	/** Token-Verbrauch dieses Aufrufs. Im Gespräch fallen je Runde ein Vielfaches an Aufrufen
+	 *  an wie in der klassischen Welle — ohne Zahlen im Mitschrieb wäre der Vergleich der
+	 *  beiden Modi eine Meinungsfrage. */
+	tokens?: { rein: number; raus: number } | null;
 };
 
 async function frage<T>(opts: {
@@ -51,23 +69,11 @@ async function frage<T>(opts: {
 	eingabe: string[];
 	mitschrieb?: Mitschrieb[];
 }): Promise<T> {
-	const apiKey = env.REQUESTY_API_KEY;
-	if (!apiKey) throw new KeinSchluessel();
-
-	const requesty = createOpenAICompatible({
-		name: 'requesty',
-		baseURL: BASE_URL,
-		apiKey,
-		// Erzwingt json_schema statt json_object — siehe ingest.ts.
-		supportsStructuredOutputs: true
-	});
-
-	const modell = MODELLE[opts.agent]();
 	const system = opts.system.join('\n');
 	const eingabe = opts.eingabe.join('\n');
 
-	const { object } = await generateObject({
-		model: requesty(modell),
+	const { object, usage } = await generateObject({
+		model: modell(opts.agent),
 		schema: opts.schema,
 		system,
 		prompt: eingabe
@@ -75,11 +81,12 @@ async function frage<T>(opts: {
 
 	opts.mitschrieb?.push({
 		agent: opts.agent,
-		modell,
+		modell: MODELLE[opts.agent](),
 		wann: Date.now(),
 		system,
 		eingabe,
-		antwort: object
+		antwort: object,
+		tokens: { rein: usage?.inputTokens ?? 0, raus: usage?.outputTokens ?? 0 }
 	});
 	return object;
 }
@@ -419,6 +426,266 @@ export async function bewerteFreitext(opts: {
 			'',
 			'Antwort des Kindes:',
 			opts.antwort
+		]
+	});
+}
+
+// ─────────────────────────────────────────────────────────────
+// 1c. Gesprächs-Agent — ein Zug, nicht eine Welle (M5)
+// ─────────────────────────────────────────────────────────────
+//
+// Der Unterschied zum Prüf-Agenten ist nicht die Fragenart, sondern der Zuschnitt: der
+// Prüf-Agent schreibt drei Fragen auf einmal und sieht die Antworten nie. Dieser hier wird
+// einmal pro Kind-Zug gerufen, sieht den ganzen bisherigen Verlauf samt Antworten und
+// entscheidet daraus, was als Nächstes passiert.
+//
+// Die Schleife liegt im Server (gespraech.ts), nicht im SDK: ein Kind überlegt Minuten und
+// lädt zwischendurch die Seite neu — ein Tool-Loop könnte darauf nicht warten.
+
+/** Ein Zug, wie er im Verlauf steht — Eingabe für den nächsten Aufruf. */
+export type Verlaufszug = {
+	wer: 'lernassi' | 'kind';
+	text: string;
+	/** Bei einer gezählten Frage: wie die Antwort ausging. Sonst null. */
+	ergebnis?: string | null;
+};
+
+const ZugSchema = z.object({
+	// Steht bewusst als erstes Feld: beim Streamen kommen die Felder in dieser Reihenfolge,
+	// und das Kind soll den Satz wachsen sehen, nicht auf die Auswahl warten.
+	text: z
+		.string()
+		.describe(
+			'Was du dem Kind jetzt sagst. Bei einer Frage IST das die Frage — kein Vorspann, ' +
+				'keine zweite Fassung. Ein bis drei Sätze.'
+		),
+	zug: z
+		.enum(['reden', 'frage', 'schluss'])
+		.describe(
+			'reden = nur sagen, das Kind antwortet frei. frage = das Kind tippt an. ' +
+				'schluss = das Gespräch ist durch.'
+		),
+	bezug: z
+		.enum(['heft', 'darueber-hinaus'])
+		.describe(
+			'heft = die Sache steht im Material des Kindes, du darfst dorthin verweisen. ' +
+				'darueber-hinaus = du gehst bewusst weiter; dann NICHT aufs Heft verweisen.'
+		),
+	art: z
+		.enum(['single', 'multi', 'yesno', 'order', 'match'])
+		.nullable()
+		.describe('Nur bei zug "frage". Sonst null. Freitext gibt es hier nicht — das Gespräch IST der Freitext.'),
+	auswahl: z
+		.array(z.string())
+		.describe(
+			'single/multi: alle Möglichkeiten (3 bis 4). yesno: leer. order: die Elemente in der ' +
+				'RICHTIGEN Reihenfolge — gemischt wird später. match: die linken Begriffe. Sonst leer.'
+		),
+	partner: z.array(z.string()).describe('Nur bei match: partner[i] gehört zu auswahl[i]. Sonst leer.'),
+	richtig: z
+		.array(z.string())
+		.describe(
+			'single: die eine richtige Möglichkeit, wortgleich aus auswahl. multi: alle richtigen. ' +
+				'yesno: ["Ja"] oder ["Nein"]. order und match: leer. Sonst leer.'
+		),
+	zaehlt: z
+		.boolean()
+		.describe(
+			'true, wenn diese Frage wirklich etwas über den Lernstand aussagt und in die Punkte ' +
+				'eingehen soll. false bei Fragen, die nur das Gespräch steuern. Bei zug "reden" ' +
+					'und "schluss" immer false.'
+		),
+	punkte: z
+		.number()
+		.int()
+		.min(1)
+		.max(3)
+		.describe(
+			'Wie schwer die Frage ist: 1 = auf Anhieb zu wissen, 2 = braucht Nachdenken, ' +
+				'3 = verlangt Verknüpfen. Vergib 3 sparsam. Ohne gezählte Frage: 1.'
+		)
+});
+
+export type Zug = z.infer<typeof ZugSchema>;
+
+const GESPRAECH_SYSTEM = [
+	'Du führst mit einem Kind ein Gespräch über einen Punkt, den es sich selbst vorgenommen hat.',
+	'Zwei Dinge zugleich: du findest heraus, wie es um seinen Lernstand steht, und du vertiefst ihn.',
+	'Du hältst keinen Vortrag — du fragst, hörst zu und hakst nach.',
+	'',
+	'DEIN WICHTIGSTER ZUG: geh auf das ein, was das Kind zuletzt gesagt oder angetippt hat.',
+	'Ein Zug, der die letzte Antwort nicht aufgreift, ist verschenkt. Genau das ist der',
+	'Unterschied zu einer Liste vorgefertigter Fragen.',
+	'',
+	'Das Heft ist dein Ausgangspunkt, nicht dein Zaun. Du darfst verknüpfen, gegenüberstellen,',
+	'nach dem Warum fragen, eine Folge abschätzen lassen, ein Gegenbeispiel prüfen — auch wenn',
+	'das im Aufschrieb so nicht steht. Aber setze `bezug` ehrlich: bei "heft" darfst du auf das',
+	'eigene Heft verweisen, bei "darueber-hinaus" sagst du dem Kind, dass ihr über seinen',
+	'Aufschrieb hinausgeht, und verweist NICHT darauf. Erfinde nichts, was weder im Material',
+	'steht noch gesichertes Schulwissen ist.',
+	'',
+	'Angetippte Fragen sind dein normales Gesprächsmittel, nicht die Ausnahme: sie gehen schnell,',
+	'sind eindeutig und halten das Gespräch in Bewegung. Der Großteil deiner Züge sollte eine',
+	'sein. Reines Reden nimmst du für das, was eine Auswahl nicht kann — eine Beobachtung',
+	'spiegeln, offen nachfragen, einen Zwischenstand ziehen. Sparsam.',
+	'',
+	'`zaehlt` entscheidet, ob ein Zug in den Lernstand eingeht. Eine Frage, die wirklich etwas',
+	'prüft, zählt. Eine Frage, die nur das Gespräch steuert („Womit fangen wir an?"), zählt nicht.',
+	'Sei darin ehrlich — eine Steuerfrage als Prüfung auszugeben verfälscht den Stand.',
+	'Auf eine gezählte Frage gibt es GENAU EINEN Versuch: dein nächster Zug IST das Nachfassen.',
+	'',
+	'Keine zwei Fragen auf denselben Sachverhalt. Was saß, wird nicht wiederholt — dort gehst du',
+	'eine Stufe höher: verbinden, einordnen, begründen.',
+	'',
+	'Am Ende stellt ein eigener Schritt eine kurze Abschlussprüfung. Du musst also nicht alles',
+	'selbst abprüfen und die Prüfung auch nicht ankündigen — nutze deine Züge fürs Verstehen.',
+	'',
+	'Wenn das Kind etwas schreibt, das nicht zum Lernen gehört — über sich, über andere, über',
+	'zu Hause — geh nicht darauf ein und frag nicht nach. Ein freundlicher Satz, dann zurück zum',
+	'Stoff. Du bist kein Gesprächspartner für alles.',
+	'',
+	KIND_TON
+];
+
+/**
+ * Der nächste Zug — gestreamt. Gibt den Textzuwachs Stück für Stück heraus und daneben die
+ * Zusage auf den fertigen, geprüften Zug.
+ *
+ * Der Aufrufer MUSS `textStrom` auslaufen lassen, sonst wird `fertig` nie erfüllt.
+ */
+export function naechsterZug(opts: {
+	fach: string;
+	kapitel: string;
+	auftrag: string;
+	material: string;
+	lernziel: string | null;
+	beurteilung: string | null;
+	verlauf: Verlaufszug[];
+	restzuege: number;
+	mitschrieb?: Mitschrieb[];
+}): { textStrom: AsyncIterable<string>; fertig: Promise<Zug> } {
+	const system = GESPRAECH_SYSTEM.join('\n');
+	const eingabe = [
+		`Fach: ${opts.fach}`,
+		`Kapitel: ${opts.kapitel}`,
+		'',
+		'Das Kind hat sich diesen Punkt vorgenommen:',
+		opts.auftrag,
+		'',
+		'Lernziel der Lehrkraft für diese Klasse:',
+		opts.lernziel ?? '(keines hinterlegt — richte dich allein am Material aus)',
+		'',
+		'Was du über dieses Kind in diesem Kapitel schon weißt:',
+		opts.beurteilung ?? '(noch nichts)',
+		'',
+		'Material des Kindes:',
+		opts.material,
+		'',
+		'Das Gespräch bisher:',
+		...(opts.verlauf.length
+			? opts.verlauf.map(
+					(z) =>
+						`${z.wer === 'kind' ? 'Kind' : 'Du'}: ${z.text}` +
+						(z.ergebnis ? `  [${z.ergebnis}]` : '')
+				)
+			: ['(noch nichts — das ist dein erster Zug)']),
+		'',
+		opts.restzuege <= 1
+			? 'Das ist dein LETZTER Zug. Setze zug "schluss" und runde in einem Satz ab — ohne ' +
+				'Ergebnis und ohne Zahl.'
+			: `Du hast noch etwa ${opts.restzuege} Züge. Danach kommt die Abschlussprüfung.`
+	].join('\n');
+
+	const lauf = streamObject({
+		model: modell('gespraech'),
+		schema: ZugSchema,
+		system,
+		prompt: eingabe
+	});
+
+	async function* textStrom() {
+		let bisher = '';
+		for await (const teil of lauf.partialObjectStream) {
+			const t = teil.text;
+			if (typeof t === 'string' && t.length > bisher.length) {
+				yield t.slice(bisher.length);
+				bisher = t;
+			}
+		}
+	}
+
+	const fertig = (async () => {
+		const antwort = await lauf.object;
+		const usage = await lauf.usage.catch(() => null);
+		opts.mitschrieb?.push({
+			agent: 'gespraech',
+			modell: MODELLE.gespraech(),
+			wann: Date.now(),
+			system,
+			eingabe,
+			antwort,
+			tokens: usage ? { rein: usage.inputTokens ?? 0, raus: usage.outputTokens ?? 0 } : null
+		});
+		return antwort;
+	})();
+
+	return { textStrom: textStrom(), fertig };
+}
+
+/**
+ * Die Abschlussprüfung: wenige Fragen, ein Versuch, kein Hinweis, keine Vorrede.
+ * Sie misst, was vom Gespräch geblieben ist — deshalb bekommt sie den Verlauf zu sehen.
+ */
+export async function pruefungsfragen(opts: {
+	fach: string;
+	kapitel: string;
+	auftrag: string;
+	material: string;
+	lernziel: string | null;
+	verlauf: Verlaufszug[];
+	anzahl: number;
+	mitschrieb?: Mitschrieb[];
+}): Promise<z.infer<typeof WelleSchema>> {
+	return frage({
+		agent: 'pruef',
+		schema: WelleSchema,
+		mitschrieb: opts.mitschrieb,
+		system: [
+			...PRUEF_SYSTEM,
+			'',
+			'Das hier ist die Abschlussprüfung nach einem Gespräch. Sie ist kurz und sie zählt:',
+			'ein Versuch je Frage, kein Hinweis, keine Rückmeldung dazwischen. Setze `hinweis`',
+			'deshalb immer auf null.',
+			'',
+			'Prüfe, was im Gespräch WIRKLICH VORKAM — nicht das Kapitel im Ganzen. Frag aber nicht',
+			'dieselben Fragen noch einmal ab: eine Prüfung, die den Verlauf wiederholt, misst',
+			'Erinnerung an das Gespräch statt Verstehen. Nimm denselben Stoff von einer anderen Seite.',
+			'',
+			'Nur angetippte Formen (kein art "text"): eine Prüfung soll gerechnet werden können.'
+		],
+		eingabe: [
+			`Fach: ${opts.fach}`,
+			`Kapitel: ${opts.kapitel}`,
+			'',
+			'Das Kind hatte sich diesen Punkt vorgenommen:',
+			opts.auftrag,
+			'',
+			'Lernziel der Lehrkraft für diese Klasse:',
+			opts.lernziel ?? '(keines hinterlegt — richte dich allein am Material aus)',
+			'',
+			'Material des Kindes:',
+			opts.material,
+			'',
+			'So lief das Gespräch:',
+			...(opts.verlauf.length
+				? opts.verlauf.map(
+						(z) =>
+							`${z.wer === 'kind' ? 'Kind' : 'lernassi'}: ${z.text}` +
+							(z.ergebnis ? `  [${z.ergebnis}]` : '')
+					)
+				: ['(kein Verlauf)']),
+			'',
+			`Stelle genau ${opts.anzahl} Fragen.`
 		]
 	});
 }

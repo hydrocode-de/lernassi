@@ -56,6 +56,8 @@ markieren, die Markierung mitspeichern, bei der Ausgabe mitgeben.
 | `src/lib/server/lernen.ts:231` | `erzeugeFragen` — Fragen der Einordnungsrunde |
 | `src/lib/server/lernen.ts:297` | `erzeugeUebungsfragen` — Fragen der Übung |
 | `src/lib/server/lernen.ts:388` | `bewerteFreitext` — Bewertung und Rückmeldungssatz |
+| `lernen.ts` → `naechsterZug` | **Gesprächsmodus (M5).** Jeder Zug von lernassi: Gesprächstext und Frage in einem. Läuft über `streamObject`, also außerhalb der gemeinsamen `frage()`-Stelle — eine Markierung müsste hier eigens ansetzen. Siehe `GESPRAECH.md`. |
+| `lernen.ts` → `pruefungsfragen` | Fragen der Abschlussprüfung im Gespräch |
 | `src/lib/server/lernen.ts:446` | `spiegle` — der Spiegel-Text nach der ersten Welle |
 | `src/lib/server/lernen.ts:517` | `planVorschlaege` — die Aufträge der Lernkarten |
 | `src/lib/server/lernen.ts:580` | `schreibeBeurteilung` — interne Beurteilung |
@@ -73,6 +75,7 @@ markieren, die Markierung mitspeichern, bei der Ausgabe mitgeben.
 | `questions.hint` | `schema.ts:296` | Hinweis beim Nachfassen |
 | `chapterAssessments.text` | `schema.ts:323` | Arbeitsgedächtnis des Agenten |
 | `planItems.auftrag` | `schema.ts:343` | Auftrag der Lernkarte |
+| `turns.text` (rolle `lernassi`) | `schema.ts` | Gesprächszüge im Gespräch — vollständig erzeugt. Kind-Züge sind es nicht; die Spalte trägt beides, die Unterscheidung steckt in `rolle`. |
 
 Es gibt bisher **keine Spalte**, die festhält, dass ein Feld aus einem Modellaufruf
 stammt. Die Unterscheidung „vom Kind" / „vom Modell" existiert im Datenmodell nicht —
@@ -93,6 +96,7 @@ den Abschnittshinweis (auf den Aufschrieb-Seiten).
 | `schueler/aufnahme/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Kapitel/Thema im Ablage-Pfad |
 | `schueler/thema/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Abschrift |
 | `schueler/plan/+page.svelte` | **✓ nur Attribut** | Aufträge der Lernkarten. Bewusst ohne Abzeichen: der Plan ist eine Liste, ein Abzeichen je Zeile wäre Lärm. |
+| `schueler/gespraech/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Gesprächsmodus: `KI_GESPRAECH` oben auf der Seite (Art. 50 Abs. 1 — ein Gespräch ist die Form, bei der der Hinweis am wenigsten verzichtbar ist), `kiErzeugt` an jedem Zug von lernassi, Abzeichen an der Prüfungsfrage. Kind-Züge tragen es nicht — die sind vom Kind. |
 | `schueler/runde/[id]` + `ueben/[id]`, Rückmeldungen | offen | Die Rückmeldungssätze nach einer Antwort sind ebenfalls erzeugt. Die Fragekarte trägt das Abzeichen, die Rückmeldung steht in einer eigenen Blase. |
 | `schueler/kapitel/[id]/+page.svelte:39` | offen | Themen-Chips im Vorspann (Titel stammen vom Modell) |
 | `schueler/+page.svelte` | offen | Inhaltsverzeichnis — Kapitel- und Themen-Titel. Hier hängt die Entscheidung dran, ob ein vom Kind umbenanntes Kapitel KI-erzeugt bleibt. |

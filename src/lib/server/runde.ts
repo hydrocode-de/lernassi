@@ -332,8 +332,19 @@ function mische<T>(xs: T[]): T[] {
 	return a;
 }
 
-/** Aus der Modellantwort wird eine Zeile: Anzeigeform gemischt, Lösung serverseitig. */
-export function alsZeile(roh: RohFrage, themaId: string | null) {
+/**
+ * Aus der Modellantwort wird eine Zeile: Anzeigeform gemischt, Lösung serverseitig.
+ *
+ * `einVersuch` für Fragen, bei denen das Nachfassen woanders passiert (im Gespräch ist der
+ * nächste Zug das Nachfassen) oder gar nicht stattfinden soll (Abschlussprüfung). Dort ist
+ * die Punktzahl reine Schwierigkeit und kein Versuchs-Kontingent mehr — eine schwere Frage
+ * darf 3 Punkte wert sein, auch ohne Hinweis.
+ */
+export function alsZeile(
+	roh: RohFrage,
+	themaId: string | null,
+	opts: { einVersuch?: boolean } = {}
+) {
 	let optionen: Optionen;
 	let loesung: string[];
 
@@ -366,9 +377,11 @@ export function alsZeile(roh: RohFrage, themaId: string | null) {
 	// ohne Hinweis immer 1 Punkt wert — sonst wäre ein Kontingent verschenkt, das niemand
 	// einlösen kann. Freitext braucht keinen Hinweis fürs Nachfassen: dort ist schon die
 	// Rückmeldung des Bewerters der Anstoß.
-	const hinweis = roh.hinweis?.trim() || null;
 	const kontingent = Math.min(3, Math.max(1, Math.round(roh.punkte ?? 1)));
-	const punkte = hinweis || roh.art === 'text' ? kontingent : 1;
+	// Ein Versuch heißt: kein Hinweis nötig, denn es gibt nichts nachzufassen. `antwortSpeichern`
+	// leitet daraus von selbst ab, dass nach dem ersten Versuch Schluss ist.
+	const hinweis = opts.einVersuch ? null : roh.hinweis?.trim() || null;
+	const punkte = opts.einVersuch || hinweis || roh.art === 'text' ? kontingent : 1;
 
 	return {
 		kind: roh.art,
@@ -685,7 +698,13 @@ export async function antwortSpeichern(
 
 	const bisherige = await db.select().from(responses).where(eq(responses.questionId, questionId));
 	const versuch = bisherige.length + 1;
-	// Die Punktzahl der Frage IST ihr Versuchs-Kontingent.
+	// Eine durchgelaufene Frage nimmt keine Antwort mehr an. Ohne diese Sperre könnte ein
+	// zweiter Aufruf von Hand nach einer falschen Antwort noch Punkte holen — bei
+	// Gesprächs- und Prüfungsfragen, die drei Punkte wert sein dürfen, wäre das teuer.
+	const nachfassbar = frage.kind === 'text' || Boolean(frage.hint);
+	if (bisherige.length && (!nachfassbar || bisherige.some((r) => r.outcome !== 'falsch')))
+		return null;
+	// Die Punktzahl der Frage IST ihr Versuchs-Kontingent, solange nachgefasst werden darf.
 	if (versuch > frage.punkte) return null;
 
 	const loesung = JSON.parse(frage.correctAnswer ?? '[]') as string[];
