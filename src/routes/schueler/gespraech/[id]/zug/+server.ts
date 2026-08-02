@@ -56,14 +56,7 @@ export const POST: RequestHandler = async ({ params, locals }) => {
 	const strom = new ReadableStream({
 		async start(controller) {
 			try {
-				const lauf = lernassiZug(
-					runde.id,
-					karte,
-					kontext.kapitel!,
-					lernziel,
-					stand.restzuege,
-					verlauf
-				);
+				const lauf = lernassiZug(runde.id, karte, kontext.kapitel!, lernziel, stand, verlauf);
 				for await (const stueck of lauf.textStrom) {
 					controller.enqueue(zeile({ t: 'text', v: stueck }));
 				}

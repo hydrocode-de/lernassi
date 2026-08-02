@@ -56,8 +56,7 @@ markieren, die Markierung mitspeichern, bei der Ausgabe mitgeben.
 | `src/lib/server/lernen.ts:231` | `erzeugeFragen` — Fragen der Einordnungsrunde |
 | `src/lib/server/lernen.ts:297` | `erzeugeUebungsfragen` — Fragen der Übung |
 | `src/lib/server/lernen.ts:388` | `bewerteFreitext` — Bewertung und Rückmeldungssatz |
-| `lernen.ts` → `naechsterZug` | **Gesprächsmodus (M5).** Jeder Zug von lernassi: Gesprächstext und Frage in einem. Läuft über `streamObject`, also außerhalb der gemeinsamen `frage()`-Stelle — eine Markierung müsste hier eigens ansetzen. Siehe `GESPRAECH.md`. |
-| `lernen.ts` → `pruefungsfragen` | Fragen der Abschlussprüfung im Gespräch |
+| `lernen.ts` → `naechsterZug` | **Gesprächsmodus (M5).** Jeder Zug von lernassi: Gesprächstext und Frage in einem — im Gespräch gibt es nur diese eine Erzeugungsstelle. Läuft über `streamObject`, also außerhalb der gemeinsamen `frage()`-Stelle; eine Markierung müsste hier eigens ansetzen. Siehe `GESPRAECH.md`. |
 | `src/lib/server/lernen.ts:446` | `spiegle` — der Spiegel-Text nach der ersten Welle |
 | `src/lib/server/lernen.ts:517` | `planVorschlaege` — die Aufträge der Lernkarten |
 | `src/lib/server/lernen.ts:580` | `schreibeBeurteilung` — interne Beurteilung |

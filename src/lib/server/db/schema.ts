@@ -300,10 +300,6 @@ export const questions = sqliteTable('questions', {
 	punkte: integer('punkte').notNull().default(1),
 	hint: text('hint'), // optional; bei Ja/Nein meist leer
 	topicId: text('topic_id').references(() => tocEntries.id, { onDelete: 'set null' }),
-	// Im Gespräch: gehörte diese Frage zur Abschlussprüfung oder lief sie im Verlauf mit?
-	// Beides zählt in dieselbe Summe — getrennt wird nur beim Anzeigen, weil die Prüfung
-	// ohne Nachfassen und ohne Vorrede lief und darum anders zu lesen ist.
-	pruefung: integer('pruefung', { mode: 'boolean' }).notNull().default(false),
 	// Steht die Frage im Heft dieses Kindes, oder geht sie bewusst darüber hinaus? Das Heft
 	// ist Bias, kein Zaun — aber wo der Agent darüber hinausgeht, darf er hinterher nicht
 	// „schau nochmal in dein Heft" sagen. Und die Lehrkraft soll es beim Prüfen sehen.

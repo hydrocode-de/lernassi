@@ -19,8 +19,11 @@ Verlauf samt Antworten.
 ## Der Ablauf
 
 ```
-Selbsteinschätzung → Gespräch (Zug um Zug) → Abschlussprüfung → Rückschau → Zahl
+Selbsteinschätzung → Gespräch (Zug um Zug) → Rückschau → Zahl
 ```
+
+Ein einziger Abschnitt. Es gibt **keine** getrennte Prüfung am Ende — das Kind soll an keiner
+Stelle das Gefühl haben, jetzt beginne die Bewertung.
 
 Die Rückschau steht wie in der klassischen Übung **vor** der Zahl: wer erst 78 % liest,
 antwortet nicht mehr über sich.
@@ -33,10 +36,29 @@ Tool-Loop nicht warten. Der Zustand steht in `turns`, der Server ruft je Zug ein
 `naechsterZug` auf. Das bleibt `generateObject` (bzw. `streamObject`), die strukturierte
 Ausgabe ist also nicht aufgegeben.
 
-**2. Gemessen wird aus Fragen — im Gespräch und in der Prüfung.** Reine Redezüge zählen nie.
-Fragen, die der Agent selbst als Gesprächssteuerung markiert (`zaehlt: false`), werden als
-`kind='control'` abgelegt und von `rundeAbrechnen` übersprungen — dieselbe Bauart wie die
-Nachfrage am Anfang einer Einordnung.
+**2. Gemessen wird aus den Fragen der Session — allen, rein additiv.** Es gibt keine zwei
+Sorten Fragen. Eine Frage im sechsten Zug zählt genauso viel wie die im ersten. Reine
+Redezüge zählen nie, und Fragen, die der Agent selbst als Gesprächssteuerung markiert
+(`zaehlt: false`), werden als `kind='control'` abgelegt und von `rundeAbrechnen` übersprungen
+— dieselbe Bauart wie die Nachfrage am Anfang einer Einordnung.
+
+Gesteuert wird das über **eine** Zahl: das Punkteziel der Session (`punkteZiel`, rund 1,2
+Punkte je Minute Kartenumfang). Der Agent bekommt bei jedem Zug gesagt, wo er steht — bei 5
+von 12 und knapper Zeit stellt er Fragen statt zu reden, bei 12 von 12 ist Schluss. Was
+früher „die Prüfung" war, ist damit einfach das Auffüllen: mal zwei Fragen, mal keine.
+
+Das Ziel ist Untergrenze, keine Obergrenze; ein Überschießen im letzten Zug ist kein Fehler.
+Es soll nur nicht vorkommen, dass eine Session auf drei Punkten steht — daraus lässt sich
+kein Prozentwert ablesen, der etwas bedeutet.
+
+**Das Kind erfährt davon nichts.** Der Prompt verbietet dem Agenten ausdrücklich, über
+Punkte, Ziele, Prüfung oder Fortschritt zu sprechen, und die Seite zeigt während des
+Gesprächs keine Zahl — nur einen Balken ohne Beschriftung. Ein laufender Punktestand wäre das
+deutlichste „du wirst gerade geprüft"-Signal, das die Oberfläche senden könnte.
+
+Wann die Session endet, entscheidet der Server, nicht der Agent: ein `schluss`, den niemand
+angefordert hat, wird zum Redezug, und beim angeforderten Abschluss wird der Zug als solcher
+festgeschrieben, auch wenn das Modell noch eine Frage anhängen wollte.
 
 Bewusst **kein** ganzheitliches Modellurteil über das Gespräch: daran hängen
 `roundTopics` → Lehrer-Dashboard → `kategorieAus` → die Position der Karte in der
@@ -87,8 +109,8 @@ node scripts/gespraech-attrappe.mjs          # hört auf :8787
 REQUESTY_BASE_URL=http://127.0.0.1:8787/v1 REQUESTY_API_KEY=egal GESPRAECH=1 npm run dev
 ```
 
-Die Attrappe spielt ein festes Drehbuch (Frage → offener Zug → Frage über das Heft hinaus →
-Frage → Schluss → drei Prüfungsfragen) und streamt in Stücken. Sie sagt **nichts** über die
+Die Attrappe spielt ein festes Drehbuch (sechs Fragen und ein offener Zug, zusammen genau die
+12 Punkte einer Zehn-Minuten-Karte) und streamt in Stücken. Sie sagt **nichts** über die
 Qualität echter Modellantworten — sie prüft nur, dass der Ablauf trägt.
 
 ## Was noch offen ist
@@ -105,9 +127,9 @@ Modi keine Meinungsfrage ist.
 die zweite große Kostenschraube — und zugleich die technische Form von „Heft als Bias":
 danach greifen statt darin eingesperrt sein.
 
-**Gewichtung.** Gespräch und Prüfung zählen gleich in dieselbe Summe; getrennt ausgewiesen
-wird nur bei der Anzeige („Im Gespräch 6 von 6, in der Prüfung 0 von 6"). Ob die Prüfung
-schwerer wiegen sollte, entscheidet man besser an echten Daten als vorher.
+**Kalibrierung des Punkteziels.** 1,2 Punkte je Minute ist geraten. Zu hoch heißt: das
+Gespräch wird zum Abfragen, weil der Agent auffüllen muss. Zu niedrig heißt: die Prozentzahl
+steht auf zu wenig Fragen. Das ist die erste Zahl, die nach echten Läufen nachzuziehen ist.
 
 **Prüfung durch die Lehrkraft.** Ein freierer Agent braucht mehr Aufsicht, nicht weniger. Die
 angetippten Züge lassen sich weiter als einzelne Fragen stichproben (anonym, ohne Kind);

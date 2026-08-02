@@ -52,6 +52,39 @@ function zugFuer(prompt) {
 			richtig: ['Neue Währung', 'Weniger Staatsausgaben'],
 			zaehlt: true,
 			punkte: 3
+		},
+		{
+			text: 'Bring die Schritte in die richtige Reihenfolge.',
+			zug: 'frage',
+			bezug: 'heft',
+			art: 'order',
+			auswahl: ['Hyperinflation', 'Einführung der Rentenmark', 'Stabilisierung'],
+			partner: [],
+			richtig: [],
+			zaehlt: true,
+			punkte: 3
+		},
+		{
+			text: 'Und womit war die Rentenmark gedeckt?',
+			zug: 'frage',
+			bezug: 'heft',
+			art: 'single',
+			auswahl: ['Mit Grundbesitz und Industrieanlagen', 'Mit Gold', 'Mit Devisen'],
+			partner: [],
+			richtig: ['Mit Grundbesitz und Industrieanlagen'],
+			zaehlt: true,
+			punkte: 2
+		},
+		{
+			text: 'Wurde sie unbegrenzt ausgegeben?',
+			zug: 'frage',
+			bezug: 'heft',
+			art: 'yesno',
+			auswahl: [],
+			partner: [],
+			richtig: ['Nein'],
+			zaehlt: true,
+			punkte: 1
 		}
 	];
 	if (kindZuege < drehbuch.length) return drehbuch[kindZuege];
@@ -68,47 +101,10 @@ function zugFuer(prompt) {
 	};
 }
 
-const PRUEFUNG = {
-	fragen: [
-		{
-			thema: 'Rentenmark',
-			art: 'single',
-			punkte: 2,
-			frage: 'Womit war die Rentenmark gedeckt?',
-			auswahl: ['Mit Grundbesitz und Industrieanlagen', 'Mit Gold', 'Mit Devisen'],
-			partner: [],
-			richtig: ['Mit Grundbesitz und Industrieanlagen'],
-			hinweis: null
-		},
-		{
-			thema: 'Rentenmark',
-			art: 'yesno',
-			punkte: 1,
-			frage: 'Wurde die Rentenmark unbegrenzt ausgegeben?',
-			auswahl: [],
-			partner: [],
-			richtig: ['Nein'],
-			hinweis: null
-		},
-		{
-			thema: 'Rentenmark',
-			art: 'order',
-			punkte: 3,
-			frage: 'Bring die Schritte in die richtige Reihenfolge.',
-			auswahl: ['Hyperinflation', 'Einführung der Rentenmark', 'Stabilisierung'],
-			partner: [],
-			richtig: [],
-			hinweis: null
-		}
-	],
-	luecke: null
-};
-
 function antwortFuer(koerper) {
 	const system = (koerper.messages ?? []).find((m) => m.role === 'system')?.content ?? '';
 	const prompt = (koerper.messages ?? []).find((m) => m.role === 'user')?.content ?? '';
 	if (system.includes('Du führst mit einem Kind ein Gespräch')) return zugFuer(prompt);
-	if (system.includes('Abschlussprüfung nach einem Gespräch')) return PRUEFUNG;
 	// Beurteilungs-Agent läuft nach dem Abschluss nach.
 	if (system.includes('Arbeitsgedächtnis')) return { text: 'Attrappen-Beurteilung.' };
 	return { fragen: [], luecke: null };

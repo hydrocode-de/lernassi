@@ -3,10 +3,15 @@
 //
 // Der Reihe nach:
 //
-//   Selbsteinschätzung → Gespräch (Zug um Zug) → Abschlussprüfung → Rückschau → Zahl
+//   Selbsteinschätzung → Gespräch (Zug um Zug) → Rückschau → Zahl
 //
-// Was gemessen wird, sind Fragen — im Gespräch und in der Prüfung. Reine Redezüge zählen nie,
-// und Fragen, die der Agent selbst als Steuerung markiert, auch nicht (`kind='control'`).
+// Gemessen wird aus den Fragen der Session — ALLEN, rein additiv. Es gibt keinen zweiten
+// Abschnitt und keine zweite Sorte Frage: eine Frage gegen Ende zählt genauso viel wie die
+// erste, und das Kind soll an keiner Stelle das Gefühl haben, jetzt beginne die Prüfung.
+// Gesteuert wird das über EINE Zahl, das Punkteziel (`punkteZiel`): der Agent bekommt bei
+// jedem Zug gesagt, wo er steht, und füllt auf. Reine Redezüge zählen nie, und Fragen, die
+// der Agent selbst als Steuerung markiert, auch nicht (`kind='control'`).
+//
 // Gerechnet wird weiterhin von `rundeAbrechnen`: für die Abrechnung ist ein Gespräch eine
 // Übung wie jede andere, und das Klassen-Dashboard muss davon nichts wissen.
 //
@@ -17,18 +22,10 @@
 import { db } from '$lib/server/db';
 import { planItems, questions, responses, rounds, turns } from '$lib/server/db/schema';
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import {
-	materialAlsText,
-	naechsterZug,
-	pruefungsfragen,
-	type Verlaufszug,
-	type Zug
-} from '$lib/server/lernen';
+import { materialAlsText, naechsterZug, type Verlaufszug, type Zug } from '$lib/server/lernen';
 import {
 	alsZeile,
 	brauchbar,
-	entdoppelt,
-	lernzielFuer,
 	mitschriebFuer,
 	type KapitelKontext,
 	type Optionen
@@ -45,21 +42,30 @@ export function gespraechAn(env: Record<string, string | undefined>): boolean {
 export const ZUG_MAX = 600;
 
 /**
- * Wie viele Züge lernassi in diesem Gespräch hat. Aus dem Umfang der Karte, aber nicht der
- * ganze: ein Teil der Zeit gehört der Abschlussprüfung.
- *
- * Der Agent bekommt die Restzahl gesagt und darf früher aufhören — sie ist Obergrenze,
- * nicht Soll.
+ * Wie viele Züge lernassi höchstens hat. Reine Notbremse gegen ein Gespräch, das nicht
+ * aufhört — wann Schluss ist, entscheidet das Punkteziel, nicht diese Zahl.
+ * Rund eine Minute je Zug: Lesen, Antworten, Rückmeldung.
  */
 export function zuegeBudget(minuten: number | null): number {
 	const m = Math.max(3, Math.min(20, minuten ?? 10));
-	return Math.max(5, Math.min(12, Math.round((m * 60 * 0.7) / 60)));
+	return Math.max(5, Math.min(16, Math.round((m * 60) / 55)));
 }
 
-/** Wie viele Fragen die Abschlussprüfung stellt. Kurz — sie soll messen, nicht ermüden. */
-export function pruefungsUmfang(minuten: number | null): number {
+/**
+ * Wie viele Punkte eine Session einsammeln soll.
+ *
+ * Das ist die EINE Steuergröße des Gesprächs. Es gibt keine getrennte Prüfung und keine zwei
+ * Sorten Fragen: alles, was gefragt wird, zählt in dieselbe Summe. Der Agent bekommt bei
+ * jedem Zug gesagt, wo er steht — merkt er bei 5 von 12, dass die Zeit knapp wird, stellt er
+ * eben Fragen statt zu reden; ist er schon drüber, hört er auf.
+ *
+ * Das Ziel ist Untergrenze, keine Obergrenze: eine Frage, die drüber hinausschießt, ist kein
+ * Fehler. Es soll nur nicht vorkommen, dass eine ganze Session auf drei Punkten steht — aus
+ * drei Punkten lässt sich kein Prozentwert ablesen, der etwas bedeutet.
+ */
+export function punkteZiel(minuten: number | null): number {
 	const m = Math.max(3, Math.min(20, minuten ?? 10));
-	return Math.max(3, Math.min(5, Math.round(m / 4)));
+	return Math.max(6, Math.min(20, Math.round(m * 1.2)));
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -123,6 +129,7 @@ type Roh = {
 	offeneFrage: Zugansicht['frage'] | null;
 	letzterIstLernassi: boolean;
 	geredet: number;
+	moeglich: number;
 	schluss: boolean;
 };
 
@@ -176,6 +183,13 @@ async function lesen(roundId: string): Promise<Roh> {
 				: null,
 		letzterIstLernassi: letzter?.wer === 'lernassi',
 		geredet: zuege.filter((z) => z.wer === 'lernassi').length,
+		// Alles, was bisher zu holen war. Steuerfragen zählen nicht mit — und NUR die Züge von
+		// lernassi: der Antwort-Zug des Kindes zeigt auf dieselbe Frage, sonst zählte jede
+		// Frage doppelt und das Punkteziel wäre bei der Hälfte erreicht.
+		moeglich: zuege.reduce(
+			(s, z) => s + (z.wer === 'lernassi' && z.frage?.zaehlt ? z.frage.punkte : 0),
+			0
+		),
 		schluss: zuege.some((z) => z.art === 'schluss')
 	};
 }
@@ -187,22 +201,34 @@ export type Gespraechsstand = {
 	dran: 'lernassi' | 'frage' | 'text';
 	offeneFrage: Zugansicht['frage'] | null;
 	restzuege: number;
-	/** Das Gespräch ist durch — es folgt die Abschlussprüfung. */
+	/** Was bisher zu holen war und was die Session einsammeln soll. Nur für den Agenten und
+	 *  den Fortschrittsbalken — dem Kind wird während des Gesprächs KEINE Zahl gezeigt. */
+	moeglich: number;
+	ziel: number;
+	/** Der nächste Zug ist der letzte: Ziel erreicht oder Züge fast alle. Der Agent bekommt
+	 *  das gesagt und rundet ab, statt noch eine Frage zu stellen. */
+	abschluss: boolean;
+	/** Das Gespräch ist durch — es folgt die Rückschau. */
 	durch: boolean;
 };
 
 export async function gespraechsstand(roundId: string, karte: Karte): Promise<Gespraechsstand> {
 	const roh = await lesen(roundId);
 	const budget = zuegeBudget(karte.minutes);
+	const ziel = punkteZiel(karte.minutes);
 	const restzuege = Math.max(0, budget - roh.geredet);
-	const durch = roh.schluss || (restzuege === 0 && !roh.offeneFrage);
 
 	return {
 		zuege: roh.zuege,
 		dran: roh.offeneFrage ? 'frage' : roh.letzterIstLernassi && !roh.schluss ? 'text' : 'lernassi',
 		offeneFrage: roh.offeneFrage,
 		restzuege,
-		durch
+		moeglich: roh.moeglich,
+		ziel,
+		// Genug eingesammelt, oder die Notbremse greift. Beides führt zu genau einem letzten
+		// Zug — einem Satz, keiner Frage.
+		abschluss: !roh.schluss && (roh.moeglich >= ziel || restzuege <= 1),
+		durch: roh.schluss
 	};
 }
 
@@ -245,7 +271,7 @@ export function lernassiZug(
 	karte: Karte,
 	kontext: KapitelKontext,
 	lernziel: string | null,
-	restzuege: number,
+	stand: Gespraechsstand,
 	verlauf: Verlaufszug[]
 ): { textStrom: AsyncIterable<string>; fertig: Promise<Zug> } {
 	// Nur das Material der Karte, nicht das ganze Kapitel — wie in der klassischen Übung.
@@ -262,12 +288,18 @@ export function lernassiZug(
 		lernziel,
 		beurteilung: kontext.beurteilung,
 		verlauf,
-		restzuege,
+		restzuege: stand.restzuege,
+		punkte: stand.moeglich,
+		ziel: stand.ziel,
+		abschluss: stand.abschluss,
 		mitschrieb: mitschriebFuer(roundId)
 	});
 
 	const fertig = lauf.fertig.then(async (zug) => {
-		await zugSpeichern(roundId, karte, zug);
+		// War der Abschluss angesagt, ist es der Abschluss — auch wenn das Modell noch eine
+		// Frage anhängen wollte. Sonst entscheidet der Agent, wann die Session endet, und das
+		// soll er nicht.
+		await zugSpeichern(roundId, karte, zug, stand.abschluss);
 		return zug;
 	});
 
@@ -289,12 +321,18 @@ function frageBrauchbar(zug: Zug): boolean {
 	});
 }
 
-async function zugSpeichern(roundId: string, karte: Karte, zug: Zug): Promise<void> {
+async function zugSpeichern(
+	roundId: string,
+	karte: Karte,
+	zug: Zug,
+	erzwingeSchluss = false
+): Promise<void> {
 	const stelle = await naechsteStelle(roundId);
 
-	// Eine Frage, die die Prüfung nicht besteht, wird zum Redezug: der Satz steht trotzdem,
+	// Eine Frage, die die Kontrolle nicht besteht, wird zum Redezug: der Satz steht trotzdem,
 	// er ist nur nichts zum Antippen. Besser als ein Zug, der ins Leere läuft.
-	const alsFrage = frageBrauchbar(zug);
+	// Beim Abschluss wird ohnehin keine Frage mehr angelegt.
+	const alsFrage = !erzwingeSchluss && frageBrauchbar(zug);
 	let questionId: string | null = null;
 
 	if (alsFrage && zug.art) {
@@ -330,11 +368,21 @@ async function zugSpeichern(roundId: string, karte: Karte, zug: Zug): Promise<vo
 		questionId = neu.id;
 	}
 
+	// Wann die Session endet, entscheidet das Punkteziel — nicht der Agent. Ein „schluss",
+	// den niemand angefordert hat, wird darum zum Redezug: der Satz steht, das Gespräch
+	// geht weiter. Sonst könnte ein Modell bei 6 von 12 Punkten aussteigen, und die Runde
+	// stünde mit einer Punktzahl da, aus der sich nichts ablesen lässt.
+	const art = erzwingeSchluss
+		? 'schluss'
+		: zug.zug === 'schluss' || (zug.zug === 'frage' && !alsFrage)
+			? 'reden'
+			: zug.zug;
+
 	await db.insert(turns).values({
 		roundId,
 		sortOrder: stelle,
 		rolle: 'lernassi',
-		art: zug.zug === 'frage' && !alsFrage ? 'reden' : zug.zug,
+		art,
 		// Bei einer Frage steht derselbe Text auch in `questions.prompt`. Bewusst doppelt:
 		// der Verlauf soll für sich lesbar sein, und die Frage muss es für die Prüfung durch
 		// die Lehrkraft ebenfalls sein.
@@ -357,23 +405,15 @@ export async function kindSagt(roundId: string, text: string): Promise<void> {
 	});
 }
 
-/**
- * Ein angetippter Zug des Kindes: erst bewerten, dann als Zug vermerken.
- *
- * Antworten der Abschlussprüfung werden NICHT als Zug vermerkt: die Prüfung ist kein Gespräch,
- * und ihre Antworten hätten im Verlauf nichts verloren. Gerechnet werden sie trotzdem — das
- * passiert in `responses`, nicht hier.
- */
+/** Ein angetippter Zug des Kindes: erst bewerten, dann als Zug vermerken. */
 export async function kindTippt(
 	roundId: string,
 	questionId: string,
 	gegeben: string[]
 ): Promise<boolean> {
-	const frage = (await db.select().from(questions).where(eq(questions.id, questionId)))[0];
 	const { antwortSpeichern } = await import('$lib/server/runde');
 	const bewertung = await antwortSpeichern(roundId, questionId, gegeben);
 	if (!bewertung) return false;
-	if (frage?.pruefung) return true;
 
 	await db.insert(turns).values({
 		roundId,
@@ -387,157 +427,8 @@ export async function kindTippt(
 }
 
 // ─────────────────────────────────────────────────────────────
-// Abschlussprüfung
-// ─────────────────────────────────────────────────────────────
-
-/** Schreibt die Prüfungsfragen, falls sie noch fehlen. Ein Versuch, kein Hinweis. */
-export async function pruefungSchreiben(
-	roundId: string,
-	karte: Karte,
-	kontext: KapitelKontext,
-	lernziel: string | null
-): Promise<void> {
-	const vorhanden = await db
-		.select()
-		.from(questions)
-		.where(and(eq(questions.roundId, roundId), eq(questions.pruefung, true)));
-	if (vorhanden.length) return;
-
-	const eigene = karte.topicId
-		? kontext.themen.filter((t) => t.themaId === karte.topicId)
-		: kontext.themen;
-	const material = eigene.length ? eigene : kontext.themen;
-	const anzahl = pruefungsUmfang(karte.minutes);
-
-	const ergebnis = await pruefungsfragen({
-		fach: kontext.fach,
-		kapitel: kontext.kapitel,
-		auftrag: karte.auftrag,
-		material: materialAlsText(material, true),
-		lernziel,
-		verlauf: await fuerDenAgenten(roundId),
-		anzahl,
-		mitschrieb: mitschriebFuer(roundId)
-	});
-
-	// Freitext hat in einer Prüfung nichts zu suchen: sie soll gerechnet werden können.
-	const gut = entdoppelt(ergebnis.fragen.filter((f) => f.art !== 'text').filter(brauchbar)).slice(
-		0,
-		anzahl
-	);
-	const ab = (await db.select().from(questions).where(eq(questions.roundId, roundId))).length;
-
-	for (const [i, roh] of gut.entries()) {
-		await db.insert(questions).values({
-			...alsZeile(roh, karte.topicId ?? null, { einVersuch: true }),
-			roundId,
-			wave: 2,
-			sortOrder: ab + i,
-			pruefung: true,
-			bezug: 'heft'
-		});
-	}
-}
-
-export type Pruefungsstand = {
-	frage: {
-		id: string;
-		nummer: number;
-		von: number;
-		art: string;
-		prompt: string;
-		optionen: Optionen;
-		punkte: number;
-	} | null;
-	beantwortet: number;
-	von: number;
-};
-
-export async function pruefungsstand(roundId: string): Promise<Pruefungsstand> {
-	const fragen = (
-		await db
-			.select()
-			.from(questions)
-			.where(and(eq(questions.roundId, roundId), eq(questions.pruefung, true)))
-	).sort((a, b) => a.sortOrder - b.sortOrder);
-
-	const antworten = fragen.length
-		? await db
-				.select()
-				.from(responses)
-				.where(
-					inArray(
-						responses.questionId,
-						fragen.map((f) => f.id)
-					)
-				)
-		: [];
-
-	const erledigt = (id: string) => antworten.some((r) => r.questionId === id);
-	const beantwortet = fragen.filter((f) => erledigt(f.id)).length;
-	const offen = fragen.find((f) => !erledigt(f.id));
-
-	return {
-		frage: offen
-			? {
-					id: offen.id,
-					nummer: beantwortet + 1,
-					von: fragen.length,
-					art: offen.kind,
-					prompt: offen.prompt,
-					optionen: JSON.parse(offen.options ?? '{"auswahl":[]}') as Optionen,
-					punkte: offen.punkte
-				}
-			: null,
-		beantwortet,
-		von: fragen.length
-	};
-}
-
-// ─────────────────────────────────────────────────────────────
 // Abschluss
 // ─────────────────────────────────────────────────────────────
-
-/** Punkte getrennt nach Gespräch und Prüfung — für die Anzeige, nicht fürs Rechnen. */
-export async function aufteilung(roundId: string): Promise<{
-	gespraech: { erreicht: number; moeglich: number };
-	pruefung: { erreicht: number; moeglich: number };
-}> {
-	const fragen = (await db.select().from(questions).where(eq(questions.roundId, roundId))).filter(
-		(f) => f.kind !== 'control'
-	);
-	const antworten = fragen.length
-		? await db
-				.select()
-				.from(responses)
-				.where(
-					inArray(
-						responses.questionId,
-						fragen.map((f) => f.id)
-					)
-				)
-		: [];
-
-	const summe = (auswahl: typeof fragen) =>
-		auswahl.reduce(
-			(s, f) => {
-				const treffer = antworten
-					.filter((r) => r.questionId === f.id)
-					.sort((a, b) => a.attempt - b.attempt)
-					.find((r) => r.outcome !== 'falsch');
-				return {
-					erreicht: s.erreicht + (treffer ? Math.max(1, f.punkte - (treffer.attempt - 1)) : 0),
-					moeglich: s.moeglich + f.punkte
-				};
-			},
-			{ erreicht: 0, moeglich: 0 }
-		);
-
-	return {
-		gespraech: summe(fragen.filter((f) => !f.pruefung)),
-		pruefung: summe(fragen.filter((f) => f.pruefung))
-	};
-}
 
 /**
  * Abschluss. Räumt zuerst den Wortlaut des Kindes weg, dann rechnet die gewöhnliche Übung ab:

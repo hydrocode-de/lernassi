@@ -463,7 +463,7 @@ const ZugSchema = z.object({
 		.enum(['reden', 'frage', 'schluss'])
 		.describe(
 			'reden = nur sagen, das Kind antwortet frei. frage = das Kind tippt an. ' +
-				'schluss = das Gespräch ist durch.'
+				'schluss = abrunden; NUR wenn dir gesagt wird, dass dies der letzte Zug ist.'
 		),
 	bezug: z
 		.enum(['heft', 'darueber-hinaus'])
@@ -530,15 +530,21 @@ const GESPRAECH_SYSTEM = [
 	'spiegeln, offen nachfragen, einen Zwischenstand ziehen. Sparsam.',
 	'',
 	'`zaehlt` entscheidet, ob ein Zug in den Lernstand eingeht. Eine Frage, die wirklich etwas',
-	'prüft, zählt. Eine Frage, die nur das Gespräch steuert („Womit fangen wir an?"), zählt nicht.',
-	'Sei darin ehrlich — eine Steuerfrage als Prüfung auszugeben verfälscht den Stand.',
+	'zeigt, zählt. Eine Frage, die nur das Gespräch steuert („Womit fangen wir an?"), zählt nicht.',
+	'Sei darin ehrlich — eine Steuerfrage als zählende auszugeben verfälscht den Stand.',
 	'Auf eine gezählte Frage gibt es GENAU EINEN Versuch: dein nächster Zug IST das Nachfassen.',
 	'',
 	'Keine zwei Fragen auf denselben Sachverhalt. Was saß, wird nicht wiederholt — dort gehst du',
 	'eine Stufe höher: verbinden, einordnen, begründen.',
 	'',
-	'Am Ende stellt ein eigener Schritt eine kurze Abschlussprüfung. Du musst also nicht alles',
-	'selbst abprüfen und die Prüfung auch nicht ankündigen — nutze deine Züge fürs Verstehen.',
+	'Du bekommst bei jedem Zug gesagt, wie viele Punkte deine zählenden Fragen bisher ergeben',
+	'und wie viele die Session ergeben soll. Das ist deine Zeiteinteilung: liegst du weit',
+	'darunter und hast nur noch wenige Züge, stell jetzt zählende Fragen statt zu reden.',
+	'Liegst du gut, hast du Luft für einen offenen Zug oder eine schwerere Frage.',
+	'',
+	'DAS KIND ERFÄHRT VON ALLEDEM NICHTS. Sprich nie über Punkte, Ziele, Prüfung, Bewertung',
+	'oder darüber, wie weit ihr seid. Es soll ein Gespräch sein, keine Prüfung — es gibt auch',
+	'keinen Abschnitt, ab dem es „jetzt zählt". Kündige nichts dergleichen an.',
 	'',
 	'Wenn das Kind etwas schreibt, das nicht zum Lernen gehört — über sich, über andere, über',
 	'zu Hause — geh nicht darauf ein und frag nicht nach. Ein freundlicher Satz, dann zurück zum',
@@ -562,6 +568,11 @@ export function naechsterZug(opts: {
 	beurteilung: string | null;
 	verlauf: Verlaufszug[];
 	restzuege: number;
+	/** Punkte, die die zählenden Fragen bisher ergeben, und was die Session ergeben soll. */
+	punkte: number;
+	ziel: number;
+	/** Dies ist der letzte Zug: abrunden, keine Frage mehr. */
+	abschluss: boolean;
 	mitschrieb?: Mitschrieb[];
 }): { textStrom: AsyncIterable<string>; fertig: Promise<Zug> } {
 	const system = GESPRAECH_SYSTEM.join('\n');
@@ -590,10 +601,14 @@ export function naechsterZug(opts: {
 				)
 			: ['(noch nichts — das ist dein erster Zug)']),
 		'',
-		opts.restzuege <= 1
-			? 'Das ist dein LETZTER Zug. Setze zug "schluss" und runde in einem Satz ab — ohne ' +
-				'Ergebnis und ohne Zahl.'
-			: `Du hast noch etwa ${opts.restzuege} Züge. Danach kommt die Abschlussprüfung.`
+		`Deine zählenden Fragen ergeben bisher ${opts.punkte} Punkte, die Session soll auf etwa ${opts.ziel} kommen.`,
+		`Danach hast du noch etwa ${opts.restzuege} Züge.`,
+		'',
+		opts.abschluss
+			? 'Das ist dein LETZTER Zug. Setze zug "schluss" und runde das Gespräch in einem Satz ' +
+				'ab: keine Frage mehr, kein Ergebnis, keine Zahl, kein „das war die Prüfung". ' +
+				'Ein Satz, der das Gespräch schließt, mehr nicht.'
+			: 'Mach weiter.'
 	].join('\n');
 
 	const lauf = streamObject({
@@ -630,64 +645,6 @@ export function naechsterZug(opts: {
 	})();
 
 	return { textStrom: textStrom(), fertig };
-}
-
-/**
- * Die Abschlussprüfung: wenige Fragen, ein Versuch, kein Hinweis, keine Vorrede.
- * Sie misst, was vom Gespräch geblieben ist — deshalb bekommt sie den Verlauf zu sehen.
- */
-export async function pruefungsfragen(opts: {
-	fach: string;
-	kapitel: string;
-	auftrag: string;
-	material: string;
-	lernziel: string | null;
-	verlauf: Verlaufszug[];
-	anzahl: number;
-	mitschrieb?: Mitschrieb[];
-}): Promise<z.infer<typeof WelleSchema>> {
-	return frage({
-		agent: 'pruef',
-		schema: WelleSchema,
-		mitschrieb: opts.mitschrieb,
-		system: [
-			...PRUEF_SYSTEM,
-			'',
-			'Das hier ist die Abschlussprüfung nach einem Gespräch. Sie ist kurz und sie zählt:',
-			'ein Versuch je Frage, kein Hinweis, keine Rückmeldung dazwischen. Setze `hinweis`',
-			'deshalb immer auf null.',
-			'',
-			'Prüfe, was im Gespräch WIRKLICH VORKAM — nicht das Kapitel im Ganzen. Frag aber nicht',
-			'dieselben Fragen noch einmal ab: eine Prüfung, die den Verlauf wiederholt, misst',
-			'Erinnerung an das Gespräch statt Verstehen. Nimm denselben Stoff von einer anderen Seite.',
-			'',
-			'Nur angetippte Formen (kein art "text"): eine Prüfung soll gerechnet werden können.'
-		],
-		eingabe: [
-			`Fach: ${opts.fach}`,
-			`Kapitel: ${opts.kapitel}`,
-			'',
-			'Das Kind hatte sich diesen Punkt vorgenommen:',
-			opts.auftrag,
-			'',
-			'Lernziel der Lehrkraft für diese Klasse:',
-			opts.lernziel ?? '(keines hinterlegt — richte dich allein am Material aus)',
-			'',
-			'Material des Kindes:',
-			opts.material,
-			'',
-			'So lief das Gespräch:',
-			...(opts.verlauf.length
-				? opts.verlauf.map(
-						(z) =>
-							`${z.wer === 'kind' ? 'Kind' : 'lernassi'}: ${z.text}` +
-							(z.ergebnis ? `  [${z.ergebnis}]` : '')
-					)
-				: ['(kein Verlauf)']),
-			'',
-			`Stelle genau ${opts.anzahl} Fragen.`
-		]
-	});
 }
 
 // ─────────────────────────────────────────────────────────────

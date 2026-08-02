@@ -8,18 +8,14 @@
 
 import { db } from '$lib/server/db';
 import { rounds } from '$lib/server/db/schema';
-import { KeinSchluessel } from '$lib/server/lernen';
-import { FREITEXT_MAX, lernzielFuer, SICHERHEIT } from '$lib/server/runde';
+import { FREITEXT_MAX, SICHERHEIT } from '$lib/server/runde';
 import {
-	aufteilung,
 	gespraechAbschliessen,
 	gespraechsstand,
 	gespraechVerwerfen,
 	karteVon,
 	kindSagt,
 	kindTippt,
-	pruefungSchreiben,
-	pruefungsstand,
 	ZUG_MAX
 } from '$lib/server/gespraech';
 import { istRueckschau, RUECKSCHAU, skalaFuer, uebungsKontext } from '$lib/server/uebung';
@@ -77,7 +73,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			wert,
 			erreicht: runde.erreicht ?? 0,
 			moeglich: runde.moeglich ?? 0,
-			teile: await aufteilung(runde.id),
 			kategorie,
 			wort: KATEGORIEN[kategorie].wort,
 			farbe: KATEGORIEN[kategorie].farbe,
@@ -106,30 +101,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const stand = await gespraechsstand(runde.id, karte);
 	if (!stand.durch) {
 		return { ...gemeinsam, phase: 'gespraech' as const, stand };
-	}
-
-	// ─── Abschlussprüfung ───
-	let fehler: string | null = null;
-	try {
-		await pruefungSchreiben(
-			runde.id,
-			karte,
-			kontext.kapitel,
-			await lernzielFuer(runde.studentId, kontext.kapitel.fach)
-		);
-	} catch (e) {
-		console.error('[gespraech] Prüfung konnte nicht geschrieben werden:', e);
-		fehler = e instanceof KeinSchluessel ? 'Das Üben ist gerade nicht möglich.' : RUHIGER_SATZ;
-	}
-
-	const pruefung = await pruefungsstand(runde.id);
-	if (pruefung.frage) {
-		return { ...gemeinsam, phase: 'pruefung' as const, pruefung, zuege: stand.zuege };
-	}
-	// Keine einzige Prüfungsfrage zustande gekommen: nicht hängen bleiben. Das Gespräch hat
-	// gezählte Fragen geliefert, daraus lässt sich abrechnen.
-	if (!pruefung.von && fehler) {
-		return { ...gemeinsam, phase: 'fehler' as const, fehler };
 	}
 
 	// ─── Rückschau, vor der Zahl ───
@@ -177,12 +148,10 @@ export const actions: Actions = {
 		const wahl = String((await request.formData()).get('wahl') ?? '');
 		if (!istRueckschau(wahl)) return fail(400, { message: 'Bitte eine Antwort auswählen.' });
 
-		// Nicht vorziehen: solange das Gespräch läuft oder eine Prüfungsfrage offen ist, würde
-		// die Rückschau die Runde abrechnen, bevor es etwas abzurechnen gibt.
+		// Nicht vorziehen: solange das Gespräch läuft, würde die Rückschau die Runde abrechnen,
+		// bevor es etwas abzurechnen gibt.
 		const stand = await gespraechsstand(runde.id, karte);
-		const pruefung = await pruefungsstand(runde.id);
-		if (!stand.durch || pruefung.frage)
-			return fail(409, { message: 'Da fehlt noch etwas — lade die Seite neu.' });
+		if (!stand.durch) return fail(409, { message: 'Da fehlt noch etwas — lade die Seite neu.' });
 
 		await db.update(rounds).set({ selfAfter: wahl }).where(eq(rounds.id, runde.id));
 

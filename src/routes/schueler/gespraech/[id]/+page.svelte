@@ -20,13 +20,7 @@
 	let offenesLinks = $state<string | null>(null);
 	let fragenId = $state<string | null>(null);
 
-	const offeneFrage = $derived(
-		data.phase === 'gespraech'
-			? data.stand.offeneFrage
-			: data.phase === 'pruefung'
-				? data.pruefung.frage
-				: null
-	);
+	const offeneFrage = $derived(data.phase === 'gespraech' ? data.stand.offeneFrage : null);
 
 	$effect(() => {
 		if (offeneFrage && offeneFrage.id !== fragenId) {
@@ -124,10 +118,14 @@
 		offeneFrage?.art === 'match' ? offeneFrage.optionen.auswahl.every((l) => paare[l]) : false
 	);
 
-	const schritt = $derived(
-		data.phase === 'fertig' ? 3 : data.phase === 'pruefung' || data.phase === 'rueckschau' ? 2 : 1
-	);
+	const schritt = $derived(data.phase === 'fertig' ? 2 : 1);
 	const stufe = (n: number) => (schritt === n ? 'jetzt' : schritt > n ? 'durch' : 'spaeter');
+
+	// Wie weit die Session ist — OHNE Zahl. Ein laufender Punktestand wäre das deutlichste
+	// „du wirst gerade geprüft"-Signal, das die Seite senden könnte.
+	const fortschritt = $derived(
+		data.phase === 'gespraech' ? Math.min(100, (data.stand.moeglich / data.stand.ziel) * 100) : 0
+	);
 </script>
 
 <!-- Antwortfeld einer angetippten Frage. Einmal geschrieben, zweimal gebraucht: im Gespräch
@@ -251,16 +249,12 @@
 		{/if}
 	</div>
 	<div class="stufen">
-		<span class="tag {stufe(1)}">1 Reden</span>
-		<span class="tag {stufe(2)}">2 Prüfen</span>
-		<span class="tag {stufe(3)}">3 Abhaken</span>
-		{#if data.phase === 'pruefung'}
-			<span class="small punkte">Frage {data.pruefung.frage?.nummer} von {data.pruefung.von}</span>
-		{/if}
+		<span class="tag {stufe(1)}">1 Machen</span>
+		<span class="tag {stufe(2)}">2 Abhaken</span>
 	</div>
 	<div class="balken">
-		{#if data.phase === 'pruefung'}
-			<span style="width:{data.pruefung.von ? (data.pruefung.beantwortet / data.pruefung.von) * 100 : 0}%"></span>
+		{#if data.phase === 'gespraech'}
+			<span style="width:{fortschritt}%"></span>
 		{/if}
 	</div>
 </div>
@@ -358,28 +352,6 @@
 			</form>
 		{/if}
 
-		<!-- ─────────── Abschlussprüfung ─────────── -->
-	{:else if data.phase === 'pruefung' && data.pruefung.frage}
-		<div class="card card--tint">
-			<p style="margin:0;font-size:16px;line-height:1.5">
-				Das Reden ist durch. Jetzt kommen noch {data.pruefung.von}
-				{data.pruefung.von === 1 ? 'Frage' : 'Fragen'} am Stück – ohne Hilfe, ein Versuch je Frage.
-			</p>
-		</div>
-		<div class="card steigt">
-			<p class="eyebrow fragenkopf" style="margin:0 0 8px">
-				<span>
-					Frage {data.pruefung.frage.nummer} von {data.pruefung.von} · {data.pruefung.frage.punkte}
-					{data.pruefung.frage.punkte === 1 ? 'Punkt' : 'Punkte'}
-				</span>
-				<span class="tag tag--ki">{KI_MARKE}</span>
-			</p>
-			<p style="margin:0 0 14px;font-size:17px;line-height:1.55" {...kiErzeugt}>
-				{data.pruefung.frage.prompt}
-			</p>
-			{@render tippen(data.pruefung.frage)}
-		</div>
-
 		<!-- ─────────── Rückschau ─────────── -->
 	{:else if data.phase === 'rueckschau'}
 		<form method="POST" action="?/rueckschau" class="card steigt">
@@ -397,12 +369,6 @@
 			<p class="eyebrow" style="margin:0 0 8px">Dein Ergebnis</p>
 			<p style="margin:0;font-size:20px;line-height:1.45">
 				{data.erreicht} von {data.moeglich} Punkten – <strong>{data.wort}</strong>.
-			</p>
-			<!-- Getrennt ausgewiesen: im Gespräch durfte nachgedacht und geredet werden, in der
-			     Prüfung nicht. Eine Summe aus beidem allein würde das verwischen. -->
-			<p style="margin:8px 0 0;font-size:15px;line-height:1.5">
-				Im Gespräch {data.teile.gespraech.erreicht} von {data.teile.gespraech.moeglich}, in der
-				Prüfung {data.teile.pruefung.erreicht} von {data.teile.pruefung.moeglich}.
 			</p>
 			<p style="margin:10px 0 0;font-size:17px;line-height:1.55">
 				{#if data.abgehakt}
