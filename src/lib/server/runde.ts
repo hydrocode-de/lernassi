@@ -19,6 +19,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import {
 	bewerteFreitext,
 	erzeugeFragen,
+	erzeugeFragenStroemend,
 	erzeugeUebungsfragen,
 	materialAlsText,
 	planVorschlaege,
@@ -26,7 +27,9 @@ import {
 	spiegle,
 	type MaterialThema,
 	type Mitschrieb,
-	type RohFrage
+	type RohFrage,
+	type WellenAuftrag,
+	ZEITLIMIT_MS
 } from '$lib/server/lernen';
 import { wertAus } from '$lib/kategorie';
 import { naechstePosition } from '$lib/server/warteschlange';
@@ -125,6 +128,42 @@ function imHintergrund(schluessel: string, arbeit: () => Promise<void>): Promise
 		.finally(() => laufendeWellen.delete(schluessel));
 	laufendeWellen.set(schluessel, p);
 	return p;
+}
+
+// Der Textzuwachs einer laufenden Welle, gepuffert. Nötig, weil die Welle schon beim
+// Rundenstart losläuft: wer erst danach zuschaut, soll den Anfang nicht verpassen, und zwei
+// Zuschauer sollen keine zwei Modellaufrufe bezahlen.
+type Wellenstrom = { stuecke: string[]; ende: boolean; wecker: Set<() => void> };
+const stroeme = new Map<string, Wellenstrom>();
+
+function wecken(strom: Wellenstrom): void {
+	for (const w of strom.wecker) w();
+	strom.wecker.clear();
+}
+
+/**
+ * Harte Obergrenze um die ganze Welle.
+ *
+ * Das Zeitlimit am Modellaufruf allein genügt nicht: bricht ein laufender Strom mitten ab, endet
+ * er unter Umständen einfach nicht mehr — und wer ihn ausliest, wartet ewig. Beim Kind sähe das
+ * aus wie „ich bin noch dran", für immer. Diese Grenze sorgt dafür, dass es in jedem Fall ein
+ * Ende gibt, das man nochmal anstoßen kann.
+ *
+ * Gilt je Anlauf, nicht für beide zusammen: ein hängender Strom soll nach EINEM Zeitlimit enden
+ * und nicht erst, wenn auch das Kontingent des zweiten Anlaufs verbraucht wäre.
+ */
+const WELLE_DEADLINE_MS = ZEITLIMIT_MS + 5_000;
+
+async function mitDeadline<T>(arbeit: () => Promise<T>, ms: number): Promise<T> {
+	let wecker: ReturnType<typeof setTimeout>;
+	const reissleine = new Promise<never>((_, ab) => {
+		wecker = setTimeout(() => ab(new Error(`Welle nach ${Math.round(ms / 1000)}s abgebrochen`)), ms);
+	});
+	try {
+		return await Promise.race([arbeit(), reissleine]);
+	} finally {
+		clearTimeout(wecker!);
+	}
 }
 
 // Eine Welle kann durchlaufen und trotzdem keine brauchbare Frage liefern. Damit die
@@ -306,8 +345,14 @@ export async function starteRunde(studentId: string, kontext: KapitelKontext) {
 	});
 
 	// Fragen der ersten Welle laufen schon los, während das Kind seine Selbsteinschätzung
-	// abgibt. So kann es danach sofort klicken.
-	void welleErzeugen(runde.id, 1, kontext, materialFuerRunde(kontext, true)).catch(() => {});
+	// abgibt. So kann es danach sofort klicken. Bewusst der gestreamte Weg: kommt das Kind
+	// mitten hinein, sieht es den Fragetext wachsen statt eine wartende Seite.
+	void welleStroemen(
+		runde.id,
+		1,
+		kontext,
+		materialFuerRunde(kontext, true)
+	).fertig.catch(() => {});
 
 	return runde;
 }
@@ -472,29 +517,173 @@ async function welleErzeugen(
 			mitschrieb: mitschriebFuer(roundId)
 		});
 
-		// Einordnung bleibt reines Antippen — Freitext gibt es nur in der Übung.
-		const nach = welle === 1 ? 0 : WELLE_1;
-		const gut = ergebnis.fragen
-			.filter((f) => f.art !== 'text')
-			.filter(brauchbar)
-			.slice(0, welle === 1 ? WELLE_1 : WELLE_2);
-		for (const [i, roh] of gut.entries()) {
-			const thema = genutzt.find(
-				(t) => t.titel.localeCompare(roh.thema, 'de', { sensitivity: 'base' }) === 0
-			);
-			await db.insert(questions).values({
-				roundId,
-				wave: welle,
-				sortOrder: nach + i,
-				...alsZeile(roh, thema?.themaId ?? null)
-			});
+		const geschrieben = await welleSchreiben(roundId, welle, genutzt, ergebnis);
+		if (!geschrieben) {
+			const { auftrag } = await wellenAuftrag(roundId, welle, kontext, material);
+			await zweiterAnlauf(roundId, welle, genutzt, auftrag);
 		}
-		if (ergebnis.luecke) luecken.set(roundId, ergebnis.luecke);
-
-		const versucht = versuchteWellen.get(roundId) ?? new Set<number>();
-		versucht.add(welle);
-		versuchteWellen.set(roundId, versucht);
 	});
+}
+
+/** Was der Auftrag für eine Welle braucht — einmal zusammengesucht, für beide Wege. */
+async function wellenAuftrag(
+	roundId: string,
+	welle: 1 | 2,
+	kontext: KapitelKontext,
+	material: MaterialThema[]
+) {
+	const genutzt = material.length ? material : kontext.themen;
+	const lernziel = await lernzielFuer(
+		(await db.select().from(rounds).where(eq(rounds.id, roundId)))[0].studentId,
+		kontext.fach
+	);
+	const bisher = welle === 2 ? await bisherigeFragen(roundId) : [];
+	return {
+		genutzt,
+		auftrag: {
+			fach: kontext.fach,
+			kapitel: kontext.kapitel,
+			material: materialAlsText(genutzt, true),
+			lernziel,
+			beurteilung: kontext.beurteilung,
+			welle,
+			anzahl: welle === 1 ? WELLE_1 : WELLE_2,
+			bisher,
+			mitschrieb: mitschriebFuer(roundId)
+		}
+	};
+}
+
+/** Die Antwort des Prüf-Agenten in Zeilen verwandeln. Gilt für beide Wege gleich. */
+async function welleSchreiben(
+	roundId: string,
+	welle: 1 | 2,
+	genutzt: MaterialThema[],
+	ergebnis: { fragen: RohFrage[]; luecke: string | null }
+): Promise<number> {
+	// Einordnung bleibt reines Antippen — Freitext gibt es nur in der Übung.
+	const nach = welle === 1 ? 0 : WELLE_1;
+	const gut = ergebnis.fragen
+		.filter((f) => f.art !== 'text')
+		.filter(brauchbar)
+		.slice(0, welle === 1 ? WELLE_1 : WELLE_2);
+	// Eine Welle, die durchläuft und trotzdem nichts Brauchbares liefert, sieht für das Kind aus
+	// wie ein Fehler — hier steht dann, WAS geliefert wurde und woran es lag, statt nur dass es
+	// klemmte. Ein Modell liefert praktisch immer Fragen; fällt hier alles durch, liegt es fast
+	// sicher an uns.
+	if (!gut.length && ergebnis.fragen.length) {
+		console.warn(
+			`[runde] Welle ${welle}: alle ${ergebnis.fragen.length} Fragen des Modells verworfen.`,
+			ergebnis.fragen.map((f) => ({
+				art: f.art,
+				auswahl: f.auswahl?.length ?? 0,
+				partner: f.partner?.length ?? 0,
+				richtig: f.richtig?.length ?? 0,
+				freitext: f.art === 'text'
+			}))
+		);
+	}
+	for (const [i, roh] of gut.entries()) {
+		const thema = genutzt.find(
+			(t) => t.titel.localeCompare(roh.thema, 'de', { sensitivity: 'base' }) === 0
+		);
+		await db.insert(questions).values({
+			roundId,
+			wave: welle,
+			sortOrder: nach + i,
+			...alsZeile(roh, thema?.themaId ?? null)
+		});
+	}
+	if (ergebnis.luecke) luecken.set(roundId, ergebnis.luecke);
+
+	const versucht = versuchteWellen.get(roundId) ?? new Set<number>();
+	versucht.add(welle);
+	versuchteWellen.set(roundId, versucht);
+	return gut.length;
+}
+
+/**
+ * Kam nichts Brauchbares, noch EIN Anlauf.
+ *
+ * Denn ein Modell liefert praktisch immer Fragen — eine leere Welle heißt also nicht „geht
+ * nicht", sondern „diesmal ist etwas schiefgelaufen": eine halbe Frage, ein Feld, das unser
+ * Filter zu Recht ablehnt. Ein zweiter Anlauf geht so gut wie immer durch, und das ist allemal
+ * besser, als dem Kind eine Fehlermeldung zu zeigen. Genau einmal, nicht in einer Schleife.
+ */
+async function zweiterAnlauf(
+	roundId: string,
+	welle: 1 | 2,
+	genutzt: MaterialThema[],
+	auftrag: WellenAuftrag
+): Promise<void> {
+	console.warn(`[runde] Welle ${welle}: zweiter Anlauf, der erste ergab keine Frage.`);
+	const ergebnis = await mitDeadline(() => erzeugeFragen(auftrag), WELLE_DEADLINE_MS);
+	const geschrieben = await welleSchreiben(roundId, welle, genutzt, ergebnis);
+	if (!geschrieben) console.warn(`[runde] Welle ${welle}: auch der zweite Anlauf ergab nichts.`);
+}
+
+/**
+ * Eine Welle holen und dabei zusehen können: gibt den Text der ersten Frage Wort für Wort
+ * heraus und schreibt am Ende alle Fragen.
+ *
+ * Läuft die Welle schon (Hintergrundlauf vom Rundenstart, zweiter Tab, Doppelklick), wird KEIN
+ * zweiter Modellaufruf gestartet: der Zuschauer hängt sich an den laufenden und bekommt aus dem
+ * Puffer auch das, was vor ihm schon angekommen ist.
+ */
+export function welleStroemen(
+	roundId: string,
+	welle: 1 | 2,
+	kontext: KapitelKontext,
+	material: MaterialThema[]
+): { textStrom: AsyncIterable<string>; fertig: Promise<void> } {
+	const schluessel = `${roundId}:${welle}`;
+	let strom = stroeme.get(schluessel);
+	if (!strom) stroeme.set(schluessel, (strom = { stuecke: [], ende: false, wecker: new Set() }));
+	const hier = strom;
+
+	// `imHintergrund` führt die Arbeit nur beim ERSTEN Aufruf aus; wer später dazukommt, bekommt
+	// dieselbe Zusage — und über den Puffer auch den Text, der vor ihm schon angekommen ist.
+	const fertig = imHintergrund(schluessel, () =>
+		mitDeadline(async () => {
+			const vorhanden = await db
+				.select()
+				.from(questions)
+				.where(and(eq(questions.roundId, roundId), eq(questions.wave, welle)));
+			if (vorhanden.length) return;
+
+			const { genutzt, auftrag } = await wellenAuftrag(roundId, welle, kontext, material);
+			const lauf = erzeugeFragenStroemend(auftrag);
+			for await (const stueck of lauf.textStrom) {
+				hier.stuecke.push(stueck);
+				wecken(hier);
+			}
+			return { genutzt, auftrag, ergebnis: await lauf.fertig };
+		}, WELLE_DEADLINE_MS).then(async (fertig) => {
+			if (!fertig) return;
+			const { genutzt, auftrag, ergebnis } = fertig;
+			const geschrieben = await welleSchreiben(roundId, welle, genutzt, ergebnis);
+			if (!geschrieben) await zweiterAnlauf(roundId, welle, genutzt, auftrag);
+		})
+	).finally(() => {
+		hier.ende = true;
+		wecken(hier);
+		// Nach einem Fehlschlag soll ein neuer Versuch frisch anfangen dürfen.
+		stroeme.delete(schluessel);
+	});
+
+	async function* textStrom() {
+		let gelesen = 0;
+		for (;;) {
+			while (gelesen < hier.stuecke.length) yield hier.stuecke[gelesen++];
+			if (hier.ende) return;
+			await new Promise<void>((los) => hier.wecker.add(los));
+		}
+	}
+
+	// Ein Fehler gehört dem Aufrufer von `fertig`, nicht dem Strom — sonst stirbt der Lauf
+	// an einem unbeachteten Promise.
+	fertig.catch(() => {});
+	return { textStrom: textStrom(), fertig };
 }
 
 // Die Lücke zwischen Erwartung und Material ist keine Störung, sondern Information —

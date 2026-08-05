@@ -4,7 +4,6 @@
 
 import { db } from '$lib/server/db';
 import { planItems, rounds } from '$lib/server/db/schema';
-import { KeinSchluessel } from '$lib/server/lernen';
 import {
 	antwortSpeichern,
 	FRAGEN_JE_RUNDE,
@@ -90,21 +89,19 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	}
 
 	// ─── Fragen ───
-	let stand = await naechsteFrage(runde.id);
-	let fehler: string | null = null;
+	const stand = await naechsteFrage(runde.id);
+
+	// Fehlen Fragen, wird hier NICHT darauf gewartet. Ein Load, der auf das Modell wartet, hält
+	// die Seite an und kann in dieser Zeit nichts anzeigen — kein Hinweis, kein Fortschritt.
+	// Stattdessen steht die Seite sofort, und sie holt die Fragen über /welle im Strom.
 	if (stand.welleFehlt && !welleVersucht(runde.id, stand.welleFehlt)) {
-		try {
-			await welleNachziehen(
-				runde.id,
-				stand.welleFehlt,
-				kontext,
-				materialFuerRunde(kontext, true)
-			);
-		} catch (e) {
-			console.error('[runde] Fragen konnten nicht geschrieben werden:', e);
-			fehler = e instanceof KeinSchluessel ? 'Das Üben ist gerade nicht möglich.' : RUHIGER_SATZ;
-		}
-		stand = await naechsteFrage(runde.id);
+		return {
+			...gemeinsam,
+			phase: 'wartet' as const,
+			// Die Nummer, die die kommende Frage tragen wird — damit „Frage 2 von 5" schon steht,
+			// bevor die Frage da ist.
+			nummer: stand.beantwortet + 1
+		};
 	}
 
 	if (stand.frage) {
@@ -121,7 +118,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	// Keine Frage übrig und keine Welle nachzuziehen: es gab keine einzige brauchbare Frage.
 	if (!stand.beantwortet) {
-		return { ...gemeinsam, phase: 'fehler' as const, fehler: fehler ?? RUHIGER_SATZ };
+		return { ...gemeinsam, phase: 'fehler' as const, fehler: RUHIGER_SATZ };
 	}
 
 	// ─── Spiegel ───

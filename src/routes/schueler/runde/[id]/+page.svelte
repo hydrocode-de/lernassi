@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { KI_MARKE, kiErzeugt } from '$lib/ki';
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { rundeAblegen } from '$lib/mitschrieb';
 
 	let { data, form } = $props();
@@ -40,7 +41,7 @@
 	});
 
 	const schritt = $derived(
-		data.phase === 'selbst' || data.phase === 'fragen'
+		data.phase === 'selbst' || data.phase === 'fragen' || data.phase === 'wartet'
 			? 1
 			: data.phase === 'spiegel'
 				? 2
@@ -52,12 +53,76 @@
 		{
 			selbst: 'Erst dein Gefühl',
 			fragen: 'Fragen aus deinem Heft',
+			wartet: 'Fragen aus deinem Heft',
 			spiegel: 'Gefühl und Ergebnis',
 			plan: 'Deine Punkte',
 			fertig: 'Plan steht',
 			fehler: ''
 		}[data.phase] ?? ''
 	);
+
+	// ─────────── Auf die nächsten Fragen warten ───────────
+	//
+	// Die Fragen kommen über einen Strom in die STEHENDE Seite, nicht über einen Seiten-Load.
+	// Ein Load könnte während der 10 bis 20 Sekunden nichts anzeigen; hier steht die Form der
+	// Frage sofort da und der Text wächst hinein.
+	let strom = $state('');
+	let stromFehler = $state<string | null>(null);
+	let lage = $state<'heft' | 'schreiben'>('heft');
+	let langeSchonDa = $state(false);
+	let geholtFuer = $state<number | null>(null);
+
+	// Ab hier ist das Warten ungewöhnlich lang — dann wird es gesagt statt verschwiegen.
+	const LANGE = 12000;
+
+	$effect(() => {
+		if (data.phase !== 'wartet' || geholtFuer === data.nummer) return;
+		geholtFuer = data.nummer;
+		welleHolen();
+	});
+
+	async function welleHolen() {
+		strom = '';
+		stromFehler = null;
+		lage = 'heft';
+		langeSchonDa = false;
+		const uhr = setTimeout(() => (langeSchonDa = true), LANGE);
+		let fertig = false;
+		try {
+			const antwort = await fetch(`/schueler/runde/${data.roundId}/welle`, { method: 'POST' });
+			if (!antwort.ok || !antwort.body) throw new Error(String(antwort.status));
+
+			const leser = antwort.body.getReader();
+			const entschluessler = new TextDecoder();
+			let rest = '';
+			for (;;) {
+				const { done, value } = await leser.read();
+				if (done) break;
+				rest += entschluessler.decode(value, { stream: true });
+				const zeilen = rest.split('\n');
+				rest = zeilen.pop() ?? '';
+				for (const z of zeilen) {
+					if (!z.trim()) continue;
+					const ereignis = JSON.parse(z);
+					if (ereignis.t === 'text') strom += ereignis.v;
+					else if (ereignis.t === 'lage') lage = ereignis.v;
+					else if (ereignis.t === 'fehler') stromFehler = ereignis.v;
+					else if (ereignis.t === 'fertig') fertig = true;
+				}
+			}
+		} catch {
+			stromFehler = 'Da komme ich gerade nicht weiter.';
+		} finally {
+			clearTimeout(uhr);
+			// Die Fragen stehen jetzt in der Datenbank — die Seite holt sie sich von dort.
+			if (fertig) await invalidateAll();
+		}
+	}
+
+	function nochmal() {
+		geholtFuer = null;
+		stromFehler = null;
+	}
 
 	const rueckmeldung = $derived(
 		form && 'outcome' in form
@@ -153,6 +218,66 @@
 		</form>
 
 		<!-- ─────────── Fragen ─────────── -->
+		<!-- ─────────── Die nächste Frage entsteht ───────────
+		     Gleiche Karte, gleicher Zähler, gleiche KI-Kennzeichnung wie eine fertige Frage: das
+		     Kind sieht, was kommt, statt einer leeren Seite. -->
+	{:else if data.phase === 'wartet'}
+		{#if stromFehler}
+			<div class="card steigt">
+				<p class="eyebrow fragenkopf" style="margin:0 0 8px">
+					<span>Frage {data.nummer} von {data.von}</span>
+					<span class="tag tag--ki">{KI_MARKE}</span>
+				</p>
+				<div class="blase" style="margin:0 0 14px">{stromFehler}</div>
+				{#if data.nummer > 1}
+					<p style="margin:0 0 14px;font-size:15px;color:var(--ink-2)">
+						Was du bisher beantwortet hast, bleibt erhalten.
+					</p>
+				{/if}
+				<div class="stapel">
+					<button class="btn btn--go btn--block" type="button" onclick={nochmal}>
+						Nochmal versuchen
+					</button>
+					<a class="btn btn--quiet btn--block" href="/schueler/kapitel/{data.kapitelId}">
+						Später weitermachen
+					</a>
+				</div>
+			</div>
+		{:else}
+			<div class="card steigt">
+				<p class="eyebrow fragenkopf" style="margin:0 0 8px">
+					<span>Frage {data.nummer} von {data.von}</span>
+					<span class="tag tag--ki">{KI_MARKE}</span>
+				</p>
+
+				<p class="entsteht" {...kiErzeugt}>
+					{strom}{#if strom}<span class="kursor"></span>{/if}
+				</p>
+
+				<!-- Die Form der Antwort steht schon da, damit die Karte nicht als Loch wirkt. -->
+				<div class="stapel" aria-hidden="true">
+					<div class="platzhalter"></div>
+					<div class="platzhalter" style="animation-delay:.2s"></div>
+					<div class="platzhalter" style="animation-delay:.4s"></div>
+				</div>
+			</div>
+
+			<div class="card card--tint atmet" aria-live="polite">
+				<p style="margin:0;font-size:17px;line-height:1.55">
+					{#if lage === 'heft'}
+						Einen Moment, ich schaue in dein Heft nach<span class="punkte"><i></i><i></i><i></i></span>
+					{:else}
+						Ich schreibe dir die Frage<span class="punkte"><i></i><i></i><i></i></span>
+					{/if}
+				</p>
+				{#if langeSchonDa}
+					<p class="dauert">
+						Das dauert heute länger als sonst. Ich bin noch dran — du kannst auch kurz ins Heft
+						gehen und gleich wiederkommen.
+					</p>
+				{/if}
+			</div>
+		{/if}
 	{:else if data.phase === 'fragen' && frage}
 		{#if rueckmeldung}
 			<div class="blase">{rueckmeldung.antwort.join(' · ')}</div>
@@ -333,17 +458,41 @@
 		</div>
 
 		{#if !data.reaktion}
-			<form method="POST" action="?/spiegelReaktion" class="card">
+			<form
+				method="POST"
+				action="?/spiegelReaktion"
+				class="card"
+				use:enhance={() => {
+					laeuft = true;
+					return async ({ update }) => {
+						await update();
+						laeuft = false;
+					};
+				}}
+			>
 				<p style="margin:0 0 14px;font-size:17px">Passt das zu deinem Gefühl?</p>
 				<div class="stapel">
 					{#each Object.entries(data.reaktionen) as [wert, label] (wert)}
-						<button class="btn btn--quiet btn--block links" name="wert" value={wert}>{label}</button>
+						<button class="btn btn--quiet btn--block links" name="wert" value={wert} disabled={laeuft}>
+							{label}
+						</button>
 					{/each}
 				</div>
 			</form>
 		{:else}
 			<div class="blase">{data.reaktionen[data.reaktion as keyof typeof data.reaktionen]}</div>
-			<form method="POST" action="?/fokus" class="card">
+			<form
+				method="POST"
+				action="?/fokus"
+				class="card"
+				use:enhance={() => {
+					laeuft = true;
+					return async ({ update }) => {
+						await update();
+						laeuft = false;
+					};
+				}}
+			>
 				<p style="margin:0 0 6px;font-size:17px">Was davon willst du zuerst festmachen?</p>
 				<p class="small" style="margin:0 0 14px">Du kannst auch nichts auswählen.</p>
 				<div class="chips">
@@ -362,8 +511,22 @@
 				{#each gewaehlterFokus as k (k)}
 					<input type="hidden" name="kandidat" value={k} />
 				{/each}
-				<button class="btn btn--lg btn--block" style="margin-top:18px">Weiter zum Plan</button>
+				<button class="btn btn--lg btn--block" style="margin-top:18px" disabled={laeuft}>
+					Weiter zum Plan
+				</button>
 			</form>
+		{/if}
+
+		<!-- Spiegel und Plan holt jeweils der nächste Seiten-Load beim Agenten. Ohne diese Meldung
+		     stünde die Seite still, während er arbeitet — dasselbe Loch wie früher bei den Fragen. -->
+		{#if laeuft}
+			<div class="card card--tint atmet">
+				<p style="margin:0;font-size:17px;line-height:1.55">
+					{data.reaktion
+						? 'Ich schaue, was sich zum Üben lohnt'
+						: 'Einen Moment …'}<span class="punkte"><i></i><i></i><i></i></span>
+				</p>
+			</div>
 		{/if}
 
 		<!-- ─────────── Plan ─────────── -->
@@ -569,6 +732,90 @@
 		font-size: 16px;
 		line-height: 1.5;
 		padding: 12px 14px;
+	}
+
+	/* ─── Die Frage entsteht ─── */
+	.entsteht {
+		margin: 0 0 14px;
+		font-size: 17px;
+		line-height: 1.55;
+		/* Hält die Höhe einer einzeiligen Frage, damit die Karte beim ersten Wort nicht springt. */
+		min-height: 1.55em;
+	}
+	.kursor {
+		display: inline-block;
+		width: 2px;
+		height: 1.05em;
+		vertical-align: -0.18em;
+		margin-left: 2px;
+		background: var(--lavender-ink);
+		animation: la-blink 1s steps(2, start) infinite;
+	}
+	@keyframes la-blink {
+		50% {
+			opacity: 0;
+		}
+	}
+	/* Kein Spinner, sondern die Form der Antwort, die noch kommt. */
+	.platzhalter {
+		height: 48px;
+		border-radius: var(--r);
+		background: linear-gradient(
+			100deg,
+			var(--paper-2) 30%,
+			oklch(0.96 0.012 285) 50%,
+			var(--paper-2) 70%
+		);
+		background-size: 220% 100%;
+		animation: la-sweep 1.6s ease-in-out infinite;
+	}
+	@keyframes la-sweep {
+		to {
+			background-position: -120% 0;
+		}
+	}
+	.punkte {
+		display: inline-flex;
+		gap: 4px;
+		margin-left: 4px;
+		vertical-align: 2px;
+	}
+	.punkte i {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: currentColor;
+		opacity: 0.35;
+		animation: la-dot 1.25s ease-in-out infinite;
+	}
+	.punkte i:nth-child(2) {
+		animation-delay: 0.16s;
+	}
+	.punkte i:nth-child(3) {
+		animation-delay: 0.32s;
+	}
+	@keyframes la-dot {
+		40% {
+			opacity: 1;
+			transform: translateY(-2px);
+		}
+	}
+	.dauert {
+		margin: 12px 0 0;
+		font-size: 15px;
+		line-height: 1.5;
+		background: var(--apricot);
+		color: var(--apricot-ink);
+		border-radius: var(--r);
+		padding: 10px 13px;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.platzhalter,
+		.kursor,
+		.punkte i,
+		.atmet {
+			animation: none;
+		}
 	}
 	.stufen {
 		display: grid;

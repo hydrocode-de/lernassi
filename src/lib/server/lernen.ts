@@ -10,12 +10,26 @@
 // Aufnehmen und Lernen bleiben getrennt.
 
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { generateObject, streamObject } from 'ai';
+import { generateObject, streamObject, NoObjectGeneratedError } from 'ai';
 import { z } from 'zod';
+import { ausRohtext } from './antwortlesen';
 import { env } from '$env/dynamic/private';
 
 const BASE_URL = env.REQUESTY_BASE_URL ?? 'https://router.eu.requesty.ai/v1';
 const STANDARD = env.REQUESTY_MODEL ?? 'anthropic/claude-sonnet-4-5';
+
+/**
+ * Zeitlimit für EINEN Modellaufruf, samt der Wiederholungen, die das SDK selbst macht.
+ *
+ * Ohne das kann ein Aufruf minutenlang hängen — bei einem falsch gesetzten Modellnamen etwa
+ * wartet das SDK mit wachsenden Pausen immer weiter. Das Kind sieht dann bis in alle Ewigkeit
+ * „ich bin noch dran". Lieber ein ehrliches Ende, das man nochmal anstoßen kann.
+ */
+export const ZEITLIMIT_MS = 45_000;
+
+function zeitlimit(): AbortSignal {
+	return AbortSignal.timeout(ZEITLIMIT_MS);
+}
 
 /** Eine Modell-Variable pro Agent, alle mit demselben Default. Beim Pilotlauf lässt sich
  *  die klemmende Stelle einzeln tauschen, ohne Code anzufassen. */
@@ -62,6 +76,17 @@ export type Mitschrieb = {
 	tokens?: { rein: number; raus: number } | null;
 };
 
+/** Eine Antwort, die am Schema gescheitert ist, aus dem Rohtext retten — oder den Fehler
+ *  weiterwerfen. Warum das nötig ist, steht in antwortlesen.ts. */
+function gerettet<T>(schema: z.ZodType<T>, agent: keyof typeof MODELLE, fehler: unknown): T {
+	const wert = NoObjectGeneratedError.isInstance(fehler) ? ausRohtext(schema, fehler.text) : null;
+	if (wert === null) throw fehler;
+	console.warn(
+		`[${agent}] Antwort von ${MODELLE[agent]()} passte nicht aufs Schema, aus dem Rohtext gerettet.`
+	);
+	return wert;
+}
+
 async function frage<T>(opts: {
 	agent: keyof typeof MODELLE;
 	schema: z.ZodType<T>;
@@ -72,12 +97,22 @@ async function frage<T>(opts: {
 	const system = opts.system.join('\n');
 	const eingabe = opts.eingabe.join('\n');
 
-	const { object, usage } = await generateObject({
-		model: modell(opts.agent),
-		schema: opts.schema,
-		system,
-		prompt: eingabe
-	});
+	let object: T;
+	let usage: { inputTokens?: number; outputTokens?: number } | null = null;
+	try {
+		const ergebnis = await generateObject({
+			model: modell(opts.agent),
+			schema: opts.schema,
+			system,
+			prompt: eingabe,
+			abortSignal: zeitlimit()
+		});
+		object = ergebnis.object;
+		usage = ergebnis.usage ?? null;
+	} catch (fehler) {
+		object = gerettet(opts.schema, opts.agent, fehler);
+		usage = NoObjectGeneratedError.isInstance(fehler) ? (fehler.usage ?? null) : null;
+	}
 
 	opts.mitschrieb?.push({
 		agent: opts.agent,
@@ -235,7 +270,7 @@ const PRUEF_SYSTEM = [
 	KIND_TON
 ];
 
-export async function erzeugeFragen(opts: {
+export type WellenAuftrag = {
 	fach: string;
 	kapitel: string;
 	material: string;
@@ -245,7 +280,9 @@ export async function erzeugeFragen(opts: {
 	anzahl: number;
 	bisher?: { frage: string; thema: string; ergebnis: string }[];
 	mitschrieb?: Mitschrieb[];
-}): Promise<z.infer<typeof WelleSchema>> {
+};
+
+function wellenEingabe(opts: WellenAuftrag): string[] {
 	const wellenAuftrag =
 		opts.welle === 1
 			? [
@@ -266,34 +303,94 @@ export async function erzeugeFragen(opts: {
 					'In dieser Runde wird nur angetippt: kein Freitext (art "text").'
 				];
 
+	return [
+		`Fach: ${opts.fach}`,
+		`Kapitel: ${opts.kapitel}`,
+		'',
+		'Lernziel der Lehrkraft für diese Klasse:',
+		opts.lernziel ?? '(keines hinterlegt — richte dich allein am Material aus)',
+		'',
+		'Was du über dieses Kind in diesem Kapitel schon weißt:',
+		opts.beurteilung ?? '(noch nichts)',
+		'',
+		'Material des Kindes:',
+		opts.material,
+		'',
+		...(opts.bisher?.length
+			? [
+					'Diese Fragen liefen gerade schon:',
+					...opts.bisher.map((b) => `- [${b.ergebnis}] (${b.thema}) ${b.frage}`),
+					''
+				]
+			: []),
+		...wellenAuftrag
+	];
+}
+
+export async function erzeugeFragen(opts: WellenAuftrag): Promise<z.infer<typeof WelleSchema>> {
 	return frage({
 		agent: 'pruef',
 		schema: WelleSchema,
 		system: PRUEF_SYSTEM,
 		mitschrieb: opts.mitschrieb,
-		eingabe: [
-			`Fach: ${opts.fach}`,
-			`Kapitel: ${opts.kapitel}`,
-			'',
-			'Lernziel der Lehrkraft für diese Klasse:',
-			opts.lernziel ?? '(keines hinterlegt — richte dich allein am Material aus)',
-			'',
-			'Was du über dieses Kind in diesem Kapitel schon weißt:',
-			opts.beurteilung ?? '(noch nichts)',
-			'',
-			'Material des Kindes:',
-			opts.material,
-			'',
-			...(opts.bisher?.length
-				? [
-						'Diese Fragen liefen gerade schon:',
-						...opts.bisher.map((b) => `- [${b.ergebnis}] (${b.thema}) ${b.frage}`),
-						''
-					]
-				: []),
-			...wellenAuftrag
-		]
+		eingabe: wellenEingabe(opts)
 	});
+}
+
+/**
+ * Dieselbe Welle, aber gestreamt: gibt den Text der ERSTEN Frage Wort für Wort heraus, während
+ * die übrigen noch entstehen.
+ *
+ * Der Grund ist nicht Technik, sondern das Warten. Eine Welle braucht 10 bis 20 Sekunden; wird
+ * sie am Stück abgewartet, sitzt das Kind vor einer Seite, die nichts tut. Kommt der erste
+ * Fragetext schon nach zwei Sekunden an, liest es mit, während der Rest noch läuft.
+ *
+ * Der Aufrufer MUSS `textStrom` auslaufen lassen, sonst wird `fertig` nie erfüllt.
+ */
+export function erzeugeFragenStroemend(opts: WellenAuftrag): {
+	textStrom: AsyncIterable<string>;
+	fertig: Promise<z.infer<typeof WelleSchema>>;
+} {
+	const system = PRUEF_SYSTEM.join('\n');
+	const eingabe = wellenEingabe(opts).join('\n');
+
+	const lauf = streamObject({
+		model: modell('pruef'),
+		schema: WelleSchema,
+		system,
+		prompt: eingabe,
+		abortSignal: zeitlimit()
+	});
+
+	async function* textStrom() {
+		let bisher = '';
+		for await (const teil of lauf.partialObjectStream) {
+			const t = teil.fragen?.[0]?.frage;
+			if (typeof t === 'string' && t.length > bisher.length) {
+				yield t.slice(bisher.length);
+				bisher = t;
+			}
+		}
+	}
+
+	const fertig = (async () => {
+		const antwort = await lauf.object.catch((fehler: unknown) =>
+			gerettet(WelleSchema, 'pruef', fehler)
+		);
+		const usage = await lauf.usage.catch(() => null);
+		opts.mitschrieb?.push({
+			agent: 'pruef',
+			modell: MODELLE.pruef(),
+			wann: Date.now(),
+			system,
+			eingabe,
+			antwort,
+			tokens: usage ? { rein: usage.inputTokens ?? 0, raus: usage.outputTokens ?? 0 } : null
+		});
+		return antwort;
+	})();
+
+	return { textStrom: textStrom(), fertig };
 }
 
 /**
@@ -615,7 +712,8 @@ export function naechsterZug(opts: {
 		model: modell('gespraech'),
 		schema: ZugSchema,
 		system,
-		prompt: eingabe
+		prompt: eingabe,
+		abortSignal: zeitlimit()
 	});
 
 	async function* textStrom() {
@@ -630,7 +728,11 @@ export function naechsterZug(opts: {
 	}
 
 	const fertig = (async () => {
-		const antwort = await lauf.object;
+		// Gleiche Nachsicht wie in `frage`: der Zug ist schon geschrieben und gestreamt, an
+		// einem fehlenden Null-Schlüssel darf er nicht mehr scheitern.
+		const antwort = await lauf.object.catch((fehler: unknown) =>
+			gerettet(ZugSchema, 'gespraech', fehler)
+		);
 		const usage = await lauf.usage.catch(() => null);
 		opts.mitschrieb?.push({
 			agent: 'gespraech',

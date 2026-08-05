@@ -315,7 +315,11 @@
 		{#if strom}
 			<div class="sagt"><p {...kiErzeugt}>{strom}<span class="cursor"></span></p></div>
 		{:else if laeuft || (data.stand.dran === 'lernassi' && !stromFehler)}
-			<div class="sagt denkt"><span class="spinner" aria-label="lernassi überlegt"></span></div>
+			<div class="sagt denkt">
+				<span class="punkte" role="img" aria-label="lernassi überlegt">
+					<i></i><i></i><i></i>
+				</span>
+			</div>
 		{/if}
 
 		{#if stromFehler}
@@ -590,17 +594,33 @@
 	.steigt {
 		animation: steigt 0.25s ease;
 	}
-	.spinner {
-		width: 22px;
-		height: 22px;
-		border-radius: 50%;
-		border: 3px solid var(--line-2);
-		border-top-color: var(--lavender-ink);
-		animation: dreht 0.8s linear infinite;
+	/* Dieselben drei Punkte wie beim Warten auf eine Frage — ein Zeichen dafür, dass lernassi
+	   arbeitet, nicht zwei. `inline-flex`, weil auf einem Inline-Kasten weder Maße noch
+	   `transform` greifen würden. */
+	.punkte {
+		display: inline-flex;
+		gap: 5px;
+		align-items: center;
+		min-height: 22px;
 	}
-	@keyframes dreht {
-		to {
-			transform: rotate(1turn);
+	.punkte i {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--lavender-ink);
+		opacity: 0.35;
+		animation: atmet 1.25s ease-in-out infinite;
+	}
+	.punkte i:nth-child(2) {
+		animation-delay: 0.16s;
+	}
+	.punkte i:nth-child(3) {
+		animation-delay: 0.32s;
+	}
+	@keyframes atmet {
+		40% {
+			opacity: 1;
+			transform: translateY(-3px);
 		}
 	}
 	@keyframes blinkt {
@@ -616,6 +636,17 @@
 		to {
 			opacity: 1;
 			transform: none;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.punkte i,
+		.cursor,
+		.steigt {
+			animation: none;
+		}
+		/* Ohne Bewegung braucht das Zeichen trotzdem Kontrast, sonst ist es kaum zu sehen. */
+		.punkte i {
+			opacity: 0.7;
 		}
 	}
 </style>
