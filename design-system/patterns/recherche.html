@@ -1,0 +1,347 @@
+<!-- @dsCard group="Patterns" viewport="1180x1500" name="Nachlesen (Recherche)" subtitle="Vom leeren Editor über gewählte Quellen zum Entwurf – Entscheidung bleibt beim Kind" -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+	body {
+		padding: 32px;
+		max-width: 1100px;
+	}
+	.spalten {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 18px;
+		align-items: start;
+	}
+	.schritt {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.nummer {
+		display: inline-grid;
+		place-items: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
+		background: var(--lavender);
+		color: var(--lavender-ink);
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: 13px;
+	}
+	.kopf {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+	}
+	.kopf h2 {
+		margin: 0;
+		font-size: 17px;
+	}
+	.rahmen {
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: var(--r-lg);
+		padding: 16px;
+	}
+	.ki-hinweis {
+		display: flex;
+		align-items: baseline;
+		gap: 9px;
+		margin: 0;
+		padding: 10px 12px;
+		border-radius: var(--r);
+		background: var(--lavender);
+		color: var(--lavender-ink);
+		font-size: 13.5px;
+		line-height: 1.45;
+	}
+	.ki-hinweis b {
+		flex: none;
+		font-family: var(--display);
+		font-size: 11px;
+		letter-spacing: 0.08em;
+	}
+	textarea,
+	.eingabe {
+		width: 100%;
+		box-sizing: border-box;
+		border: 0;
+		padding: 0;
+		background: transparent;
+		font-family: var(--text);
+		font-size: 15px;
+		color: var(--ink);
+		resize: none;
+	}
+	.leer {
+		color: var(--ink-3);
+	}
+
+	/* Ein Treffer: ankreuzen, nicht anklicken. Nichts wird gelesen, bevor das Kind wählt. */
+	.treffer {
+		display: grid;
+		grid-template-columns: 22px 1fr;
+		gap: 10px;
+		padding: 11px 12px;
+		border: 1px solid var(--line-2);
+		border-radius: var(--r);
+		background: var(--paper);
+	}
+	.treffer--an {
+		border-color: var(--mint-2);
+		background: var(--mint);
+	}
+	.kasten {
+		width: 20px;
+		height: 20px;
+		border-radius: 6px;
+		border: 1.5px solid var(--line-2);
+		background: var(--surface);
+		display: grid;
+		place-items: center;
+		font-size: 12px;
+		color: var(--mint-ink);
+	}
+	.treffer--an .kasten {
+		border-color: var(--mint-ink);
+	}
+	.treffer h3 {
+		margin: 0 0 3px;
+		font-size: 15px;
+	}
+	.treffer p {
+		margin: 0;
+		font-size: 13.5px;
+		line-height: 1.5;
+		color: var(--ink-2);
+	}
+	.quelle {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		margin-top: 7px;
+		font-size: 12px;
+		color: var(--ink-3);
+		font-family: ui-monospace, monospace;
+	}
+	.entwurf {
+		font-size: 14px;
+		line-height: 1.65;
+		color: var(--ink-2);
+		white-space: pre-wrap;
+		margin: 0;
+	}
+	.belege {
+		margin: 0;
+		padding-left: 18px;
+		font-size: 13px;
+		line-height: 1.7;
+		color: var(--ink-2);
+	}
+	.hinweisbox {
+		background: var(--apricot);
+		border: 1px solid var(--apricot-2);
+		color: var(--apricot-ink);
+		border-radius: var(--r);
+		padding: 11px 13px;
+		font-size: 13.5px;
+		line-height: 1.5;
+	}
+	.pfeil {
+		align-self: center;
+		color: var(--ink-3);
+		font-size: 22px;
+	}
+	.fussnote {
+		margin: 26px 0 0;
+		font-size: 13.5px;
+		line-height: 1.7;
+		color: var(--ink-2);
+		max-width: 74ch;
+	}
+</style>
+
+<p class="eyebrow">Patterns · Vorschlag, noch nicht gebaut</p>
+<h1 style="margin: 0 0 6px">Nachlesen</h1>
+<p class="muted" style="margin: 0 0 8px; font-size: 16px">
+	Der dritte Weg, eine Seite zu füllen – für Kapitel, zu denen im Heft nichts steht. lernassi
+	liest nur in einer festen Liste von Seiten nach; was daraus wird, entscheidet das Kind.
+</p>
+<p class="ki-hinweis" style="max-width: 74ch; margin-bottom: 24px">
+	<b>KI</b>
+	<span>
+		Ich bin eine KI. Ich lese in Wikipedia und im Klexikon nach und schreibe dir einen Entwurf.
+		Was davon in dein Heft kommt, entscheidest du – und du kannst jeden Satz ändern.
+	</span>
+</p>
+
+<div class="spalten">
+	<!-- ─────────── 1. Einstieg im Editor ─────────── -->
+	<div class="schritt">
+		<div class="kopf">
+			<span class="nummer">1</span>
+			<h2>Im Editor: „Ich weiß noch nicht genug"</h2>
+		</div>
+		<div class="rahmen">
+			<p class="eyebrow" style="margin: 0 0 4px">Geschichte · Wiener Kongress</p>
+			<p style="margin: 0 0 12px; font-family: var(--display); font-weight: 700; font-size: 17px">
+				Seite selbst schreiben
+			</p>
+
+			<div class="field" style="margin-bottom: 10px">
+				<span class="field__label">Titel</span>
+				<span class="eingabe leer">Lass es leer – dann schlage ich einen vor</span>
+			</div>
+			<div class="field" style="margin-bottom: 12px">
+				<span class="field__label">Dein Text</span>
+				<span class="eingabe leer" style="display: block; min-height: 86px">
+					Schreib auf, was im Unterricht dran war …
+				</span>
+			</div>
+
+			<div style="display: flex; flex-direction: column; gap: 8px">
+				<span class="btn btn--go btn--block" style="min-height: 48px">Fertig – zusammenfassen</span>
+				<span class="btn btn--quiet btn--block" style="min-height: 48px">
+					Ich weiß noch nicht genug – nachlesen
+				</span>
+			</div>
+			<p class="small" style="margin: 10px 0 0">
+				Der zweite Knopf führt weiter und behält die Stelle im Verzeichnis, die du gewählt hast.
+			</p>
+		</div>
+	</div>
+
+	<!-- ─────────── 2. Recherche: fragen und wählen ─────────── -->
+	<div class="schritt">
+		<div class="kopf">
+			<span class="nummer">2</span>
+			<h2>Fragen, dann Quellen ankreuzen</h2>
+		</div>
+		<div class="rahmen">
+			<p class="eyebrow" style="margin: 0 0 4px">Geschichte · Wiener Kongress</p>
+			<p style="margin: 0 0 12px; font-family: var(--display); font-weight: 700; font-size: 17px">
+				Nachlesen
+			</p>
+
+			<div class="field" style="margin-bottom: 10px">
+				<span class="field__label">Was willst du wissen?</span>
+				<span class="eingabe">Was wurde auf dem Wiener Kongress entschieden?</span>
+			</div>
+
+			<p class="eyebrow" style="margin: 14px 0 7px">Wo ich nachlese</p>
+			<div class="chips" style="margin-bottom: 14px">
+				<span class="chip chip--mint"><span class="chip__dot"></span>Wikipedia</span>
+				<span class="chip chip--mint"><span class="chip__dot"></span>Klexikon</span>
+				<span class="chip" style="opacity: 0.55">bpb.de</span>
+				<span class="chip" style="opacity: 0.55">planet-schule.de</span>
+			</div>
+
+			<p class="eyebrow" style="margin: 0 0 8px">4 Treffer · kreuz an, was ich lesen soll</p>
+			<div style="display: flex; flex-direction: column; gap: 8px">
+				<div class="treffer treffer--an">
+					<span class="kasten">✓</span>
+					<span>
+						<h3>Wiener Kongress</h3>
+						<p>Neuordnung Europas 1814/15 nach dem Ende der napoleonischen Herrschaft …</p>
+						<span class="quelle">de.wikipedia.org · Einleitung + „Ergebnisse"</span>
+					</span>
+				</div>
+				<div class="treffer treffer--an">
+					<span class="kasten">✓</span>
+					<span>
+						<h3>Wiener Kongress</h3>
+						<p>Nach den Kriegen gegen Napoleon trafen sich die Fürsten in Wien …</p>
+						<span class="quelle">klexikon.zum.de · ganzer Artikel</span>
+					</span>
+				</div>
+				<div class="treffer">
+					<span class="kasten"></span>
+					<span>
+						<h3>Deutscher Bund</h3>
+						<p>Zusammenschluss von 39 Staaten, gegründet 1815 auf dem Wiener Kongress …</p>
+						<span class="quelle">de.wikipedia.org · Einleitung</span>
+					</span>
+				</div>
+				<div class="treffer">
+					<span class="kasten"></span>
+					<span>
+						<h3>Klemens von Metternich</h3>
+						<p>Österreichischer Staatskanzler, prägende Figur des Kongresses …</p>
+						<span class="quelle">de.wikipedia.org · Einleitung</span>
+					</span>
+				</div>
+			</div>
+
+			<span class="btn btn--go btn--block" style="min-height: 50px; margin-top: 14px">
+				2 Artikel lesen und Entwurf schreiben
+			</span>
+			<p class="small" style="margin: 9px 0 0">
+				Ich lese nur, was du angekreuzt hast. Suchen kann ich nur in dieser Liste – nicht im
+				ganzen Internet.
+			</p>
+		</div>
+	</div>
+
+	<!-- ─────────── 3. Entwurf ─────────── -->
+	<div class="schritt">
+		<div class="kopf">
+			<span class="nummer">3</span>
+			<h2>Entwurf – mit Belegen, zum Ändern</h2>
+		</div>
+		<div class="rahmen">
+			<div class="row" style="margin-bottom: 10px">
+				<span class="tag tag--sky">Entwurf</span>
+				<span class="small">noch nicht in deinem Heft</span>
+			</div>
+
+			<div class="field" style="margin-bottom: 10px">
+				<span class="field__label">Titel</span>
+				<span class="eingabe">Der Wiener Kongress 1814/15</span>
+			</div>
+
+			<div class="field" style="margin-bottom: 12px">
+				<span class="field__label">Dein Text – ändere, was du willst</span>
+				<p class="entwurf">Nach der Niederlage Napoleons trafen sich 1814 die europäischen Fürsten in Wien. Sie wollten Europa neu ordnen.
+
+Wichtige Beschlüsse:
+– Frankreich bekam wieder die Grenzen von 1792.
+– 39 deutsche Staaten wurden zum Deutschen Bund zusammengefasst.
+– Fürsten kamen zurück an die Macht („Restauration").
+
+Geleitet wurden die Verhandlungen von Metternich.</p>
+			</div>
+
+			<p class="eyebrow" style="margin: 0 0 6px">Woher das kommt</p>
+			<ul class="belege">
+				<li>Wikipedia: „Wiener Kongress" (CC BY-SA 4.0)</li>
+				<li>Klexikon: „Wiener Kongress" (CC BY-SA 4.0)</li>
+			</ul>
+
+			<div class="hinweisbox" style="margin-top: 12px">
+				Das ist nachgelesen, nicht dein Unterricht. Was deine Lehrkraft gesagt hat, zählt mehr –
+				schreib es dazu, wenn du es weißt.
+			</div>
+
+			<div style="display: flex; flex-direction: column; gap: 8px; margin-top: 14px">
+				<span class="btn btn--go btn--block" style="min-height: 50px">
+					Passt – in mein Heft übernehmen
+				</span>
+				<span class="btn btn--quiet btn--block" style="min-height: 46px">Nochmal suchen</span>
+				<span class="btn btn--plain" style="min-height: 42px">Verwerfen</span>
+			</div>
+		</div>
+		<p class="small" style="margin: 0">
+			Im Verzeichnis steht die Seite danach mit dem Zeichen <span class="tag tag--sky"
+				style="font-size: 11px">nachgelesen</span
+			> – damit Kind und Lehrkraft sie von einer Heftseite unterscheiden können.
+		</p>
+	</div>
+</div>
+
+<p class="fussnote">
+	<strong>Die Regel hinter der Oberfläche:</strong> lernassi kann nicht „ins Internet". Es kann
+	in einer festen Liste von Seiten <em>suchen</em>, und es liest nur die Treffer, die das Kind
+	ankreuzt. Es gibt keinen Weg, auf dem das Modell selbst eine Adresse aufrufen könnte. Der
+	Entwurf ist immer ein Entwurf: gespeichert wird erst, was das Kind übernimmt – und dann als
+	nachgelesene Seite, nicht als Aufschrieb. Siehe <code>RECHERCHE.md</code>.
+</p>
