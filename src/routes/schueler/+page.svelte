@@ -59,6 +59,15 @@
 	// Welches Thema gerade woanders eingeordnet wird.
 	let einordnen = $state<string | null>(null);
 	let neuesKapitel = $state('');
+
+	// In welchem Kapitel gerade eine neue Seite angelegt wird, und an welcher Stelle. Nur eines
+	// auf einmal offen — zwei offene Blöcke wären zwei Absichten.
+	let neueSeite = $state<string | null>(null);
+	let stelle = $state('');
+
+	/** Wohin die beiden Wege führen — dieselbe Stelle, zwei Arten, sie zu füllen. */
+	const seitenWeg = (weg: 'aufnehmen' | 'schreiben', kapitelId: string) =>
+		`/schueler/${weg}?kapitel=${kapitelId}${stelle ? `&nach=${stelle}` : ''}`;
 </script>
 
 {#snippet verzeichnis(f: Fach, ton: string)}
@@ -142,24 +151,42 @@
 
 {#snippet bearbeitenListe(f: Fach, ton: string)}
 	<p class="small hinweis" style="margin-top:0">
-		Namen antippen und überschreiben, dann auf ✓. Mit ▲ und ▼ verschiebst du eine Zeile.
+		Namen antippen und überschreiben, dann auf ✓. Mit ▲ und ▼ verschiebst du eine Zeile. „Seite
+		hinzufügen" legt eine neue Seite genau an die Stelle, die du wählst.
 	</p>
 
 	<div class="card baum">
 		{#each f.kapitel as kapitel (kapitel.id)}
-			<div class="zeile zeile--bearbeiten">
+			<div class="zeile zeile--bearbeiten zeile--kapitelkopf">
 				{@render ordnen(kapitel.id, kapitel.title)}
 				<span class="marke" style="background:var(--{ton}-ink)"></span>
 				{@render namensfeld(kapitel.id, kapitel.title, true)}
-				{#if !kapitel.themen.length}
-					<form method="POST" action={aktion('kapitelLoeschen')}>
-						<input type="hidden" name="id" value={kapitel.id} />
-						<button class="btn btn--plain klein">Löschen</button>
-					</form>
-				{:else}
-					<span class="small stand">{themenLabel(kapitel.themen.length)}</span>
-				{/if}
+				<span class="knoepfe">
+					<button
+						type="button"
+						class="btn btn--plain klein"
+						onclick={() => {
+							neueSeite = neueSeite === kapitel.id ? null : kapitel.id;
+							// Standard ist das Ende des Kapitels — ein Heft wächst nach unten.
+							stelle = '';
+						}}
+					>
+						Seite hinzufügen
+					</button>
+					{#if !kapitel.themen.length}
+						<form method="POST" action={aktion('kapitelLoeschen')}>
+							<input type="hidden" name="id" value={kapitel.id} />
+							<button class="btn btn--plain klein">Löschen</button>
+						</form>
+					{:else}
+						<span class="small stand">{themenLabel(kapitel.themen.length)}</span>
+					{/if}
+				</span>
 			</div>
+
+			{#if neueSeite === kapitel.id}
+				{@render neueSeiteBlock(kapitel)}
+			{/if}
 
 			{#each kapitel.themen as thema (thema.id)}
 				<div class="zeile zeile--bearbeiten zeile--eingerueckt">
@@ -201,6 +228,39 @@
 		</label>
 		<button class="btn btn--quiet">Kapitel anlegen</button>
 	</form>
+{/snippet}
+
+<!-- Eine neue Seite in diesem Kapitel: erst die Stelle, dann der Weg. Beides ist eine
+     Entscheidung des Kindes — die KI bekommt hier nur noch den Inhalt zu sehen. -->
+{#snippet neueSeiteBlock(kapitel: Kapitel)}
+	<div class="card card--tint auswahl">
+		<p style="margin:0 0 12px;font-size:16px">Neue Seite in „{kapitel.title}"</p>
+
+		{#if kapitel.themen.length}
+			<label class="field" style="margin-bottom:12px">
+				<span class="field__label">Wohin im Kapitel</span>
+				<select bind:value={stelle}>
+					<option value="">Ans Ende</option>
+					<option value="anfang">Ganz nach oben</option>
+					{#each kapitel.themen as thema (thema.id)}
+						<option value={thema.id}>Hinter „{thema.title}"</option>
+					{/each}
+				</select>
+			</label>
+		{/if}
+
+		<div class="wege">
+			<a class="btn btn--go btn--block links" href={seitenWeg('aufnehmen', kapitel.id)}>
+				Aufschrieb fotografieren
+			</a>
+			<a class="btn btn--quiet btn--block links" href={seitenWeg('schreiben', kapitel.id)}>
+				Text selbst schreiben
+			</a>
+		</div>
+		<p class="small" style="margin:10px 0 0">
+			Fotografieren ist der kurze Weg. Selbst schreiben ist für alles, was nicht im Heft steht.
+		</p>
+	</div>
 {/snippet}
 
 {#snippet einordnenBlock(f: Fach, thema: Thema, jetzigesKapitel: string)}
@@ -466,6 +526,19 @@
 	.zeile--eingerueckt {
 		padding-left: 34px;
 	}
+	/* In der Kapitelzeile stehen jetzt zwei Knöpfe. Am Handy bleibt daneben kein Platz für
+	   den Namen — dort brechen sie darunter um. */
+	@media (max-width: 620px) {
+		.zeile--kapitelkopf {
+			grid-template-columns: 26px 12px minmax(0, 1fr);
+			padding-bottom: 10px;
+		}
+		.zeile--kapitelkopf .knoepfe {
+			grid-column: 3;
+			justify-content: flex-start;
+			gap: 6px;
+		}
+	}
 	.ordnen {
 		display: flex;
 		flex-direction: column;
@@ -527,6 +600,26 @@
 	}
 	.auswahl {
 		margin: 4px 8px 10px 34px;
+	}
+	.auswahl select {
+		width: 100%;
+		border: 0;
+		padding: 0;
+		background: transparent;
+		font-family: var(--text);
+		font-size: 17px;
+		color: var(--ink);
+	}
+	.auswahl select:focus {
+		outline: none;
+	}
+	.wege {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.wege :global(.btn) {
+		min-height: 52px;
 	}
 	.stapel {
 		display: flex;

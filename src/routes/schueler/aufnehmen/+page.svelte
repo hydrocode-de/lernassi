@@ -15,8 +15,23 @@
 	let dateien = $state<HTMLInputElement | null>(null);
 	let sendefeld = $state<HTMLInputElement | null>(null);
 
-	const fach = $derived(gewaehlt ?? data.faecher[0]?.title ?? '__neu');
+	// Mit festem Ziel ist die Fachwahl weg: Kapitel und Stelle hat das Kind im Verzeichnis
+	// schon entschieden, das Fach steht über dem Kapitel.
+	const fach = $derived(data.ziel?.fach ?? gewaehlt ?? data.faecher[0]?.title ?? '__neu');
 	const gewaehltesFach = $derived(fach === '__neu' ? neuesFach.trim() : fach);
+	const stelle = $derived(
+		data.ziel
+			? data.ziel.davor
+				? `hinter „${data.ziel.davor}"`
+				: data.ziel.stelle === 'anfang'
+					? 'ganz oben'
+					: 'am Ende'
+			: ''
+	);
+	// Mit festem Ziel zurück dorthin, wo das Kind auf „Seite hinzufügen" getippt hat.
+	const zurueckWeg = $derived(
+		data.ziel ? `/schueler?fach=${data.ziel.fachId}&bearbeiten=1` : '/schueler'
+	);
 	const bereit = $derived(seiten.length > 0 && gewaehltesFach.length > 0);
 	const adresse = $derived(`${page.url.host}/schueler/aufnehmen`);
 	const doppelt = $derived(Boolean(form?.doppelt));
@@ -75,23 +90,33 @@
 	</div>
 {:else}
 	<div class="kopf nurHandy">
-		<a href="/schueler" class="btn btn--plain">Abbrechen</a>
-		<span class="tag">{gewaehltesFach || 'Fach wählen'}</span>
+		<a href={zurueckWeg} class="btn btn--plain">Abbrechen</a>
+		<span class="tag">{data.ziel?.kapitel ?? (gewaehltesFach || 'Fach wählen')}</span>
 		<span></span>
 	</div>
 	<h1 class="titel nurHandy">Aufschrieb fotografieren</h1>
-	<p class="muted hinweistext nurHandy">Ganze Heftseite ins Bild, möglichst gerade.</p>
+	{#if data.ziel}
+		<p class="muted hinweistext nurHandy">Kommt in „{data.ziel.kapitel}", {stelle}.</p>
+	{:else}
+		<p class="muted hinweistext nurHandy">Ganze Heftseite ins Bild, möglichst gerade.</p>
+	{/if}
 	<p class="ki-hinweis nurHandy" style="margin:0 0 14px">
 		<span class="ki-hinweis__marke">{KI_MARKE}</span>
 		<span>{KI_AUFNEHMEN}</span>
 	</p>
 
 	<div class="nurRechner">
-		<a href="/schueler" class="btn btn--plain zurueck">Zurück</a>
+		<a href={zurueckWeg} class="btn btn--plain zurueck">Zurück</a>
 		<h1 style="margin:0 0 5px">Aufschrieb hinzufügen</h1>
-		<p class="muted" style="margin:0 0 14px;font-size:16px">
-			{gewaehltesFach ? `Fach: ${gewaehltesFach} · ` : ''}eine Seite pro Bild, Reihenfolge egal.
-		</p>
+		{#if data.ziel}
+			<p class="muted" style="margin:0 0 14px;font-size:16px">
+				{data.ziel.fach} · „{data.ziel.kapitel}", {stelle} — eine Seite pro Bild.
+			</p>
+		{:else}
+			<p class="muted" style="margin:0 0 14px;font-size:16px">
+				{gewaehltesFach ? `Fach: ${gewaehltesFach} · ` : ''}eine Seite pro Bild, Reihenfolge egal.
+			</p>
+		{/if}
 		<p class="ki-hinweis" style="margin:0 0 24px">
 			<span class="ki-hinweis__marke">{KI_MARKE}</span>
 			<span>{KI_AUFNEHMEN}</span>
@@ -122,23 +147,35 @@
 			};
 		}}
 	>
-		<label class="field fachwahl">
-			<span class="field__label">Fach</span>
-			<select value={fach} onchange={(e) => (gewaehlt = e.currentTarget.value)}>
-				{#each data.faecher as f (f.id)}
-					<option value={f.title}>{f.title}</option>
-				{/each}
-				<option value="__neu">Neues Fach …</option>
-			</select>
-		</label>
-
-		{#if fach === '__neu'}
-			<label class="field" style="margin-bottom:10px">
-				<span class="field__label">Neues Fach</span>
-				<input bind:value={neuesFach} placeholder="z. B. Geschichte" />
+		{#if data.ziel}
+			<!-- Nichts zu wählen: das Kind hat im Verzeichnis auf eine Stelle getippt. -->
+			<div class="field fachwahl">
+				<span class="field__label">Wohin</span>
+				<p style="margin:0;font-size:18px">
+					{data.ziel.fach} · {data.ziel.kapitel} <span class="small">({stelle})</span>
+				</p>
+			</div>
+			<input type="hidden" name="kapitel" value={data.ziel.kapitelId} />
+			<input type="hidden" name="nach" value={data.ziel.stelle} />
+		{:else}
+			<label class="field fachwahl">
+				<span class="field__label">Fach</span>
+				<select value={fach} onchange={(e) => (gewaehlt = e.currentTarget.value)}>
+					{#each data.faecher as f (f.id)}
+						<option value={f.title}>{f.title}</option>
+					{/each}
+					<option value="__neu">Neues Fach …</option>
+				</select>
 			</label>
+
+			{#if fach === '__neu'}
+				<label class="field" style="margin-bottom:10px">
+					<span class="field__label">Neues Fach</span>
+					<input bind:value={neuesFach} placeholder="z. B. Geschichte" />
+				</label>
+			{/if}
+			<input type="hidden" name="fach" value={gewaehltesFach} />
 		{/if}
-		<input type="hidden" name="fach" value={gewaehltesFach} />
 		{#if data.weiter}<input type="hidden" name="weiter" value={data.weiter} />{/if}
 
 		<div class="raster">

@@ -1,8 +1,14 @@
 <script lang="ts">
 	import { seitenLabel, vorZeit } from '$lib/heft';
-	import { KI_AUFSCHRIEB, KI_MARKE, kiErzeugt } from '$lib/ki';
+	import { KI_AUFSCHRIEB, KI_MARKE, KI_ZUSAMMENFASSUNG, kiErzeugt } from '$lib/ki';
 
 	let { data, form } = $props();
+
+	// Steht hier nur Selbstgeschriebenes, ist der Hinweis ein anderer: erzeugt ist dann bloß
+	// die Zusammenfassung. Gemischt (Foto UND getippt) gilt der weitere Satz.
+	const nurSelbst = $derived(
+		data.aufschriebe.length > 0 && data.aufschriebe.every((a) => a.selbst)
+	);
 
 	let einordnen = $state(false);
 	let neuesKapitel = $state('');
@@ -17,7 +23,9 @@
 <p class="eyebrow" style="margin:0 0 6px">{data.fach.title} · {data.kapitel.title}</p>
 <h1 style="margin:0">{data.thema.title}</h1>
 <p class="muted" style="margin:5px 0 0;font-size:16px">
-	{#if data.aufschriebe.length === 1}
+	{#if nurSelbst && data.aufschriebe.length === 1}
+		Selbst geschrieben am {datum(data.aufschriebe[0].wann)}
+	{:else if data.aufschriebe.length === 1}
 		Aufschrieb vom {datum(data.aufschriebe[0].wann)} · {seitenLabel(data.seitenGesamt)}
 	{:else}
 		{data.aufschriebe.length} Aufschriebe · {seitenLabel(data.seitenGesamt)}
@@ -26,7 +34,7 @@
 
 <p class="ki-hinweis" style="margin:16px 0 0">
 	<span class="ki-hinweis__marke">{KI_MARKE}</span>
-	<span>{KI_AUFSCHRIEB}</span>
+	<span>{nurSelbst ? KI_ZUSAMMENFASSUNG : KI_AUFSCHRIEB}</span>
 </p>
 
 <div class="raster">
@@ -50,19 +58,43 @@
 			{#if a.abschrift}
 				<div class="card">
 					<div class="row" style="margin-bottom:10px">
-						<p class="eyebrow" style="margin:0">Abschrift deiner Seiten</p>
+						<p class="eyebrow" style="margin:0">
+							{a.selbst ? 'Dein Text' : 'Abschrift deiner Seiten'}
+						</p>
 						<span class="small">
 							{a.seiten.length ? `Seite ${a.seiten.map((s) => s.nummer).join(', ')}` : ''}
 						</span>
 					</div>
-					<p class="text abschrift" {...kiErzeugt}>{a.abschrift}</p>
+					{#if a.selbst}
+						<!-- Kein `kiErzeugt`: das hat das Kind geschrieben. Die Kennzeichnung an einen
+						     Kindertext zu hängen wäre sie in die falsche Richtung. -->
+						<p class="text abschrift">{a.abschrift}</p>
+						<a
+							class="btn btn--plain"
+							href="/schueler/schreiben?note={a.id}"
+							style="margin-top:10px;padding-inline:0"
+						>
+							Text bearbeiten
+						</a>
+					{:else}
+						<p class="text abschrift" {...kiErzeugt}>{a.abschrift}</p>
+					{/if}
 				</div>
 			{/if}
 		{/each}
 	</div>
 
 	<div class="stapel">
-		{#if data.fotosBehalten}
+		{#if data.seitenGesamt === 0}
+			<!-- Selbst geschrieben: hier gab es nie ein Foto. Der Satz über nicht behaltene Fotos
+			     wäre an dieser Stelle einfach falsch. -->
+			<div class="card card--tint">
+				<p class="eyebrow" style="margin:0 0 8px">Ohne Heftseiten</p>
+				<p style="margin:0;font-size:16px;line-height:1.55">
+					Diese Seite hast du selbst geschrieben – dazu gibt es keine Fotos.
+				</p>
+			</div>
+		{:else if data.fotosBehalten}
 			<div class="card">
 				<div class="row" style="margin-bottom:12px">
 					<p class="eyebrow" style="margin:0">Deine Heftseiten</p>

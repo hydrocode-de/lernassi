@@ -1,8 +1,13 @@
 // Ein Thema woanders einordnen. Steht hier, weil es an zwei Stellen gebraucht wird:
 // beim Bearbeiten des Verzeichnisses und auf der Seite eines einzelnen Eintrags.
+//
+// Dazu das Gegenstück fürs Hinzufügen: `einsortieren` legt neue Themen an eine bestimmte
+// Stelle im Kapitel — beide Wege, eine Seite anzulegen (Foto und selbst getippt), gehen
+// darüber.
 
 import { db } from '$lib/server/db';
 import { tocEntries } from '$lib/server/db/schema';
+import { themenReihenfolge } from '$lib/server/heft';
 import { and, eq } from 'drizzle-orm';
 
 export type Umzug = { ok: string } | { fehler: string };
@@ -77,4 +82,55 @@ export async function verschiebeThema(
 		.where(eq(tocEntries.id, zielKapitel.id));
 
 	return { ok: `„${thema.title}" liegt jetzt in „${zielKapitel.title}".` };
+}
+
+/**
+ * Wohin eine neue Seite im Kapitel gehört. `'anfang'` nach oben, eine Themen-ID dahinter,
+ * alles andere (auch leer) ans Ende — das Verzeichnis wächst sonst nach unten weiter, wie
+ * ein Heft.
+ */
+export type Stelle = string | null | undefined;
+
+/**
+ * Neu angelegte Themen an ihre Stelle im Kapitel setzen. Numeriert dabei das ganze Kapitel
+ * neu durch: vorher stand dort oft überall 0, und mit einer festen Position im Verzeichnis
+ * muss die Reihenfolge danach eindeutig sein — sonst rutscht die eingefügte Seite beim
+ * nächsten Aufschrieb wieder nach oben.
+ */
+export async function einsortieren(
+	studentId: string,
+	kapitelId: string,
+	neueIds: string[],
+	stelle: Stelle
+): Promise<void> {
+	const reihe = (await themenReihenfolge(studentId, kapitelId)).map((t) => t.id);
+	const alt = reihe.filter((id) => !neueIds.includes(id));
+	const neu = neueIds.filter((id) => reihe.includes(id));
+	if (!neu.length) return;
+
+	const nach = stelle === 'anfang' ? -1 : alt.findIndex((id) => id === stelle);
+	// Unbekannte Stelle heißt „ans Ende" — auch dann, wenn das Bezugsthema zwischenzeitlich
+	// verschoben oder gelöscht wurde.
+	const ordnung =
+		nach === -1 && stelle !== 'anfang'
+			? [...alt, ...neu]
+			: [...alt.slice(0, nach + 1), ...neu, ...alt.slice(nach + 1)];
+
+	for (const [i, id] of ordnung.entries())
+		await db
+			.update(tocEntries)
+			.set({ sortOrder: i + 1 })
+			.where(eq(tocEntries.id, id));
+}
+
+/**
+ * Ein Kapitel, das diesem Kind gehört, mit seinem Fach. Beide Wege zum Anlegen einer Seite
+ * brauchen genau das: Kapitel prüfen, Fach dazu holen, sonst nichts.
+ */
+export async function kapitelMitFach(studentId: string, kapitelId: string) {
+	const kapitel = await meines(studentId, kapitelId);
+	if (!kapitel || kapitel.kind !== 'chapter' || !kapitel.parentId) return null;
+	const fach = await meines(studentId, kapitel.parentId);
+	if (!fach || fach.kind !== 'subject') return null;
+	return { kapitel, fach };
 }

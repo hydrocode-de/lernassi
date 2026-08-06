@@ -8,6 +8,8 @@ import {
 } from "$lib/server/db/schema";
 import { KeinSchluessel, leseAufschrieb, tocAlsText } from "$lib/server/ingest";
 import { darfSpeichern, fingerabdruck, legeSeiteAb } from "$lib/server/bilder";
+import { einsortieren, kapitelMitFach } from "$lib/server/gliederung";
+import { themenReihenfolge } from "$lib/server/heft";
 import { and, eq, inArray } from "drizzle-orm";
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
@@ -15,6 +17,33 @@ import type { Actions, PageServerLoad } from "./$types";
 /** Nur Wege innerhalb der Anwendung — siehe aufnahme/[id]. */
 function saubererWeiterWeg(roh: string | null): string | null {
   return roh && /^\/schueler\/kapitel\/[\w-]+$/.test(roh) ? roh : null;
+}
+
+/**
+ * Kam das Kind aus dem Verzeichnis, hat es Kapitel und Stelle schon selbst gewählt. Dann ist
+ * hier nichts mehr zu entscheiden: das Fach steht über dem Kapitel, und die neuen Themen
+ * landen genau an der Stelle, auf die das Kind getippt hat. Der KI bleibt das Teilen in
+ * Themen — die Einordnung hat das Kind gemacht.
+ */
+async function festesZiel(
+  studentId: string,
+  kapitelId: string | null,
+  stelle: string | null,
+) {
+  if (!kapitelId) return null;
+  const treffer = await kapitelMitFach(studentId, kapitelId);
+  if (!treffer) return null;
+  const themen = await themenReihenfolge(studentId, treffer.kapitel.id);
+  return {
+    kapitelId: treffer.kapitel.id,
+    kapitel: treffer.kapitel.title,
+    fachId: treffer.fach.id,
+    fach: treffer.fach.title,
+    // Die Stelle darf nur ein Thema DIESES Kapitels sein — sonst ans Ende.
+    stelle:
+      stelle === "anfang" || themen.some((t) => t.id === stelle) ? stelle : "",
+    davor: themen.find((t) => t.id === stelle)?.title ?? null,
+  };
 }
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -32,6 +61,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
   return {
     faecher: faecher.sort((a, b) => a.title.localeCompare(b.title, "de")),
     weiter: saubererWeiterWeg(url.searchParams.get("weiter")),
+    ziel: await festesZiel(
+      locals.user.id,
+      url.searchParams.get("kapitel"),
+      url.searchParams.get("nach"),
+    ),
   };
 };
 
@@ -69,7 +103,14 @@ export const actions: Actions = {
     const studentId = locals.user.id;
 
     const fd = await request.formData();
-    const fach = String(fd.get("fach") ?? "").trim();
+    // Mit festem Ziel gilt das Fach des Kapitels, nicht das aus dem Auswahlfeld — das ist
+    // dann gar nicht sichtbar.
+    const ziel = await festesZiel(
+      studentId,
+      String(fd.get("kapitel") ?? "") || null,
+      String(fd.get("nach") ?? "") || null,
+    );
+    const fach = ziel?.fach ?? String(fd.get("fach") ?? "").trim();
     const dateien = fd
       .getAll("seiten")
       .filter((f): f is File => f instanceof File && f.size > 0);
@@ -155,7 +196,12 @@ export const actions: Actions = {
 
     let ergebnis;
     try {
-      ergebnis = await leseAufschrieb({ bilder, fach, gliederung });
+      ergebnis = await leseAufschrieb({
+        bilder,
+        fach,
+        gliederung,
+        festesKapitel: ziel?.kapitel,
+      });
     } catch (e) {
       if (e instanceof KeinSchluessel)
         return fail(503, {
@@ -208,19 +254,18 @@ export const actions: Actions = {
     }
 
     const fachId = await findeOderLege(studentId, "subject", fach, null);
+    const neueThemen: string[] = [];
     for (const [i, abschnitt] of ergebnis.abschnitte.entries()) {
-      const kapitelId = await findeOderLege(
-        studentId,
-        "chapter",
-        abschnitt.kapitel,
-        fachId,
-      );
+      const kapitelId =
+        ziel?.kapitelId ??
+        (await findeOderLege(studentId, "chapter", abschnitt.kapitel, fachId));
       const themaId = await findeOderLege(
         studentId,
         "topic",
         abschnitt.thema,
         kapitelId,
       );
+      neueThemen.push(themaId);
       await db.insert(notes).values({
         studentId,
         uploadId: upload.id,
@@ -232,6 +277,11 @@ export const actions: Actions = {
         sortOrder: i,
       });
     }
+
+    // Nur mit festem Ziel: dann hat das Kind eine Stelle gewählt, und die gilt. Ohne Ziel
+    // bleibt es bei der bisherigen Regel — neues Material steht oben.
+    if (ziel)
+      await einsortieren(studentId, ziel.kapitelId, neueThemen, ziel.stelle);
 
     const weiter = saubererWeiterWeg(String(fd.get("weiter") ?? "") || null);
     throw redirect(

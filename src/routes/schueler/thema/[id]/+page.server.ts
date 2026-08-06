@@ -51,6 +51,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			id: n.id,
 			wann: n.createdAt.getTime(),
 			geaendert: n.updatedAt?.getTime() ?? null,
+			// Hat das Kind den Text selbst getippt, ist nur die Zusammenfassung KI-erzeugt —
+			// und nur dann darf es den Text hier wieder bearbeiten.
+			selbst: n.herkunft === 'selbst',
 			zusammenfassung: n.summary ?? '',
 			begriffe: n.keywords ? n.keywords.split(',').map((s) => s.trim()).filter(Boolean) : [],
 			// Die Abschrift steht im Transkript — pro Seite gibt es keine eigene Spalte,

@@ -33,6 +33,16 @@ export const KI_GESPRAECH =
 export const KI_AUFSCHRIEB =
 	'Diesen Text hat eine KI aus deinen Seiten gelesen und geschrieben. Die Fotos sind deine.';
 
+/** Im Editor, in dem das Kind eine Seite selbst tippt. Der Text ist seiner — die
+ *  Zusammenfassung nicht, und genau diese Grenze muss vorher klar sein. */
+export const KI_SCHREIBEN =
+	'Ich bin eine KI – ein Computerprogramm. Was du schreibst, bleibt genau so stehen; ich fasse es nur zusammen und suche die wichtigen Begriffe.';
+
+/** Auf der Seite eines selbst getippten Aufschriebs. Gegenstück zu `KI_AUFSCHRIEB`: hier ist
+ *  nur die Zusammenfassung erzeugt, die Abschrift stammt vom Kind. */
+export const KI_ZUSAMMENFASSUNG =
+	'Die Zusammenfassung und die Begriffe hat eine KI aus deinem Text gemacht. Der Text ist deiner.';
+
 /** Was am einzelnen Stück steht, wo ein ganzer Abschnitt zu viel wäre — etwa an der Frage. */
 export const KI_MARKE = 'KI';
 

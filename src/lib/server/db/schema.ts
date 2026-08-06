@@ -175,14 +175,20 @@ export const uploadPages = sqliteTable('upload_pages', {
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
-// Ein eigenständiger Aufschrieb (ein Thema) aus einer Fotosession.
+// Ein eigenständiger Aufschrieb (ein Thema) — aus einer Fotosession oder selbst getippt.
 export const notes = sqliteTable('notes', {
 	id: id(),
 	studentId: text('student_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
+	// Leer, wenn das Kind den Text selbst getippt hat: dann gibt es keine Fotosession.
 	uploadId: text('upload_id').references(() => uploads.id, { onDelete: 'cascade' }),
 	topicId: text('topic_id').references(() => tocEntries.id, { onDelete: 'set null' }),
+	// Woher der Text kommt: 'foto' = eine KI hat ihn aus Heftseiten gelesen, 'selbst' = das Kind
+	// hat ihn getippt. Daran hängt die KI-Kennzeichnung (Art. 50 KI-VO): die Zusammenfassung ist
+	// immer erzeugt, die Abschrift nur im Foto-Fall. Was das Kind selbst geschrieben hat, darf
+	// nicht als KI-Text ausgezeichnet werden — das wäre die Kennzeichnung in die falsche Richtung.
+	herkunft: text('herkunft').notNull().default('foto'), // 'foto' | 'selbst'
 	transcript: text('transcript'),
 	summary: text('summary'),
 	keywords: text('keywords'), // kommagetrennt, für die Begriffs-Chips
