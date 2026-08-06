@@ -1,22 +1,21 @@
-<!-- @dsCard group="Patterns" viewport="900x820" name="Nachlesen (Recherche)" subtitle="Thema eingeben, lernassi liest Wikipedia, Entwurf zum Ändern" -->
+<!-- @dsCard group="Patterns" viewport="1060x900" name="Nachlesen (Recherche)" subtitle="Thema eingeben, zusehen wo lernassi nachliest, Entwurf ändern" -->
 <link rel="stylesheet" href="../styles.css">
 <style>
 	body {
 		padding: 32px;
-		max-width: 860px;
+		max-width: 1000px;
 	}
-	.zwei {
+	.drei {
 		display: grid;
-		grid-template-columns: 360px 360px;
-		gap: 40px;
+		grid-template-columns: repeat(3, 300px);
+		gap: 28px;
 		align-items: start;
 	}
 	.handy {
 		background: var(--surface);
 		border: 1px solid var(--line);
 		border-radius: 22px;
-		padding: 20px 18px;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+		padding: 18px 16px;
 	}
 	.beschriftung {
 		margin: 0 0 10px;
@@ -29,19 +28,16 @@
 		font-size: 16px;
 		color: var(--ink);
 	}
-	.leer {
-		color: var(--ink-3);
-	}
 	.ki-hinweis {
 		display: flex;
 		align-items: baseline;
 		gap: 9px;
-		margin: 0 0 16px;
+		margin: 0 0 14px;
 		padding: 10px 12px;
 		border-radius: var(--r);
 		background: var(--lavender);
 		color: var(--lavender-ink);
-		font-size: 13.5px;
+		font-size: 13px;
 		line-height: 1.45;
 	}
 	.ki-hinweis b {
@@ -50,77 +46,158 @@
 		font-size: 11px;
 		letter-spacing: 0.08em;
 	}
+
+	/* Was lernassi gerade tut — eine Zeile je Schritt, in der Reihenfolge, in der es passiert. */
+	.schritte {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	.schritte li {
+		display: grid;
+		grid-template-columns: 18px 1fr;
+		gap: 10px;
+		font-size: 14px;
+		line-height: 1.5;
+		color: var(--ink-2);
+	}
+	.schritte li.jetzt {
+		color: var(--ink);
+	}
+	.schritte li.kommt {
+		opacity: 0.4;
+	}
+	.haken {
+		color: var(--mint-ink);
+		font-size: 13px;
+	}
+	.dreher {
+		width: 14px;
+		height: 14px;
+		margin-top: 3px;
+		border-radius: 50%;
+		border: 2px solid var(--lavender-2);
+		border-top-color: var(--lavender-ink);
+	}
+	.punkt {
+		width: 7px;
+		height: 7px;
+		margin: 7px 0 0 3px;
+		border-radius: 50%;
+		background: var(--line-2);
+	}
 	.entwurf {
 		margin: 0;
-		font-size: 15px;
+		font-size: 14.5px;
 		line-height: 1.65;
 		color: var(--ink-2);
 		white-space: pre-wrap;
 	}
 	.quelle {
 		margin: 12px 0 0;
-		font-size: 13px;
+		font-size: 12.5px;
 		line-height: 1.55;
 		color: var(--ink-3);
 	}
 	.hinweisbox {
-		margin-top: 14px;
+		margin-top: 12px;
 		background: var(--apricot);
 		border: 1px solid var(--apricot-2);
 		color: var(--apricot-ink);
 		border-radius: var(--r);
-		padding: 11px 13px;
-		font-size: 13.5px;
+		padding: 10px 12px;
+		font-size: 13px;
 		line-height: 1.5;
 	}
 	.knoepfe {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		margin-top: 16px;
+		margin-top: 14px;
 	}
 	.knoepfe .btn {
-		min-height: 50px;
+		min-height: 48px;
 	}
 </style>
 
 <p class="eyebrow">Patterns · Vorschlag, noch nicht gebaut</p>
 <h1 style="margin: 0 0 6px">Nachlesen</h1>
-<p class="muted" style="margin: 0 0 26px; font-size: 16px; max-width: 62ch">
-	Ein Bildschirm, zwei Zustände. Erreichbar aus dem Editor, wenn das Kind noch nichts zu
-	schreiben hat.
+<p class="muted" style="margin: 0 0 26px; font-size: 16px; max-width: 64ch">
+	Ein Bildschirm, drei Zustände. Erreichbar aus dem Editor, wenn das Kind noch nichts zu
+	schreiben hat. Der mittlere Zustand ist der wichtigste: dort sagt lernassi, wo es nachliest
+	und warum.
 </p>
 
-<div class="zwei">
-	<!-- ─────────── vorher ─────────── -->
+<div class="drei">
+	<!-- ─────────── 1 ─────────── -->
 	<div>
-		<p class="beschriftung">Vorher</p>
+		<p class="beschriftung">Thema eingeben</p>
 		<div class="handy">
 			<p class="eyebrow" style="margin: 0 0 4px">Geschichte · Wiener Kongress</p>
-			<h2 style="margin: 0 0 14px; font-size: 21px">Nachlesen</h2>
+			<h2 style="margin: 0 0 12px; font-size: 20px">Nachlesen</h2>
 
 			<p class="ki-hinweis">
 				<b>KI</b>
-				<span>Ich lese für dich in Wikipedia nach und schreibe dir einen Entwurf.</span>
+				<span>Ich lese für dich in geprüften Lernseiten nach und schreibe dir einen Entwurf.</span>
 			</p>
 
-			<label class="field" style="margin-bottom: 14px">
+			<label class="field" style="margin-bottom: 12px">
 				<span class="field__label">Zu welchem Thema?</span>
 				<span class="eingabe">Wiener Kongress</span>
 			</label>
 
-			<span class="btn btn--go btn--block" style="min-height: 52px">Nachlesen</span>
-			<p class="small" style="margin: 10px 0 0">
-				Ich kann nur in Wikipedia und im Klexikon nachlesen, nicht im ganzen Internet.
+			<span class="btn btn--go btn--block" style="min-height: 50px">Nachlesen</span>
+			<p class="small" style="margin: 9px 0 0">
+				Ich kann nur in den Seiten suchen, die deine Lehrkraft erlaubt hat.
 			</p>
 		</div>
 	</div>
 
-	<!-- ─────────── nachher ─────────── -->
+	<!-- ─────────── 2 ─────────── -->
 	<div>
-		<p class="beschriftung">Nachher</p>
+		<p class="beschriftung">Dabei zusehen</p>
 		<div class="handy">
-			<div class="row" style="margin-bottom: 12px">
+			<p class="eyebrow" style="margin: 0 0 12px">Ich lese nach …</p>
+
+			<ul class="schritte">
+				<li>
+					<span class="haken">✓</span>
+					<span>Ich suche im <b>Klexikon</b> nach „Wiener Kongress".</span>
+				</li>
+				<li>
+					<span class="haken">✓</span>
+					<span>Gefunden. Der Artikel ist kurz – ich lese ihn ganz.</span>
+				</li>
+				<li>
+					<span class="haken">✓</span>
+					<span>
+						Was 1815 beschlossen wurde, steht dort nicht genau genug für Klasse 9.
+					</span>
+				</li>
+				<li class="jetzt">
+					<span class="dreher"></span>
+					<span>Ich schaue bei <b>ZUM Unterrichten</b> nach.</span>
+				</li>
+				<li class="kommt">
+					<span class="punkt"></span>
+					<span>Dann schreibe ich deinen Entwurf.</span>
+				</li>
+			</ul>
+
+			<p class="small" style="margin: 18px 0 0; padding-top: 12px; border-top: 1px solid var(--line)">
+				Wikipedia frage ich zuletzt – nur, wenn die Lernseiten nichts hergeben.
+			</p>
+		</div>
+	</div>
+
+	<!-- ─────────── 3 ─────────── -->
+	<div>
+		<p class="beschriftung">Entwurf ändern</p>
+		<div class="handy">
+			<div class="row" style="margin-bottom: 10px">
 				<span class="tag tag--sky">Entwurf</span>
 				<span class="small">noch nicht in deinem Heft</span>
 			</div>
@@ -142,7 +219,8 @@ Geleitet wurden die Verhandlungen von Metternich.</p>
 			</label>
 
 			<p class="quelle">
-				Aus: Wikipedia, „Wiener Kongress" (CC BY-SA 4.0) · <a href="#">Artikel ansehen</a>
+				Aus: Klexikon, „Wiener Kongress" · ZUM Unterrichten, „Historische Stichworte" (beide CC
+				BY-SA) · <a href="#">ansehen</a>
 			</p>
 
 			<div class="hinweisbox">
