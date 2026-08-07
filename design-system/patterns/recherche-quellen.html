@@ -1,0 +1,228 @@
+<!-- @dsCard group="Patterns" viewport="820x900" name="Quellen freigeben (Lehrkraft)" subtitle="Welche Seiten lernassi lesen darf – je Klasse, Reihenfolge fest" -->
+<link rel="stylesheet" href="../styles.css">
+<style>
+	body {
+		padding: 32px;
+		max-width: 720px;
+	}
+	.karte {
+		background: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: var(--r-lg);
+		padding: 22px 22px 16px;
+	}
+	.quelle {
+		display: grid;
+		grid-template-columns: 26px 1fr auto;
+		align-items: start;
+		gap: 12px;
+		padding: 14px 0;
+		border-bottom: 1px solid var(--line);
+	}
+	.quelle:last-of-type {
+		border-bottom: 0;
+	}
+	.rang {
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: 14px;
+		color: var(--ink-3);
+		padding-top: 2px;
+	}
+	.quelle h3 {
+		margin: 0 0 3px;
+		font-size: 16px;
+	}
+	.quelle p {
+		margin: 0;
+		font-size: 13.5px;
+		line-height: 1.5;
+		color: var(--ink-2);
+	}
+	.marken {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		margin-top: 7px;
+	}
+	.marke {
+		font-size: 11.5px;
+		padding: 2px 8px;
+		border-radius: var(--r-pill);
+		background: var(--paper-2);
+		color: var(--ink-3);
+		font-family: ui-monospace, monospace;
+	}
+	.marke--api {
+		background: var(--mint);
+		color: var(--mint-ink);
+	}
+	.marke--link {
+		background: var(--apricot);
+		color: var(--apricot-ink);
+	}
+	.marke--zuletzt {
+		background: var(--sky);
+		color: var(--sky-ink);
+		font-family: var(--text);
+		font-weight: 400;
+		margin-left: 6px;
+		vertical-align: 2px;
+	}
+
+	/* Schalter — reine Attrappe, zeigt nur an/aus. */
+	.kippe {
+		flex: none;
+		width: 46px;
+		height: 27px;
+		border-radius: var(--r-pill);
+		background: var(--line-2);
+		position: relative;
+		margin-top: 2px;
+	}
+	.kippe::after {
+		content: '';
+		position: absolute;
+		top: 3px;
+		left: 3px;
+		width: 21px;
+		height: 21px;
+		border-radius: 50%;
+		background: var(--surface);
+	}
+	.kippe--an {
+		background: var(--mint-ink);
+	}
+	.kippe--an::after {
+		left: auto;
+		right: 3px;
+	}
+	.aus h3,
+	.aus p {
+		opacity: 0.5;
+	}
+	.fussleiste {
+		margin-top: 18px;
+		padding-top: 14px;
+		border-top: 1px solid var(--line);
+		font-size: 13.5px;
+		line-height: 1.6;
+		color: var(--ink-2);
+	}
+</style>
+
+<p class="eyebrow">Patterns · Vorschlag, noch nicht gebaut</p>
+<h1 style="margin: 0 0 6px">Quellen freigeben</h1>
+<p class="muted" style="margin: 0 0 24px; font-size: 16px; max-width: 62ch">
+	In den Einstellungen der Lehrkraft, je Klasse. Die Reihenfolge steht fest – lernassi fragt von
+	oben nach unten und hört auf, sobald es genug hat. Wikipedia bleibt unten.
+</p>
+
+<div class="karte">
+	<div class="row" style="margin-bottom: 6px">
+		<p class="eyebrow" style="margin: 0">Geschichte 9b · Nachlesen</p>
+		<span class="tag tag--mint">an</span>
+	</div>
+	<p class="small" style="margin: 0 0 6px">
+		Ist Nachlesen aus, sehen die Kinder den Knopf nicht. Standard: aus.
+	</p>
+
+	<div class="quelle">
+		<span class="rang">1</span>
+		<span>
+			<h3>Klexikon</h3>
+			<p>Erklärt für Kinder, einfache Sprache. Deckt die Sek I nicht überall ab.</p>
+			<span class="marken">
+				<span class="marke marke--api">API · Volltext</span>
+				<span class="marke">CC BY-SA</span>
+				<span class="marke">klexikon.zum.de</span>
+			</span>
+		</span>
+		<span class="kippe kippe--an"></span>
+	</div>
+
+	<div class="quelle">
+		<span class="rang">2</span>
+		<span>
+			<h3>ZUM Unterrichten</h3>
+			<p>Von Lehrkräften geschrieben, quer über die Fächer, auf Schulniveau.</p>
+			<span class="marken">
+				<span class="marke marke--api">API · Volltext</span>
+				<span class="marke">CC BY-SA</span>
+				<span class="marke">unterrichten.zum.de</span>
+			</span>
+		</span>
+		<span class="kippe kippe--an"></span>
+	</div>
+
+	<div class="quelle">
+		<span class="rang">3</span>
+		<span>
+			<h3>Serlo</h3>
+			<p>Stark in Mathe, dazu Bio, Chemie, Informatik. Mit Abituraufgaben.</p>
+			<span class="marken">
+				<span class="marke marke--api">API · Volltext</span>
+				<span class="marke">CC BY-SA</span>
+				<span class="marke">de.serlo.org</span>
+			</span>
+		</span>
+		<span class="kippe kippe--an"></span>
+	</div>
+
+	<div class="quelle aus">
+		<span class="rang">4</span>
+		<span>
+			<h3>LEIFIphysik</h3>
+			<p>
+				Das beste Physik-Portal fürs Gymnasium – aber ohne Schnittstelle und mit NC-Lizenz.
+				lernassi kann nur darauf verweisen, nicht daraus schreiben.
+			</p>
+			<span class="marken">
+				<span class="marke marke--link">nur Link</span>
+				<span class="marke">CC BY-NC</span>
+				<span class="marke">leifiphysik.de</span>
+			</span>
+		</span>
+		<span class="kippe"></span>
+	</div>
+
+	<div class="quelle aus">
+		<span class="rang">5</span>
+		<span>
+			<h3>bpb.de</h3>
+			<p>
+				Politik und Zeitgeschichte, redaktionell geprüft. Meist ND-Lizenz – Umschreiben ist
+				nicht erlaubt, also auch hier nur ein Verweis.
+			</p>
+			<span class="marken">
+				<span class="marke marke--link">nur Link</span>
+				<span class="marke">CC BY-NC-ND</span>
+				<span class="marke">bpb.de</span>
+			</span>
+		</span>
+		<span class="kippe"></span>
+	</div>
+
+	<div class="quelle">
+		<span class="rang">6</span>
+		<span>
+			<h3>Wikipedia <span class="marke marke--zuletzt">immer zuletzt</span></h3>
+			<p>
+				Findet fast alles, ist aber für die Mittelstufe oft zu schwer und niemandes Lehrwerk.
+				Wird nur gefragt, wenn oben nichts Passendes stand.
+			</p>
+			<span class="marken">
+				<span class="marke marke--api">API · Volltext</span>
+				<span class="marke">CC BY-SA</span>
+				<span class="marke">de.wikipedia.org</span>
+			</span>
+		</span>
+		<span class="kippe kippe--an"></span>
+	</div>
+
+	<p class="fussleiste">
+		Eigene Adressen kann man hier nicht eintragen. Jede Quelle ist eine Schnittstelle, die
+		gebaut werden muss – eine freie URL-Eingabe wäre etwas anderes: dann liest lernassi
+		beliebige Seiten, und keiner weiß mehr, was drin stand.
+	</p>
+</div>

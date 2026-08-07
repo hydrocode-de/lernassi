@@ -5,6 +5,7 @@
 import { db } from '$lib/server/db';
 import { consents, notes, tocEntries, uploadPages } from '$lib/server/db/schema';
 import { verschiebeThema } from '$lib/server/gliederung';
+import { quellenLesen } from '$lib/server/quelle';
 import { and, eq, inArray } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -40,6 +41,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		await db.select().from(consents).where(eq(consents.studentId, studentId))
 	)[0];
 
+	// Woher jeder Aufschrieb kommt — Heftseiten, eigene Angabe oder nachgelesener Artikel.
+	const quellen = await quellenLesen(meine.map((n) => n.id));
+
 	const aufschriebe = meine.map((n) => {
 		const nummern = n.pageNumbers
 			? n.pageNumbers
@@ -51,6 +55,10 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			id: n.id,
 			wann: n.createdAt.getTime(),
 			geaendert: n.updatedAt?.getTime() ?? null,
+			// Hat das Kind den Text selbst getippt, ist nur die Zusammenfassung KI-erzeugt —
+			// und nur dann darf es den Text hier wieder bearbeiten.
+			selbst: n.herkunft === 'selbst',
+			quellen: quellen.get(n.id) ?? [],
 			zusammenfassung: n.summary ?? '',
 			begriffe: n.keywords ? n.keywords.split(',').map((s) => s.trim()).filter(Boolean) : [],
 			// Die Abschrift steht im Transkript — pro Seite gibt es keine eigene Spalte,

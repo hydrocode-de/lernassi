@@ -172,6 +172,40 @@
 	<button class="btn">Grenzen speichern</button>
 </form>
 
+{#if data.rechercheMoeglich}
+	<h2 style="margin:32px 0 12px">Nachlesen</h2>
+	<form method="POST" action="?/speichereRecherche" class="card">
+		<p class="small" style="margin:0 0 14px">
+			Findet ein Kind zu einem Kapitel nichts in seinem Heft, kann lernassi in geprüften
+			Lernseiten nachlesen und einen Entwurf schreiben. Das Kind ändert ihn und übernimmt ihn
+			selbst; im Heft steht danach, woher der Text kommt. Standard: aus.
+		</p>
+
+		<label class="schalterzeile">
+			<input type="checkbox" name="an" value="1" checked={data.cls.recherche} />
+			<span><strong>Nachlesen erlauben</strong></span>
+		</label>
+
+		<div class="quellen" class:quellen--aus={!data.cls.recherche}>
+			{#each data.quellen as q (q.id)}
+				<label class="schalterzeile">
+					<input type="checkbox" name="quelle" value={q.id} checked={q.an} />
+					<span>
+						<strong>{q.label}</strong>
+						<span class="small" style="display:block">{q.wofuer}</span>
+					</span>
+				</label>
+			{/each}
+			<p class="small" style="margin:10px 0 0">
+				Die Reihenfolge steht fest: lernassi fragt die Lernseiten zuerst und Wikipedia nur, wenn
+				dort nichts Passendes stand. Eigene Adressen lassen sich nicht eintragen.
+			</p>
+		</div>
+
+		<button class="btn" style="margin-top:16px">Nachlesen speichern</button>
+	</form>
+{/if}
+
 <h2 style="margin:32px 0 12px">Zugänge</h2>
 <div class="card">
 	<form method="POST" action="?/generatePseudonyms" class="stack">
@@ -227,6 +261,30 @@
 </form>
 
 <style>
+	/* Nachlesen: Schalter mit Erklärung daneben, nicht nur ein Kästchen. */
+	.schalterzeile {
+		display: grid;
+		grid-template-columns: 22px 1fr;
+		align-items: start;
+		gap: 12px;
+		padding: 10px 0;
+		cursor: pointer;
+	}
+	.schalterzeile input {
+		width: 20px;
+		height: 20px;
+		margin-top: 2px;
+		accent-color: var(--mint-ink);
+	}
+	.quellen {
+		margin-left: 34px;
+		border-left: 2px solid var(--line);
+		padding-left: 16px;
+	}
+	.quellen--aus {
+		opacity: 0.5;
+	}
+
 	.stapel {
 		display: flex;
 		flex-direction: column;

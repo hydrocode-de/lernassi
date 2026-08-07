@@ -85,6 +85,13 @@ export const classes = sqliteTable('classes', {
 	// null = Standardskala aus dem Code. An der Klasse, nicht an der Lehrkraft: was in
 	// Klasse 6 „sitzt" heißt, heißt in Klasse 10 nicht dasselbe.
 	masteryScale: text('mastery_scale'),
+	// Darf das Kind in dieser Klasse nachlesen lassen (Recherche)? Standard: nein. Ob eine
+	// Klasse nachschlagen soll, ist eine Entscheidung über den Unterricht — in Klasse 6 kann
+	// sie anders ausfallen als im Leistungskurs, also hängt sie an der Klasse.
+	recherche: integer('recherche', { mode: 'boolean' }).notNull().default(false),
+	// Welche Quellen dabei erlaubt sind. JSON, Liste von IDs aus `recherche.ts`.
+	// null = die Standardliste. Die Reihenfolge steht im Code, nicht hier.
+	rechercheQuellen: text('recherche_quellen'),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
@@ -138,6 +145,13 @@ export const tocEntries = sqliteTable('toc_entries', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	parentId: text('parent_id'),
 	kind: text('kind').notNull(), // 'subject' | 'chapter' | 'topic'
+	// Nur bei kind='subject': die Klasse, deren Fach dieser Zweig ist. Ein Kind ist immer in
+	// mindestens einer Klasse (ohne Beitrittscode gibt es kein Konto), und ein Fach im Heft IST
+	// eine dieser Klassen — daran hängen Lernziel, Skala und die Freigaben der Lehrkraft.
+	// Vorher stand hier nur der Titel und die Zuordnung lief über einen Namensvergleich: wer
+	// „Gesch." tippte, hatte ein Fach ohne Klasse und damit ohne Lernziel. `null` gibt es nur
+	// noch für Altdaten, die beim Umzug keiner Klasse zugeordnet werden konnten.
+	classId: text('class_id').references(() => classes.id, { onDelete: 'set null' }),
 	title: text('title').notNull(),
 	sortOrder: integer('sort_order').notNull().default(0),
 	// Nur bei kind='chapter': wann zuletzt eine abgeschlossene Runde über dieses Kapitel lief.
@@ -175,14 +189,20 @@ export const uploadPages = sqliteTable('upload_pages', {
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
-// Ein eigenständiger Aufschrieb (ein Thema) aus einer Fotosession.
+// Ein eigenständiger Aufschrieb (ein Thema) — aus einer Fotosession oder selbst getippt.
 export const notes = sqliteTable('notes', {
 	id: id(),
 	studentId: text('student_id')
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
+	// Leer, wenn das Kind den Text selbst getippt hat: dann gibt es keine Fotosession.
 	uploadId: text('upload_id').references(() => uploads.id, { onDelete: 'cascade' }),
 	topicId: text('topic_id').references(() => tocEntries.id, { onDelete: 'set null' }),
+	// Woher der Text kommt: 'foto' = eine KI hat ihn aus Heftseiten gelesen, 'selbst' = das Kind
+	// hat ihn getippt. Daran hängt die KI-Kennzeichnung (Art. 50 KI-VO): die Zusammenfassung ist
+	// immer erzeugt, die Abschrift nur im Foto-Fall. Was das Kind selbst geschrieben hat, darf
+	// nicht als KI-Text ausgezeichnet werden — das wäre die Kennzeichnung in die falsche Richtung.
+	herkunft: text('herkunft').notNull().default('foto'), // 'foto' | 'selbst'
 	transcript: text('transcript'),
 	summary: text('summary'),
 	keywords: text('keywords'), // kommagetrennt, für die Begriffs-Chips
@@ -192,6 +212,27 @@ export const notes = sqliteTable('notes', {
 	// Zusammen mit dem Kapitel-Zeitstempel die Antwort auf „ist hier was Neues?".
 	// Gleich createdAt = neu; später = nachträglich geändert.
 	updatedAt: integer('updated_at', { mode: 'timestamp' })
+});
+
+// Woher ein Aufschrieb kommt — im Klartext, nicht nur als Herkunftsart.
+//
+// Jeder Aufschrieb hat eine Quelle, und zwar in allen drei Fällen: beim Foto sind es die
+// Heftseiten, beim getippten Text was das Kind selbst angibt („abgeschrieben", „erfunden"),
+// bei der Recherche der Artikel mit Adresse und Lizenz. Damit steht am Material immer, worauf
+// es beruht — für das Kind die halbe Recherchekompetenz, und bei CC-Quellen zugleich Pflicht.
+//
+// Eigene Tabelle statt Spalten am Aufschrieb, weil es mehrere sein können: eine Recherche
+// kann zwei Artikel gelesen haben.
+export const noteSources = sqliteTable('note_sources', {
+	id: id(),
+	noteId: text('note_id')
+		.notNull()
+		.references(() => notes.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	url: text('url'),
+	lizenz: text('lizenz'),
+	sortOrder: integer('sort_order').notNull().default(0),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 
 // Kind-Präferenzen (zusätzlich zur rechtlichen Elterneinwilligung).

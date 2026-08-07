@@ -1,0 +1,1 @@
+ALTER TABLE `notes` ADD `herkunft` text DEFAULT 'foto' NOT NULL;

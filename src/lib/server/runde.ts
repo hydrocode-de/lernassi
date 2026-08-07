@@ -33,6 +33,7 @@ import {
 } from '$lib/server/lernen';
 import { wertAus } from '$lib/kategorie';
 import { naechstePosition } from '$lib/server/warteschlange';
+import { klasseFuerFach } from '$lib/server/klasse';
 
 export const WELLE_1 = 3;
 export const WELLE_2 = 2;
@@ -264,21 +265,20 @@ export async function kapitelKontext(
 
 /**
  * Das aktuelle Lernziel für dieses Fach. Freitext, ungeschnitten.
- * Ein Kind sitzt in mehreren Klassen, je eine pro Fach — gesucht ist die, deren Fach zum
- * Fach im Heft passt. Fächer, für die es keine Klasse gibt, laufen ohne Lernziel.
+ * Gefragt wird über die Klasse, die am Fach des Hefts hängt (`tocEntries.classId`) — nicht
+ * mehr über einen Namensvergleich. Altdaten ohne Klasse laufen weiter ohne Lernziel.
  */
-export async function lernzielFuer(studentId: string, fach: string): Promise<string | null> {
-	const zeilen = await db
-		.select({ fach: classes.subject, ziel: learningGoals.description })
-		.from(students)
-		.innerJoin(classes, eq(classes.id, students.classId))
-		.leftJoin(learningGoals, eq(learningGoals.classId, classes.id))
-		.where(eq(students.userId, studentId));
+export async function lernzielFuer(studentId: string, fachId: string): Promise<string | null> {
+	const klasse = await klasseFuerFach(studentId, fachId);
+	if (!klasse) return null;
 
-	const passend = zeilen.find(
-		(z) => z.fach && z.fach.localeCompare(fach, 'de', { sensitivity: 'base' }) === 0
-	);
-	const text = passend?.ziel?.trim();
+	const ziel = (
+		await db
+			.select({ text: learningGoals.description })
+			.from(learningGoals)
+			.where(eq(learningGoals.classId, klasse.id))
+	)[0];
+	const text = ziel?.text?.trim();
 	return text?.length ? text : null;
 }
 
@@ -501,7 +501,7 @@ async function welleErzeugen(
 		const genutzt = material.length ? material : kontext.themen;
 		const lernziel = await lernzielFuer(
 			(await db.select().from(rounds).where(eq(rounds.id, roundId)))[0].studentId,
-			kontext.fach
+			kontext.fachId
 		);
 		const bisher = welle === 2 ? await bisherigeFragen(roundId) : [];
 
@@ -535,7 +535,7 @@ async function wellenAuftrag(
 	const genutzt = material.length ? material : kontext.themen;
 	const lernziel = await lernzielFuer(
 		(await db.select().from(rounds).where(eq(rounds.id, roundId)))[0].studentId,
-		kontext.fach
+		kontext.fachId
 	);
 	const bisher = welle === 2 ? await bisherigeFragen(roundId) : [];
 	return {
@@ -982,7 +982,7 @@ export async function planBauen(
 		fach: kontext.fach,
 		spiegel,
 		fokus,
-		lernziel: await lernzielFuer(runde.studentId, kontext.fach),
+		lernziel: await lernzielFuer(runde.studentId, kontext.fachId),
 		material: materialAlsText(kontext.themen, false),
 		beurteilung: kontext.beurteilung,
 		schonImPlan,

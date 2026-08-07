@@ -71,7 +71,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	// ─── Durch: Kategorie und was mit der Karte passiert ───
 	if (runde.status === 'abgeschlossen') {
-		const skala = await skalaFuer(runde.studentId);
+		const skala = await skalaFuer(runde.studentId, karte.subjectId);
 		const wert = runde.wert ?? 0;
 		const kategorie = kategorieAus(wert, skala);
 		// Nicht die Kategorie erzählen, sondern den Platz, an dem die Karte wirklich liegt —

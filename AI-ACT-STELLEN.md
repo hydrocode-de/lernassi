@@ -66,7 +66,7 @@ markieren, die Markierung mitspeichern, bei der Ausgabe mitgeben.
 | Feld | Datei | Inhalt |
 |---|---|---|
 | `tocEntries.title` | `schema.ts:141` | Kapitel- und Themen-Titel, vom Modell vergeben |
-| `notes.transcript` | `schema.ts:186` | Abschrift des Hefts — Grenzfall, siehe `AI-ACT.md` |
+| `notes.transcript` | `schema.ts:186` | Abschrift des Hefts — Grenzfall, siehe `AI-ACT.md`. Bei `herkunft='selbst'` gar nicht erzeugt: den Text hat das Kind getippt. |
 | `notes.summary` | `schema.ts:187` | Zusammenfassung — klar synthetisch |
 | `notes.keywords` | `schema.ts:188` | Begriffs-Chips |
 | `questions.prompt` | `schema.ts:288` | Fragetext |
@@ -76,9 +76,16 @@ markieren, die Markierung mitspeichern, bei der Ausgabe mitgeben.
 | `planItems.auftrag` | `schema.ts:343` | Auftrag der Lernkarte |
 | `turns.text` (rolle `lernassi`) | `schema.ts` | Gesprächszüge im Gespräch — vollständig erzeugt. Kind-Züge sind es nicht; die Spalte trägt beides, die Unterscheidung steckt in `rolle`. |
 
-Es gibt bisher **keine Spalte**, die festhält, dass ein Feld aus einem Modellaufruf
-stammt. Die Unterscheidung „vom Kind" / „vom Modell" existiert im Datenmodell nicht —
-beim Verzeichnis ist sie sogar bewusst verwischt, weil das Kind Titel nachbearbeiten darf
+Es gibt bisher **keine allgemeine Spalte**, die festhält, dass ein Feld aus einem
+Modellaufruf stammt. Zwei Stellen tragen die Unterscheidung inzwischen für ihren Fall:
+`turns.rolle` im Gespräch und `notes.herkunft` beim Aufschrieb (`'foto'` = die KI hat den
+Text aus Heftseiten gelesen, `'selbst'` = das Kind hat ihn getippt, `'recherche'` = die KI hat
+ihn aus freigegebenen Lernseiten geschrieben und das Kind hat ihn übernommen; die
+Zusammenfassung ist in allen drei Fällen erzeugt). Dazu `note_sources`: woher der Inhalt
+stammt, im Klartext. Beides sind Sonderfälle, keine Systematik.
+
+Sonst existiert die Unterscheidung „vom Kind" / „vom Modell" im Datenmodell nicht — beim
+Verzeichnis ist sie sogar bewusst verwischt, weil das Kind Titel nachbearbeiten darf
 (`src/routes/schueler/+page.server.ts`, `gliederung.ts`). Genau diese Fälle braucht eine
 Entscheidung: bleibt ein vom Kind umbenanntes Kapitel KI-erzeugt?
 
@@ -93,7 +100,9 @@ den Abschnittshinweis (auf den Aufschrieb-Seiten).
 | `schueler/runde/[id]/+page.svelte` | **✓ Abzeichen + Attribut** | Fragetext, Abzeichen in der Kopfzeile der Fragekarte |
 | `schueler/ueben/[id]/+page.svelte` | **✓ Abzeichen + Attribut** | Fragetext und der Auftrag in der Überschrift |
 | `schueler/aufnahme/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Kapitel/Thema im Ablage-Pfad |
-| `schueler/thema/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Abschrift |
+| `schueler/thema/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Abschrift. Bei selbst getippten Seiten (`notes.herkunft='selbst'`) trägt der Text KEIN Attribut und der Hinweis ist `KI_ZUSAMMENFASSUNG` — erzeugt ist dort nur die Zusammenfassung. |
+| `schueler/recherche/+page.svelte` | **✓ Hinweis + Attribut** | Nachlesen: `KI_RECHERCHE` oben auf der Seite. Der Entwurf ist vollständig erzeugt — bis das Kind ihn übernimmt. Die Schritte („Ich lese den Klexikon-Artikel …") sind ebenfalls vom Modell formuliert und stehen unter demselben Hinweis. Am Aufschrieb im Heft steht danach die Quelle mit Adresse und Lizenz (`note_sources`). |
+| `schueler/schreiben/+page.svelte` | **✓ Hinweis** | Editor für eine selbst getippte Seite: `KI_SCHREIBEN` sagt vor dem Tippen, was die KI mit dem Text macht (zusammenfassen, Begriffe ziehen) und was nicht (ihn ändern). Ausgegeben wird hier nichts Erzeugtes, darum kein Attribut. |
 | `schueler/plan/+page.svelte` | **✓ nur Attribut** | Aufträge der Lernkarten. Bewusst ohne Abzeichen: der Plan ist eine Liste, ein Abzeichen je Zeile wäre Lärm. |
 | `schueler/gespraech/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Gesprächsmodus: `KI_GESPRAECH` oben auf der Seite (Art. 50 Abs. 1 — ein Gespräch ist die Form, bei der der Hinweis am wenigsten verzichtbar ist), `kiErzeugt` an jedem Zug von lernassi, Abzeichen an der Prüfungsfrage. Kind-Züge tragen es nicht — die sind vom Kind. |
 | `schueler/runde/[id]` + `ueben/[id]`, Rückmeldungen | offen | Die Rückmeldungssätze nach einer Antwort sind ebenfalls erzeugt. Die Fragekarte trägt das Abzeichen, die Rückmeldung steht in einer eigenen Blase. |

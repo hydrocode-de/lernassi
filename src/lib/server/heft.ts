@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { notes, questions, responses, roundTopics, rounds, tocEntries } from '$lib/server/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 export type Thema = {
 	id: string;
@@ -25,7 +25,14 @@ export type Kapitel = {
 	gefragt: number | null;
 	neuesMaterial: boolean;
 };
-export type Fach = { id: string; title: string; kapitel: Kapitel[]; anzahlThemen: number };
+export type Fach = {
+	id: string;
+	title: string;
+	/** Die Klasse, deren Fach dieser Zweig ist. null nur bei Altdaten ohne Zuordnung. */
+	classId: string | null;
+	kapitel: Kapitel[];
+	anzahlThemen: number;
+};
 
 // Das Inhaltsverzeichnis eines Kindes. Die Seitenleiste braucht es auf jeder Seite,
 // darum liegt es im Layout und nicht in einer einzelnen Route.
@@ -87,10 +94,45 @@ export async function heftLesen(studentId: string): Promise<Fach[]> {
 			return {
 				id: f.id,
 				title: f.title,
+				classId: f.classId,
 				kapitel,
 				anzahlThemen: kapitel.reduce((s, k) => s + k.themen.length, 0)
 			};
 		});
+}
+
+/**
+ * Die Themen eines Kapitels in genau der Reihenfolge, in der sie im Verzeichnis stehen —
+ * dieselbe Regel wie in `heftLesen`, nur für ein Kapitel und ohne den ganzen Rest.
+ *
+ * Gebraucht wird das beim Einsortieren einer neuen Seite: „hinter dieses Thema" heißt hinter
+ * das Thema, das das Kind an dieser Stelle SIEHT. Solange ein Kapitel nie umsortiert wurde,
+ * ist das die zeitliche Ordnung (neueste oben) und nicht die alphabetische.
+ */
+export async function themenReihenfolge(
+	studentId: string,
+	kapitelId: string
+): Promise<{ id: string; title: string }[]> {
+	const themen = await db
+		.select()
+		.from(tocEntries)
+		.where(and(eq(tocEntries.studentId, studentId), eq(tocEntries.parentId, kapitelId)));
+	const meine = await db.select().from(notes).where(eq(notes.studentId, studentId));
+
+	const zuletzt = new Map<string, number>();
+	for (const n of meine) {
+		if (!n.topicId) continue;
+		const t = (n.updatedAt ?? n.createdAt).getTime();
+		if (t > (zuletzt.get(n.topicId) ?? 0)) zuletzt.set(n.topicId, t);
+	}
+
+	return themen
+		.sort(
+			(a, b) =>
+				(a.sortOrder || Number.MAX_SAFE_INTEGER) - (b.sortOrder || Number.MAX_SAFE_INTEGER) ||
+				(zuletzt.get(b.id) ?? 0) - (zuletzt.get(a.id) ?? 0)
+		)
+		.map((t) => ({ id: t.id, title: t.title }));
 }
 
 /**
