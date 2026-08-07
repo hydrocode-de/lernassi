@@ -4,6 +4,8 @@ import { classes, learningGoals, pseudonyms, students, user, account } from '$li
 import { makePseudonym } from '$lib/server/roster';
 import { ZIEL_WARNSCHWELLE } from '$lib/lernziel';
 import { KATEGORIEN, skalaLesen, skalaSchreiben } from '$lib/kategorie';
+import { istQuellenId, QUELLEN, quellenAus } from '$lib/server/recherche';
+import { env } from '$env/dynamic/private';
 import { klassenblick } from '$lib/server/fortschritt';
 import { ownedClass } from '$lib/server/lehrer';
 import { and, eq, desc } from 'drizzle-orm';
@@ -40,6 +42,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		ziel,
 		pseudonyms: ps.map((p) => ({ ...p, name: p.userId ? (namen.get(p.userId) ?? null) : null })),
 		warnschwelle: ZIEL_WARNSCHWELLE,
+		// Der Zweig ist in Erprobung: ohne RECHERCHE=1 gibt es die Einstellung gar nicht.
+		rechercheMoeglich: env.RECHERCHE === '1',
+		quellen: QUELLEN.map((q) => ({
+			id: q.id,
+			label: q.label,
+			wofuer: q.wofuer,
+			an: quellenAus(cls.rechercheQuellen).some((f) => f.id === q.id)
+		})),
 		skala,
 		kategorien: KATEGORIEN,
 		kinder
@@ -47,6 +57,31 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 };
 
 export const actions: Actions = {
+	// Nachlesen freigeben und festlegen, wo lernassi lesen darf. Beides an der Klasse: ob
+	// nachgeschlagen werden soll, ist eine Entscheidung über den Unterricht.
+	speichereRecherche: async ({ params, locals, request }) => {
+		const cls = await ownedClass(locals, params.id);
+		const fd = await request.formData();
+		const an = fd.get('an') === '1';
+		const gewaehlt = fd
+			.getAll('quelle')
+			.map((q) => String(q))
+			.filter(istQuellenId);
+
+		await db
+			.update(classes)
+			.set({ recherche: an, rechercheQuellen: JSON.stringify(gewaehlt) })
+			.where(eq(classes.id, cls.id));
+
+		return {
+			ok: an
+				? gewaehlt.length
+					? 'Nachlesen ist an.'
+					: 'Nachlesen ist an, aber keine Quelle ausgewählt — so findet lernassi nichts.'
+				: 'Nachlesen ist aus.'
+		};
+	},
+
 	// Ein Lernziel je Klasse, fortgeschrieben statt ergänzt.
 	speichereZiel: async ({ params, locals, request }) => {
 		const cls = await ownedClass(locals, params.id);

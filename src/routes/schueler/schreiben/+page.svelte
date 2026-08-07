@@ -122,6 +122,23 @@
 			</button>
 		</div>
 	</form>
+
+	{#if data.nachlesen}
+		<div class="nachlesen">
+			<a
+				class="btn btn--quiet btn--block"
+				href="/schueler/recherche?kapitel={data.kapitel.id}{data.stelle
+					? `&nach=${data.stelle}`
+					: ''}"
+			>
+				Ich weiß noch nicht genug – nachlesen
+			</a>
+			<p class="small" style="margin:8px 2px 0">
+				Dann suche ich in geprüften Lernseiten und schreibe dir einen Entwurf, den du ändern
+				kannst.
+			</p>
+		</div>
+	{/if}
 {/if}
 
 <style>
@@ -139,6 +156,14 @@
 	}
 	.herkunft {
 		margin-top: 12px;
+	}
+	.nachlesen {
+		margin-top: 22px;
+		padding-top: 18px;
+		border-top: 1px solid var(--line);
+	}
+	.nachlesen :global(.btn) {
+		min-height: 52px;
 	}
 	.herkunft .chips {
 		margin-top: 8px;

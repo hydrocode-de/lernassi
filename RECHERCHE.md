@@ -1,7 +1,10 @@
-# Nachlesen (Recherche) — Entwurf, noch nicht gebaut
+# Nachlesen (Recherche) — Erprobungszweig
 
-> Oberfläche: `design-system/patterns/recherche.html` (Kind) und
+> Gebaut. Ohne `RECHERCHE=1` gibt es den Zweig nirgends; darin gibt die Lehrkraft je Klasse
+> frei, Standard aus. Oberflächen-Entwurf: `design-system/patterns/recherche.html` (Kind) und
 > `design-system/patterns/recherche-quellen.html` (Lehrkraft).
+>
+> Code: `src/lib/server/recherche.ts`, `src/routes/schueler/recherche/`.
 
 ## Warum
 
@@ -13,30 +16,42 @@ Heft landet nur, was das Kind übernimmt.
 
 ## Das Werkzeug
 
-Ein Werkzeug pro Quelle, eine Aufgabe: **Thema rein, Artikel raus.**
+Gesucht wird ohne Modell. Der Server fragt **alle freigegebenen Quellen gleichzeitig** — das
+ist ein API-Aufruf je Quelle, kostet nichts und dauert eine Sekunde. Was das Modell bekommt,
+ist die fertige Trefferliste; sein einziges Werkzeug wählt daraus aus:
 
 ```ts
 // src/lib/server/recherche.ts
-const klexikon = tool({
-  description: 'Sucht im Klexikon (für Kinder erklärt, einfache Sprache) und holt den Artikel.',
-  inputSchema: z.object({ thema: z.string() }),
-  execute: async ({ thema }) => {
-    // MediaWiki: action=query&list=search&srsearch=<thema>  →  Titel
-    //            action=query&prop=extracts&explaintext=1   →  Text
-    return { titel, text: text.slice(0, 8000), url };
-  }
+const lies = tool({
+  description: 'Liest einen Treffer aus der Liste vollständig. Nur Titel, die in der Liste stehen.',
+  inputSchema: z.object({
+    quelle: z.enum(['klexikon', 'zum', 'wikipedia']),
+    titel: z.string(),
+    warum: z.string()   // ein Satz an das Kind
+  }),
+  execute: async ({ quelle, titel, warum }) => { … }
 });
 ```
 
 Kein Schlüssel, keine Kosten. Wikimedia will nur einen `User-Agent` mit Kontaktadresse.
 
 Damit ist die „Whitelist" nichts, was man pflegen muss: **das Modell kann keine Adresse
-aufrufen, weil es kein Werkzeug dafür hat.** Es kann `klexikon({thema})` rufen,
-`zumUnterrichten({thema})`, `wikipedia({thema})` — sonst nichts. Neue Quelle = neues Werkzeug.
+aufrufen, weil es kein Werkzeug dafür hat.** `lies` prüft zweimal — die Quelle muss für diese
+Klasse freigegeben sein, und der Titel muss in der Trefferliste stehen, die der Server selbst
+geholt hat. Eine neue Quelle ist eine Zeile in `QUELLEN`.
+
+Dass Wikipedia zuletzt kommt, ist ebenfalls Code und keine Bitte im Prompt: hatten die
+Lernseiten Treffer, steht Wikipedia gar nicht erst in `lesbar` — dann kann `lies` sie nicht
+öffnen, auch wenn das Modell es versuchte.
 
 Eine **freie URL-Eingabe kommt nicht rein**, und zwar nicht aus Vorsicht, sondern weil sie das
 Gegenteil davon wäre: dann liest lernassi beliebige Seiten, und keiner weiß mehr, was drin
 stand.
+
+**Gebaut, mit einer Abweichung:** `prop=extracts` liefert fertigen Klartext, ist aber eine
+Wikimedia-Erweiterung — Klexikon und ZUM haben sie nicht installiert und antworten einfach
+ohne Textfeld. Für die geht es über `action=parse&prop=text` und eigenes Entmarkupen
+(`alsText()`); bei Wikipedia bleibt `extracts`, dort spart es das halbe Megabyte HTML.
 
 **MCP braucht es dafür nicht.** MCP ist das Protokoll, mit dem ein *fremder* Prozess Werkzeuge
 anbietet. Der Modellaufruf läuft in unserem eigenen Server — das Werkzeug ist einfach eine
@@ -106,8 +121,8 @@ gereicht hat (das ist Recherchekompetenz, und sie ist hier beiläufig zu haben);
 Wartezeit erträglich, ohne zu lügen; und es ist die ehrlichste Form von Kennzeichnung — das
 Kind sieht die Arbeit, nicht nur das Ergebnis.
 
-**Technisch schon vorhanden.** `welle/+server.ts` und `gespraech/[id]/zug/+server.ts` streamen
-NDJSON, eine JSON-Zeile je Ereignis. Dasselbe hier:
+**Technisch dasselbe Muster wie bei der Welle.** `strom/+server.ts` schickt NDJSON, eine
+JSON-Zeile je Ereignis:
 
 ```
 {"t":"schritt","v":"Ich suche im Klexikon nach „Wiener Kongress"."}
@@ -115,9 +130,15 @@ NDJSON, eine JSON-Zeile je Ereignis. Dasselbe hier:
 {"t":"entwurf","v":{…}}
 ```
 
-Die Schritte entstehen nicht aus Rohdaten der Werkzeugaufrufe, sondern der Agent formuliert sie
-selbst mit: jeder Werkzeugaufruf bekommt im Schema ein Feld `warum` („was du gerade tust, ein
-Satz, an das Kind gerichtet"). Damit steht dort ein Grund und kein Protokoll.
+Die Schritte kommen aus zwei Quellen. Was gesucht und gefunden wurde, weiß der Server aus den
+API-Antworten — „Klexikon: nichts gefunden" ist dann eine Tatsache, keine Behauptung des
+Modells. Warum ein Artikel gelesen wird, formuliert der Agent: das Werkzeug `lies` hat dafür
+ein Feld `warum` („ein Satz, an das Kind gerichtet"). Damit steht dort ein Grund und kein
+Protokoll.
+
+Kein `streamText`: die Tokens des Modells braucht niemand. Die Schritte entstehen in
+`execute` und gehen über den eigenen Strom raus, der Werkzeug-Lauf ist ein `generateText`
+mit `stopWhen: stepCountIs(4)`.
 
 ## Der Ablauf
 
@@ -145,19 +166,19 @@ die Nennung. Am Entwurf steht: *was deine Lehrkraft gesagt hat, zählt mehr.*
 Anweisung drinstehen. Was dagegen trägt: das Modell hat außer „Artikel holen" kein Werkzeug,
 die Ausgabe ist ein festes Schema, und sie geht durch ein Kind, das sie liest.
 
-## Was zu bauen wäre
+## Was gebaut ist
 
 | Stelle | Was |
 |---|---|
-| `src/lib/server/recherche.ts` | MediaWiki-Adapter (fünf Quellen, eine Funktion), Serlo separat, ein Modellaufruf mit Werkzeugen |
+| `src/lib/server/recherche.ts` | Whitelist, MediaWiki-Adapter (suchen, lesen in zwei Spielarten), der Agent mit `lies` |
 | `src/routes/schueler/recherche/+page.*` + `strom/+server.ts` | die drei Zustände, NDJSON wie bei der Welle |
-| `schueler/schreiben/+page.*` | Knopf hin, Entwurf als Vorbelegung zurück |
-| `lehrer/klasse/[id]` | Schalter je Quelle |
-| `schema.ts` + Migration | `herkunft='recherche'`, Quellen am Aufschrieb, `classes.recherche{,Quellen}` |
-| `src/lib/ki.ts`, `AI-ACT-STELLEN.md` | Hinweistext, neue Anzeigestelle |
+| `schueler/schreiben/+page.*` | der Knopf „Ich weiß noch nicht genug – nachlesen" |
+| `lehrer/klasse/[id]` | Schalter für Nachlesen und je Quelle |
+| `schema.ts` + Migrationen | `classes.recherche{,Quellen}`, `notes.herkunft='recherche'`, `note_sources` |
+| `src/lib/ki.ts`, `AI-ACT-STELLEN.md` | `KI_RECHERCHE`, neue Anzeigestelle |
 
-Der MediaWiki-Teil ist ein halber Tag, weil er einmal für fünf Quellen gilt. Der Rest ist die
-Route und der Schalter bei der Lehrkraft.
+Serlo fehlt noch: eigene GraphQL-Schnittstelle statt MediaWiki, und sie bitten um Kontakt vor
+produktiver Nutzung.
 
 ## Offen
 

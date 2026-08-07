@@ -18,6 +18,9 @@ export type MeineKlasse = {
 	name: string;
 	stufe: string;
 	skala: string | null;
+	/** Freigaben der Lehrkraft für dieses Fach. */
+	recherche: boolean;
+	rechercheQuellen: string | null;
 };
 
 /** Die Klassen eines Kindes — je eine pro Fach. Das ist die Auswahl, wenn es etwas ablegt. */
@@ -28,7 +31,9 @@ export async function meineKlassen(studentId: string): Promise<MeineKlasse[]> {
 			fach: classes.subject,
 			name: classes.name,
 			stufe: classes.grade,
-			skala: classes.masteryScale
+			skala: classes.masteryScale,
+			recherche: classes.recherche,
+			rechercheQuellen: classes.rechercheQuellen
 		})
 		.from(students)
 		.innerJoin(classes, eq(classes.id, students.classId))

@@ -79,8 +79,10 @@ markieren, die Markierung mitspeichern, bei der Ausgabe mitgeben.
 Es gibt bisher **keine allgemeine Spalte**, die festhält, dass ein Feld aus einem
 Modellaufruf stammt. Zwei Stellen tragen die Unterscheidung inzwischen für ihren Fall:
 `turns.rolle` im Gespräch und `notes.herkunft` beim Aufschrieb (`'foto'` = die KI hat den
-Text aus Heftseiten gelesen, `'selbst'` = das Kind hat ihn getippt; die Zusammenfassung ist
-in beiden Fällen erzeugt). Beides sind Sonderfälle, keine Systematik.
+Text aus Heftseiten gelesen, `'selbst'` = das Kind hat ihn getippt, `'recherche'` = die KI hat
+ihn aus freigegebenen Lernseiten geschrieben und das Kind hat ihn übernommen; die
+Zusammenfassung ist in allen drei Fällen erzeugt). Dazu `note_sources`: woher der Inhalt
+stammt, im Klartext. Beides sind Sonderfälle, keine Systematik.
 
 Sonst existiert die Unterscheidung „vom Kind" / „vom Modell" im Datenmodell nicht — beim
 Verzeichnis ist sie sogar bewusst verwischt, weil das Kind Titel nachbearbeiten darf
@@ -99,6 +101,7 @@ den Abschnittshinweis (auf den Aufschrieb-Seiten).
 | `schueler/ueben/[id]/+page.svelte` | **✓ Abzeichen + Attribut** | Fragetext und der Auftrag in der Überschrift |
 | `schueler/aufnahme/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Kapitel/Thema im Ablage-Pfad |
 | `schueler/thema/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Zusammenfassung, Begriffe, Abschrift. Bei selbst getippten Seiten (`notes.herkunft='selbst'`) trägt der Text KEIN Attribut und der Hinweis ist `KI_ZUSAMMENFASSUNG` — erzeugt ist dort nur die Zusammenfassung. |
+| `schueler/recherche/+page.svelte` | **✓ Hinweis + Attribut** | Nachlesen: `KI_RECHERCHE` oben auf der Seite. Der Entwurf ist vollständig erzeugt — bis das Kind ihn übernimmt. Die Schritte („Ich lese den Klexikon-Artikel …") sind ebenfalls vom Modell formuliert und stehen unter demselben Hinweis. Am Aufschrieb im Heft steht danach die Quelle mit Adresse und Lizenz (`note_sources`). |
 | `schueler/schreiben/+page.svelte` | **✓ Hinweis** | Editor für eine selbst getippte Seite: `KI_SCHREIBEN` sagt vor dem Tippen, was die KI mit dem Text macht (zusammenfassen, Begriffe ziehen) und was nicht (ihn ändern). Ausgegeben wird hier nichts Erzeugtes, darum kein Attribut. |
 | `schueler/plan/+page.svelte` | **✓ nur Attribut** | Aufträge der Lernkarten. Bewusst ohne Abzeichen: der Plan ist eine Liste, ein Abzeichen je Zeile wäre Lärm. |
 | `schueler/gespraech/[id]/+page.svelte` | **✓ Hinweis + Attribut** | Gesprächsmodus: `KI_GESPRAECH` oben auf der Seite (Art. 50 Abs. 1 — ein Gespräch ist die Form, bei der der Hinweis am wenigsten verzichtbar ist), `kiErzeugt` an jedem Zug von lernassi, Abzeichen an der Prüfungsfrage. Kind-Züge tragen es nicht — die sind vom Kind. |

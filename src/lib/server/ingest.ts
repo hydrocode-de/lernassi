@@ -60,8 +60,8 @@ export function tocAlsText(kapitel: { title: string; themen: string[] }[]): stri
 		.join('\n');
 }
 
-/** Das Modell, über das alles Lesen läuft. Ein Zugang, zwei Aufrufe (Foto und Getipptes). */
-function modell() {
+/** Das Modell, über das alles Lesen läuft — Foto, Getipptes und die Recherche. */
+export function modell() {
 	const apiKey = env.REQUESTY_API_KEY;
 	if (!apiKey) throw new KeinSchluessel();
 

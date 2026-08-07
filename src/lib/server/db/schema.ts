@@ -85,6 +85,13 @@ export const classes = sqliteTable('classes', {
 	// null = Standardskala aus dem Code. An der Klasse, nicht an der Lehrkraft: was in
 	// Klasse 6 „sitzt" heißt, heißt in Klasse 10 nicht dasselbe.
 	masteryScale: text('mastery_scale'),
+	// Darf das Kind in dieser Klasse nachlesen lassen (Recherche)? Standard: nein. Ob eine
+	// Klasse nachschlagen soll, ist eine Entscheidung über den Unterricht — in Klasse 6 kann
+	// sie anders ausfallen als im Leistungskurs, also hängt sie an der Klasse.
+	recherche: integer('recherche', { mode: 'boolean' }).notNull().default(false),
+	// Welche Quellen dabei erlaubt sind. JSON, Liste von IDs aus `recherche.ts`.
+	// null = die Standardliste. Die Reihenfolge steht im Code, nicht hier.
+	rechercheQuellen: text('recherche_quellen'),
 	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
 });
 

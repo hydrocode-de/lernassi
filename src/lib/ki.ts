@@ -38,6 +38,11 @@ export const KI_AUFSCHRIEB =
 export const KI_SCHREIBEN =
 	'Ich bin eine KI – ein Computerprogramm. Was du schreibst, bleibt genau so stehen; ich fasse es nur zusammen und suche die wichtigen Begriffe.';
 
+/** Auf der Recherche-Seite. Sagt zwei Dinge: dass hier eine KI arbeitet, und dass sie es
+ *  nicht aus sich selbst tut — sie liest in Seiten nach, die die Lehrkraft freigegeben hat. */
+export const KI_RECHERCHE =
+	'Ich bin eine KI – ein Computerprogramm. Ich lese in geprüften Lernseiten nach und schreibe dir einen Entwurf. Was davon in dein Heft kommt, entscheidest du.';
+
 /** Auf der Seite eines selbst getippten Aufschriebs. Gegenstück zu `KI_AUFSCHRIEB`: hier ist
  *  nur die Zusammenfassung erzeugt, die Abschrift stammt vom Kind. */
 export const KI_ZUSAMMENFASSUNG =

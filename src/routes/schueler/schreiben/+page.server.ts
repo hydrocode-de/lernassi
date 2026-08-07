@@ -20,6 +20,8 @@ import { einsortieren, kapitelMitFach } from '$lib/server/gliederung';
 import { themenReihenfolge } from '$lib/server/heft';
 import { KeinSchluessel, leseGetipptes, tocAlsText } from '$lib/server/ingest';
 import { QUELLEN_VORSCHLAEGE, quellenLesen, quellenSchreiben } from '$lib/server/quelle';
+import { darfNachlesen } from '$lib/server/recherche';
+import { klasseFuerFach } from '$lib/server/klasse';
 import { and, eq } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -78,6 +80,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		fach: { id: fach.id, title: fach.title },
 		kapitel: { id: kapitel.id, title: kapitel.title },
 		vorschlaege: QUELLEN_VORSCHLAEGE,
+		// Der Weg nach nebenan: nachlesen lassen, wenn das Kind noch nichts zu schreiben hat.
+		// Nur wenn die Lehrkraft dieses Fach dafür freigegeben hat.
+		nachlesen: !note && darfNachlesen(await klasseFuerFach(studentId, fach.id)),
 		quelle: note ? ((await quellenLesen([note.id])).get(note.id)?.[0]?.name ?? '') : '',
 		// Beim Bearbeiten bleibt die Stelle, wo sie ist — umsortiert wird im Verzeichnis.
 		stelle: note ? '' : stelle,
