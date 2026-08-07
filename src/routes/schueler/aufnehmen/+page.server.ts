@@ -16,6 +16,7 @@ import {
   meineKlassen,
 } from "$lib/server/klasse";
 import { themenReihenfolge } from "$lib/server/heft";
+import { fotoQuelle, quellenSchreiben } from "$lib/server/quelle";
 import { and, eq, inArray } from "drizzle-orm";
 import { fail, redirect } from "@sveltejs/kit";
 import type { Actions, PageServerLoad } from "./$types";
@@ -277,16 +278,22 @@ export const actions: Actions = {
         kapitelId,
       );
       neueThemen.push(themaId);
-      await db.insert(notes).values({
-        studentId,
-        uploadId: upload.id,
-        topicId: themaId,
-        transcript: abschnitt.transkript,
-        summary: abschnitt.zusammenfassung,
-        keywords: abschnitt.begriffe.join(", "),
-        pageNumbers: abschnitt.seiten.join(","),
-        sortOrder: i,
-      });
+      const [note] = await db
+        .insert(notes)
+        .values({
+          studentId,
+          uploadId: upload.id,
+          topicId: themaId,
+          transcript: abschnitt.transkript,
+          summary: abschnitt.zusammenfassung,
+          keywords: abschnitt.begriffe.join(", "),
+          pageNumbers: abschnitt.seiten.join(","),
+          sortOrder: i,
+        })
+        .returning({ id: notes.id });
+      await quellenSchreiben(note.id, [
+        fotoQuelle(abschnitt.seiten, new Date()),
+      ]);
     }
 
     // Nur mit festem Ziel: dann hat das Kind eine Stelle gewählt, und die gilt. Ohne Ziel

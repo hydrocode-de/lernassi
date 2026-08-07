@@ -19,6 +19,7 @@ import { notes, tocEntries } from '$lib/server/db/schema';
 import { einsortieren, kapitelMitFach } from '$lib/server/gliederung';
 import { themenReihenfolge } from '$lib/server/heft';
 import { KeinSchluessel, leseGetipptes, tocAlsText } from '$lib/server/ingest';
+import { QUELLEN_VORSCHLAEGE, quellenLesen, quellenSchreiben } from '$lib/server/quelle';
 import { and, eq } from 'drizzle-orm';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -76,6 +77,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	return {
 		fach: { id: fach.id, title: fach.title },
 		kapitel: { id: kapitel.id, title: kapitel.title },
+		vorschlaege: QUELLEN_VORSCHLAEGE,
+		quelle: note ? ((await quellenLesen([note.id])).get(note.id)?.[0]?.name ?? '') : '',
 		// Beim Bearbeiten bleibt die Stelle, wo sie ist — umsortiert wird im Verzeichnis.
 		stelle: note ? '' : stelle,
 		davor: themen.find((t) => t.id === stelle)?.title ?? null,
@@ -91,11 +94,13 @@ export const actions: Actions = {
 		const noteId = String(fd.get('note') ?? '') || null;
 		const titel = String(fd.get('titel') ?? '').trim();
 		const text = String(fd.get('text') ?? '').trim();
+		// Woher das Kind es hat. Freiwillig — ein Pflichtfeld wäre eine Hürde vor dem Schreiben.
+		const quelle = String(fd.get('quelle') ?? '').trim();
 
 		// Der Text kommt bei jedem Fehlschlag zurück in das Feld. Ein Kind, das zehn Minuten
 		// getippt hat, verliert das nicht, weil das Modell gerade nicht antwortet.
 		const zurueck = (status: number, message: string) =>
-			fail(status, { message, titel, text });
+			fail(status, { message, titel, text, quelle });
 
 		if (text.length < MINDESTENS)
 			return zurueck(400, `Schreib noch ein bisschen mehr – mindestens ein paar Sätze.`);
@@ -157,6 +162,7 @@ export const actions: Actions = {
 				.update(tocEntries)
 				.set({ title: themaTitel })
 				.where(eq(tocEntries.id, note.topicId!));
+			await quellenSchreiben(note.id, [{ name: quelle }]);
 			throw redirect(303, `/schueler/thema/${note.topicId}`);
 		}
 
@@ -165,14 +171,18 @@ export const actions: Actions = {
 			.values({ studentId, kind: 'topic', title: themaTitel, parentId: kapitel.id })
 			.returning({ id: tocEntries.id });
 
-		await db.insert(notes).values({
-			studentId,
-			topicId: thema.id,
-			herkunft: 'selbst',
-			transcript: text,
-			summary: ergebnis.zusammenfassung,
-			keywords: ergebnis.begriffe.join(', ')
-		});
+		const [neu] = await db
+			.insert(notes)
+			.values({
+				studentId,
+				topicId: thema.id,
+				herkunft: 'selbst',
+				transcript: text,
+				summary: ergebnis.zusammenfassung,
+				keywords: ergebnis.begriffe.join(', ')
+			})
+			.returning({ id: notes.id });
+		await quellenSchreiben(neu.id, [{ name: quelle }]);
 
 		await einsortieren(studentId, kapitel.id, [thema.id], String(fd.get('nach') ?? ''));
 		throw redirect(303, `/schueler/thema/${thema.id}`);

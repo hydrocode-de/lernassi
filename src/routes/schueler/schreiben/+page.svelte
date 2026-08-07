@@ -10,6 +10,7 @@
 	// Feld dem Kind. `untrack`, weil hier bewusst der Startwert gelesen wird.
 	let titel = $state(untrack(() => form?.titel ?? data.note?.titel ?? ''));
 	let text = $state(untrack(() => form?.text ?? data.note?.text ?? ''));
+	let quelle = $state(untrack(() => form?.quelle ?? data.quelle ?? ''));
 	let laeuft = $state(false);
 
 	const bereit = $derived(text.trim().length >= data.mindestens);
@@ -87,6 +88,27 @@
 			></textarea>
 		</label>
 
+		<!-- Woher das Kind es hat. Steht unter dem Text, weil es zum Aufschrieb gehört und nicht
+		     zum Schreiben — und ist freiwillig: ein Pflichtfeld wäre eine Hürde vor dem Anfangen. -->
+		<div class="herkunft">
+			<label class="field">
+				<span class="field__label">Woher hast du das? (freiwillig)</span>
+				<input name="quelle" bind:value={quelle} maxlength="300" placeholder="z. B. aus dem Unterricht" />
+			</label>
+			<div class="chips">
+				{#each data.vorschlaege as vorschlag (vorschlag)}
+					<button
+						type="button"
+						class="chip"
+						class:chip--mint={quelle === vorschlag}
+						onclick={() => (quelle = quelle === vorschlag ? '' : vorschlag)}
+					>
+						{vorschlag}
+					</button>
+				{/each}
+			</div>
+		</div>
+
 		<div class="fuss">
 			<p class="small" style="margin:0">
 				{#if bereit}
@@ -114,6 +136,16 @@
 		font-size: 17px;
 		line-height: 1.65;
 		resize: vertical;
+	}
+	.herkunft {
+		margin-top: 12px;
+	}
+	.herkunft .chips {
+		margin-top: 8px;
+	}
+	.herkunft .chip {
+		cursor: pointer;
+		border: 1px solid var(--line-2);
 	}
 	.fuss {
 		display: flex;

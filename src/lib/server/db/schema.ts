@@ -207,6 +207,27 @@ export const notes = sqliteTable('notes', {
 	updatedAt: integer('updated_at', { mode: 'timestamp' })
 });
 
+// Woher ein Aufschrieb kommt — im Klartext, nicht nur als Herkunftsart.
+//
+// Jeder Aufschrieb hat eine Quelle, und zwar in allen drei Fällen: beim Foto sind es die
+// Heftseiten, beim getippten Text was das Kind selbst angibt („abgeschrieben", „erfunden"),
+// bei der Recherche der Artikel mit Adresse und Lizenz. Damit steht am Material immer, worauf
+// es beruht — für das Kind die halbe Recherchekompetenz, und bei CC-Quellen zugleich Pflicht.
+//
+// Eigene Tabelle statt Spalten am Aufschrieb, weil es mehrere sein können: eine Recherche
+// kann zwei Artikel gelesen haben.
+export const noteSources = sqliteTable('note_sources', {
+	id: id(),
+	noteId: text('note_id')
+		.notNull()
+		.references(() => notes.id, { onDelete: 'cascade' }),
+	name: text('name').notNull(),
+	url: text('url'),
+	lizenz: text('lizenz'),
+	sortOrder: integer('sort_order').notNull().default(0),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(now)
+});
+
 // Kind-Präferenzen (zusätzlich zur rechtlichen Elterneinwilligung).
 export const consents = sqliteTable('consents', {
 	id: id(),
