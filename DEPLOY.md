@@ -12,11 +12,39 @@ Der Rest ist Auschecken und Starten.
 
 ## Laufender Betrieb
 
+Von Hand auf dem Server:
+
 ```bash
 cd /apps/lernassi && git pull && docker compose up -d --build
 ```
 
+Oder vom eigenen Rechner aus, mit Sicherung und Kontrolle danach:
+
+```bash
+scripts/deploy.sh            # den Stand von main ausrollen
+scripts/deploy.sh v0.5.0     # genau diesen Tag ausrollen
+```
+
+Das Skript sichert vorher die Datenbank nach `/data/lernassi/backups` (die letzten zehn
+bleiben liegen), holt den Stand, baut neu und wartet, bis die Seite mit 200 antwortet —
+sonst meldet ein Deploy Erfolg, während der Container noch im Kreis läuft. Ziel, Pfad und
+Adresse lassen sich über `LERNASSI_SSH`, `LERNASSI_PFAD`, `LERNASSI_DATEN` und
+`LERNASSI_URL` überschreiben.
+
 Migrationen laufen beim Containerstart mit (`node scripts/migrate.mjs`).
+
+### Von selbst, beim Tag
+
+`.github/workflows/deploy.yml` rollt aus, sobald ein Tag `v*` gepusht wird (und von Hand
+über „Run workflow"). Dafür müssen zwei Secrets im Repository liegen:
+
+| Secret | Inhalt |
+|---|---|
+| `DEPLOY_KEY` | privater SSH-Schlüssel; der öffentliche Teil gehört auf camels-de in `~/.ssh/authorized_keys`. Ein eigener Schlüssel nur dafür, kein persönlicher. |
+| `DEPLOY_KNOWN_HOSTS` | Ausgabe von `ssh-keyscan data.camels-de.org`. Ohne das müsste der Lauf den Wirt blind akzeptieren. |
+
+Solange die Secrets fehlen, bricht der Lauf mit einer klaren Meldung ab und rührt den
+Server nicht an.
 
 ## Einmal aufsetzen
 

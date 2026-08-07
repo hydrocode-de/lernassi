@@ -1,0 +1,60 @@
+# Deployen, wenn ein Tag gesetzt wird — dann ist das Ausrollen ein `git push origin v0.6.0`
+# und kein Handgriff auf dem Server mehr. Von Hand geht es weiterhin über „Run workflow".
+#
+# Was in den Repository-Secrets liegen muss (Settings → Secrets and variables → Actions):
+#
+#   DEPLOY_KEY          privater SSH-Schlüssel, dessen öffentlicher Teil auf camels-de in
+#                       ~/.ssh/authorized_keys steht. Am besten ein eigener Schlüssel nur
+#                       dafür, kein persönlicher.
+#   DEPLOY_KNOWN_HOSTS  Ausgabe von `ssh-keyscan data.camels-de.org`. Ohne das müsste der
+#                       Lauf den Wirt blind akzeptieren — dann deployt man beim ersten
+#                       DNS-Zwischenfall irgendwohin.
+#
+# Optional als Variables (statt Secrets), wenn die Vorgaben nicht passen:
+#   DEPLOY_ZIEL (root@data.camels-de.org) · DEPLOY_PFAD (/apps/lernassi) · DEPLOY_URL
+
+name: Deploy
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Tag oder Commit, der ausgerollt werden soll (leer = main)'
+        required: false
+
+concurrency:
+  # Zwei Deploys gleichzeitig auf denselben Server wären zwei Wahrheiten.
+  group: deploy-camels-de
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SSH einrichten
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test -n "$DEPLOY_KEY" || { echo "::error::Secret DEPLOY_KEY fehlt"; exit 1; }
+          test -n "$DEPLOY_KNOWN_HOSTS" || { echo "::error::Secret DEPLOY_KNOWN_HOSTS fehlt"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_deploy
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
+
+      - name: Ausrollen
+        env:
+          LERNASSI_SSH: ${{ vars.DEPLOY_ZIEL || 'root@data.camels-de.org' }}
+          LERNASSI_PFAD: ${{ vars.DEPLOY_PFAD || '/apps/lernassi' }}
+          LERNASSI_URL: ${{ vars.DEPLOY_URL || 'https://lernassi.hydrocode.cloud' }}
+        run: |
+          chmod +x scripts/deploy.sh
+          # Bei einem Tag genau diesen Stand, sonst was in der Eingabe steht (leer = main).
+          scripts/deploy.sh "${{ github.ref_type == 'tag' && github.ref_name || inputs.ref }}"
