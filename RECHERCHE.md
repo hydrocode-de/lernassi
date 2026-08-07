@@ -136,16 +136,23 @@ Modells. Warum ein Artikel gelesen wird, formuliert der Agent: das Werkzeug `lie
 ein Feld `warum` („ein Satz, an das Kind gerichtet"). Damit steht dort ein Grund und kein
 Protokoll.
 
-Kein `streamText`: die Tokens des Modells braucht niemand. Die Schritte entstehen in
-`execute` und gehen über den eigenen Strom raus, der Werkzeug-Lauf ist ein `generateText`
-mit `stopWhen: stepCountIs(4)`.
+**Zwei Modellaufrufe, zwei Antworten auf die Streaming-Frage.** Der erste Aufruf ist die
+Werkzeug-Schleife: `generateText` mit `stopWhen: stepCountIs(4)`. Was das Modell dabei an
+Fließtext schreibt („Gut, ich schaue mal…"), zeigt niemand an — die sichtbaren Sätze kommen
+aus `execute` und aus den Suchergebnissen. Diese Tokens zu streamen wäre Aufwand für nichts.
+
+Der zweite Aufruf ist der Entwurf, und der ist genau umgekehrt: er IST der Text, den das Kind
+gleich liest. Also `streamObject`, und jedes Stück geht als `{"t":"waechst"}` an die Seite —
+der Text erscheint im selben Feld, in das das Kind gleich hineinschreibt, nur solange
+schreibgeschützt. Dieselbe Überlegung wie bei den Fragen einer Welle in `lernen.ts`.
 
 ## Der Ablauf
 
 ```
 Editor: „Ich weiß noch nicht genug – nachlesen"
    → Thema eingeben (vorbelegt mit dem Kapiteltitel)
-   → ein Modellaufruf MIT Werkzeugen, 2–4 Schritte, Schritte werden gestreamt
+   → Aufruf 1: Werkzeuge, 2–4 Schritte — die Schritte gehen sofort raus
+   → Aufruf 2: der Entwurf, Stück für Stück ins Textfeld
    → Entwurf: Titel, Text, Zusammenfassung, Begriffe, benutzte Quellen
    → im Editor änderbar → „In mein Heft" speichert als nachgelesene Seite
 ```

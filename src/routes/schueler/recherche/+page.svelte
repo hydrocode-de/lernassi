@@ -20,15 +20,20 @@
 	let meldung = $state<string | null>(null);
 	let entwurf = $state<Entwurf | null>(null);
 
-	// Im Entwurf darf das Kind alles ändern — es ist sein Heft.
+	// Im Entwurf darf das Kind alles ändern — es ist sein Heft. Während lernassi schreibt,
+	// füllen sich dieselben Felder; angefasst werden dürfen sie erst danach.
 	let titel = $state('');
 	let text = $state('');
+	let schreibt = $state(false);
 
 	async function nachlesen() {
 		laeuft = true;
+		schreibt = false;
 		schritte = [];
 		meldung = null;
 		entwurf = null;
+		titel = '';
+		text = '';
 
 		try {
 			const antwort = await fetch('/schueler/recherche/strom', {
@@ -53,10 +58,17 @@
 					const e = JSON.parse(z) as { t: string; v: unknown };
 					if (e.t === 'schritt') schritte = [...schritte, String(e.v)];
 					else if (e.t === 'leer' || e.t === 'fehler') meldung = String(e.v);
-					else if (e.t === 'entwurf') {
+					else if (e.t === 'waechst') {
+						// Jedes Stück enthält alles Bisherige — überschreiben, nicht anhängen.
+						const teil = e.v as { titel?: string; text?: string };
+						schreibt = true;
+						if (teil.titel) titel = teil.titel;
+						if (teil.text) text = teil.text;
+					} else if (e.t === 'entwurf') {
 						entwurf = e.v as Entwurf;
 						titel = entwurf.thema;
 						text = entwurf.text;
+						schreibt = false;
 					}
 				}
 			}
@@ -70,6 +82,7 @@
 
 	function nochmal() {
 		entwurf = null;
+		schreibt = false;
 		schritte = [];
 		meldung = null;
 	}
@@ -84,7 +97,7 @@
 
 {#if form?.message}<div class="meldung meldung--fehler">{form.message}</div>{/if}
 
-{#if !entwurf}
+{#if !entwurf && !schreibt}
 	<p class="muted" style="margin:0 0 16px;font-size:16px">
 		Für ein Thema, zu dem in deinem Heft noch nichts steht.
 	</p>
@@ -137,44 +150,61 @@
 	<!-- Entwurf: dasselbe Formular wie im Editor. Gespeichert wird erst beim Übernehmen. -->
 	<div class="row" style="margin:14px 0 12px">
 		<span class="tag tag--sky">Entwurf</span>
-		<span class="small">noch nicht in deinem Heft</span>
+		<span class="small">
+			{schreibt ? 'lernassi schreibt gerade …' : 'noch nicht in deinem Heft'}
+		</span>
 	</div>
 
 	<form method="POST" action="?/uebernehmen">
 		<input type="hidden" name="kapitel" value={data.kapitel.id} />
 		<input type="hidden" name="nach" value={data.stelle} />
-		<input type="hidden" name="zusammenfassung" value={entwurf.zusammenfassung} />
-		<input type="hidden" name="begriffe" value={entwurf.begriffe.join(', ')} />
-		<input type="hidden" name="quellen" value={JSON.stringify(entwurf.quellen)} />
+		{#if entwurf}
+			<input type="hidden" name="zusammenfassung" value={entwurf.zusammenfassung} />
+			<input type="hidden" name="begriffe" value={entwurf.begriffe.join(', ')} />
+			<input type="hidden" name="quellen" value={JSON.stringify(entwurf.quellen)} />
+		{/if}
 
 		<label class="field" style="margin-bottom:10px">
 			<span class="field__label">Titel</span>
-			<input name="titel" bind:value={titel} maxlength="120" required />
+			<input name="titel" bind:value={titel} maxlength="120" readonly={schreibt} required />
 		</label>
 
+		<!-- Während lernassi schreibt, füllt sich dasselbe Feld, in das das Kind gleich
+		     hineinschreibt. Nur eben noch nicht anfassbar — sonst tippt es gegen den Strom an. -->
 		<label class="field feld">
-			<span class="field__label">Text – ändere, was du willst</span>
-			<textarea name="text" bind:value={text} rows="14" maxlength="20000" required></textarea>
+			<span class="field__label">
+				{schreibt ? 'Text – entsteht gerade' : 'Text – ändere, was du willst'}
+			</span>
+			<textarea
+				name="text"
+				bind:value={text}
+				rows="14"
+				maxlength="20000"
+				readonly={schreibt}
+				required
+			></textarea>
 		</label>
 
-		<p class="quellen">
-			Aus: {#each entwurf.quellen as q, i (q.url)}{#if i > 0} · {/if}<a
-					href={q.url}
-					target="_blank"
-					rel="noreferrer">{q.name}</a
-				> ({q.lizenz}){/each}
-		</p>
+		{#if entwurf}
+			<p class="quellen">
+				Aus: {#each entwurf.quellen as q, i (q.url)}{#if i > 0} · {/if}<a
+						href={q.url}
+						target="_blank"
+						rel="noreferrer">{q.name}</a
+					> ({q.lizenz}){/each}
+			</p>
 
-		<div class="hinweisbox">
-			Das ist nachgelesen, nicht dein Unterricht. Was deine Lehrkraft gesagt hat, zählt mehr.
-		</div>
+			<div class="hinweisbox">
+				Das ist nachgelesen, nicht dein Unterricht. Was deine Lehrkraft gesagt hat, zählt mehr.
+			</div>
 
-		<div class="knoepfe">
-			<button class="btn btn--go btn--lg btn--block">Passt – in mein Heft</button>
-			<button type="button" class="btn btn--quiet btn--block" onclick={nochmal}>
-				Anderes Thema
-			</button>
-		</div>
+			<div class="knoepfe">
+				<button class="btn btn--go btn--lg btn--block">Passt – in mein Heft</button>
+				<button type="button" class="btn btn--quiet btn--block" onclick={nochmal}>
+					Anderes Thema
+				</button>
+			</div>
+		{/if}
 	</form>
 {/if}
 

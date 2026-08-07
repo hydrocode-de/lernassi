@@ -7,7 +7,8 @@
 //
 // Format wie bei der Welle und im Gespräch: eine JSON-Zeile je Ereignis (NDJSON).
 //   {"t":"schritt","v":"Ich suche im Klexikon …"}   ein Satz von lernassi, sofort anzeigen
-//   {"t":"entwurf","v":{…}}                          Titel, Text, Zusammenfassung, Quellen
+//   {"t":"waechst","v":{titel,text}}                 der Entwurf, während er geschrieben wird
+//   {"t":"entwurf","v":{…}}                          fertig: dazu Zusammenfassung, Begriffe, Quellen
 //   {"t":"leer","v":"…"}                             nichts gefunden, mit Vorschlag
 //   {"t":"fehler","v":"…"}                           klemmt
 
@@ -57,7 +58,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					kapitel: treffer.kapitel.title,
 					stufe: klasse?.stufe ?? '',
 					quellen,
-					melde: (s) => schick({ t: 'schritt', v: s.text })
+					melde: (s) => schick({ t: 'schritt', v: s.text }),
+					waechst: (teil) => schick({ t: 'waechst', v: { titel: teil.thema, text: teil.text } })
 				});
 
 				if (!ergebnis.ok) schick({ t: 'leer', v: ergebnis.hinweis });

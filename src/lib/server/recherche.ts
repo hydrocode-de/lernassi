@@ -13,7 +13,7 @@
 // Läuft über Requesty EU wie alle anderen Agenten; die Quellen selbst werden direkt vom
 // Server geholt (MediaWiki-APIs, kein Schlüssel, keine Kosten).
 
-import { generateObject, generateText, stepCountIs, tool } from 'ai';
+import { generateText, stepCountIs, streamObject, tool } from 'ai';
 import { z } from 'zod';
 import { env } from '$env/dynamic/private';
 import { modell } from '$lib/server/ingest';
@@ -287,7 +287,10 @@ export async function recherchiere(opts: {
 	kapitel: string;
 	stufe: string;
 	quellen: Quelle[];
+	/** Ein Satz von lernassi, sobald er gilt: wo gesucht wurde, was gefunden, was gelesen wird. */
 	melde: (schritt: Schritt) => void;
+	/** Der Entwurf, während er geschrieben wird. Wächst — jedes Stück enthält alles Bisherige. */
+	waechst: (teil: { thema?: string; text?: string }) => void;
 }): Promise<RechercheErgebnis> {
 	const lernseiten = opts.quellen.filter((q) => !q.zuletzt);
 	const rueckfall = opts.quellen.filter((q) => q.zuletzt);
@@ -394,7 +397,10 @@ export async function recherchiere(opts: {
 
 	opts.melde({ text: 'Ich schreibe dir jetzt einen Entwurf.' });
 
-	const { object } = await generateObject({
+	// Hier wird gestromt, und nur hier: der Entwurf IST der Text, den das Kind gleich liest.
+	// Er soll entstehen, während es zusieht, statt nach zwanzig Sekunden fertig aufzuploppen —
+	// dasselbe Argument wie bei den Fragen einer Welle (`lernen.ts`).
+	const lauf = streamObject({
 		model: modell(),
 		schema: Entwurf,
 		system: SYSTEM,
@@ -413,7 +419,10 @@ export async function recherchiere(opts: {
 		]
 	});
 
-	return { ok: true, entwurf: object, gelesen };
+	for await (const teil of lauf.partialObjectStream)
+		opts.waechst({ thema: teil?.thema, text: teil?.text });
+
+	return { ok: true, entwurf: await lauf.object, gelesen };
 }
 
 function aufzaehlung(teile: string[]): string {
