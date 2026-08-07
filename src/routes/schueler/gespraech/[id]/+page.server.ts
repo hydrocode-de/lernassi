@@ -63,7 +63,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	// ─── Durch ───
 	if (runde.status === 'abgeschlossen') {
-		const skala = await skalaFuer(runde.studentId);
+		const skala = await skalaFuer(runde.studentId, karte.subjectId);
 		const wert = runde.wert ?? 0;
 		const kategorie = kategorieAus(wert, skala);
 		const reihe = await offeneKarten(runde.studentId);

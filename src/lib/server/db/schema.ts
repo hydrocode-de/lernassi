@@ -138,6 +138,13 @@ export const tocEntries = sqliteTable('toc_entries', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	parentId: text('parent_id'),
 	kind: text('kind').notNull(), // 'subject' | 'chapter' | 'topic'
+	// Nur bei kind='subject': die Klasse, deren Fach dieser Zweig ist. Ein Kind ist immer in
+	// mindestens einer Klasse (ohne Beitrittscode gibt es kein Konto), und ein Fach im Heft IST
+	// eine dieser Klassen — daran hängen Lernziel, Skala und die Freigaben der Lehrkraft.
+	// Vorher stand hier nur der Titel und die Zuordnung lief über einen Namensvergleich: wer
+	// „Gesch." tippte, hatte ein Fach ohne Klasse und damit ohne Lernziel. `null` gibt es nur
+	// noch für Altdaten, die beim Umzug keiner Klasse zugeordnet werden konnten.
+	classId: text('class_id').references(() => classes.id, { onDelete: 'set null' }),
 	title: text('title').notNull(),
 	sortOrder: integer('sort_order').notNull().default(0),
 	// Nur bei kind='chapter': wann zuletzt eine abgeschlossene Runde über dieses Kapitel lief.

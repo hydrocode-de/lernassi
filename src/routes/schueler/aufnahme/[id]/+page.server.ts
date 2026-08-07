@@ -57,6 +57,13 @@ async function meineAufnahme(locals: App.Locals, id: string) {
 	return upload;
 }
 
+/** Das Fach über der Kette Thema → Kapitel → Fach. */
+function fachVon(alle: (typeof tocEntries.$inferSelect)[], themaId: string | null) {
+	const thema = alle.find((e) => e.id === themaId);
+	const kapitel = alle.find((e) => e.id === thema?.parentId);
+	return alle.find((e) => e.id === kapitel?.parentId && e.kind === 'subject');
+}
+
 /** Nur Wege innerhalb der Anwendung — ein Ziel aus der Adresszeile darf nicht nach außen führen. */
 function saubererWeiterWeg(roh: string | null): string | null {
 	return roh && /^\/schueler\/kapitel\/[\w-]+$/.test(roh) ? roh : null;
@@ -71,11 +78,10 @@ export const load: PageServerLoad = async ({ params, locals, url }) => {
 		(a, b) => a.sortOrder - b.sortOrder
 	);
 
-	const fachEintrag = alle.find(
-		(e) =>
-			e.kind === 'subject' &&
-			e.title.localeCompare(upload.subject, 'de', { sensitivity: 'base' }) === 0
-	);
+	// Das Fach dieser Aufnahme ergibt sich aus dem, wo die Aufschriebe gelandet sind — nicht
+	// aus dem Namen, den die Aufnahme trägt. Benennt die Lehrkraft ihr Fach um, stimmt der Name
+	// nicht mehr, der Weg über die Einträge schon.
+	const fachEintrag = fachVon(alle, meine[0]?.topicId ?? null);
 	const kapitelAuswahl = alle
 		.filter((e) => e.kind === 'chapter' && e.parentId === fachEintrag?.id)
 		.sort((a, b) => a.title.localeCompare(b.title, 'de'))
@@ -158,11 +164,7 @@ export const actions: Actions = {
 		if (!note?.topicId) return fail(400, { message: 'Nicht möglich.' });
 
 		const alle = await db.select().from(tocEntries).where(eq(tocEntries.studentId, studentId));
-		const fachEintrag = alle.find(
-			(e) =>
-				e.kind === 'subject' &&
-				e.title.localeCompare(upload.subject, 'de', { sensitivity: 'base' }) === 0
-		);
+		const fachEintrag = fachVon(alle, note.topicId);
 		if (!fachEintrag) return fail(400, { message: 'Fach nicht gefunden.' });
 
 		const vorhanden = alle.find(

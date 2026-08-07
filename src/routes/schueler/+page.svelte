@@ -12,10 +12,12 @@
 		month: 'long'
 	}).format(new Date());
 
-	// Das Wort am Thema entsteht hier, aus rohen Punkten und den Grenzen der Klasse. Ein Thema,
-	// das noch keine Runde gefragt hat, bekommt keins.
-	const themaStand = (thema: Thema) =>
-		thema.stand ? standAus(thema.stand.erreicht, thema.stand.moeglich, data.skala) : null;
+	// Das Wort am Thema entsteht hier, aus rohen Punkten und den Grenzen der Klasse — der
+	// Klasse dieses Fachs, nicht irgendeiner. Ein Thema, das noch keine Runde gefragt hat,
+	// bekommt keins.
+	const skalaVon = (f: Fach) => (f.classId ? data.skalen[f.classId] : null) ?? data.skala;
+	const themaStand = (thema: Thema, f: Fach) =>
+		thema.stand ? standAus(thema.stand.erreicht, thema.stand.moeglich, skalaVon(f)) : null;
 
 	const leer = $derived(data.faecher.length === 0);
 	const gewaehlt = $derived(page.url.searchParams.get('fach'));
@@ -102,8 +104,8 @@
 							<!-- Stand und Zeitangabe teilen EINE Spalte — sonst sprengt der zusätzliche
 							     Eintrag das Raster der Zeile und der Pfeil rutscht in die nächste Reihe. -->
 							<span class="rechts">
-								{#if themaStand(thema)}
-									{@const s = themaStand(thema)}
+								{#if themaStand(thema, f)}
+									{@const s = themaStand(thema, f)}
 									<span class="tag tag--{s?.farbe}">{s?.wort}</span>
 								{/if}
 								<span class="small stand">

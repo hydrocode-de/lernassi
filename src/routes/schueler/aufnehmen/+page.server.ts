@@ -9,6 +9,12 @@ import {
 import { KeinSchluessel, leseAufschrieb, tocAlsText } from "$lib/server/ingest";
 import { darfSpeichern, fingerabdruck, legeSeiteAb } from "$lib/server/bilder";
 import { einsortieren, kapitelMitFach } from "$lib/server/gliederung";
+import {
+  fachEintrag,
+  klasseFuerFach,
+  meineKlasse,
+  meineKlassen,
+} from "$lib/server/klasse";
 import { themenReihenfolge } from "$lib/server/heft";
 import { and, eq, inArray } from "drizzle-orm";
 import { fail, redirect } from "@sveltejs/kit";
@@ -49,17 +55,11 @@ async function festesZiel(
 export const load: PageServerLoad = async ({ locals, url }) => {
   if (!locals.user || locals.user.role !== "student")
     throw redirect(303, "/anmelden");
-  const faecher = await db
-    .select({ id: tocEntries.id, title: tocEntries.title })
-    .from(tocEntries)
-    .where(
-      and(
-        eq(tocEntries.studentId, locals.user.id),
-        eq(tocEntries.kind, "subject"),
-      ),
-    );
   return {
-    faecher: faecher.sort((a, b) => a.title.localeCompare(b.title, "de")),
+    // Zur Wahl stehen die Klassen des Kindes, nicht die Fächer seines Hefts: ein Fach IST eine
+    // Klasse. Vorher konnte hier ein Name getippt werden, der zu keiner Klasse passte — dann
+    // lief die Runde ohne Lernziel und mit der Skala einer fremden Klasse.
+    klassen: await meineKlassen(locals.user.id),
     weiter: saubererWeiterWeg(url.searchParams.get("weiter")),
     ziel: await festesZiel(
       locals.user.id,
@@ -103,14 +103,17 @@ export const actions: Actions = {
     const studentId = locals.user.id;
 
     const fd = await request.formData();
-    // Mit festem Ziel gilt das Fach des Kapitels, nicht das aus dem Auswahlfeld — das ist
+    // Mit festem Ziel gilt die Klasse des Kapitels, nicht die aus dem Auswahlfeld — das ist
     // dann gar nicht sichtbar.
     const ziel = await festesZiel(
       studentId,
       String(fd.get("kapitel") ?? "") || null,
       String(fd.get("nach") ?? "") || null,
     );
-    const fach = ziel?.fach ?? String(fd.get("fach") ?? "").trim();
+    const klasse = ziel
+      ? await klasseFuerFach(studentId, ziel.fachId)
+      : await meineKlasse(studentId, String(fd.get("klasse") ?? ""));
+    const fach = klasse?.fach ?? ziel?.fach ?? "";
     const dateien = fd
       .getAll("seiten")
       .filter((f): f is File => f instanceof File && f.size > 0);
@@ -178,14 +181,18 @@ export const actions: Actions = {
       .select()
       .from(tocEntries)
       .where(eq(tocEntries.studentId, studentId));
-    const fachEintrag = alle.find(
-      (e) =>
-        e.kind === "subject" &&
-        e.title.localeCompare(fach, "de", { sensitivity: "base" }) === 0,
+    // Über die Klasse, nicht über den Namen. Der Namensvergleich bleibt nur als Rückfall für
+    // Altdaten-Fächer ohne Klasse.
+    const fachZeile = alle.find((e) =>
+      e.kind !== "subject"
+        ? false
+        : klasse
+          ? e.classId === klasse.id
+          : e.title.localeCompare(fach, "de", { sensitivity: "base" }) === 0,
     );
     const gliederung = tocAlsText(
       alle
-        .filter((e) => e.kind === "chapter" && e.parentId === fachEintrag?.id)
+        .filter((e) => e.kind === "chapter" && e.parentId === fachZeile?.id)
         .map((k) => ({
           title: k.title,
           themen: alle
@@ -253,7 +260,11 @@ export const actions: Actions = {
         });
     }
 
-    const fachId = await findeOderLege(studentId, "subject", fach, null);
+    // Der Fach-Zweig gehört zur Klasse, nicht zu einem Namen. Ohne Klasse (nur bei Altdaten
+    // erreichbar, wenn das feste Ziel an einem klassenlosen Fach hängt) bleibt es beim Titel.
+    const fachId = klasse
+      ? await fachEintrag(studentId, klasse)
+      : await findeOderLege(studentId, "subject", fach, null);
     const neueThemen: string[] = [];
     for (const [i, abschnitt] of ergebnis.abschnitte.entries()) {
       const kapitelId =

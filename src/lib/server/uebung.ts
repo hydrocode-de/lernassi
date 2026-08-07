@@ -28,6 +28,7 @@ import {
 } from '$lib/server/runde';
 import { einsortieren, naechsteKarte, offeneKarten } from '$lib/server/warteschlange';
 import { kategorieAus, skalaLesen, type Kategorie, type Stufe } from '$lib/kategorie';
+import { klasseFuerFach, meineKlassen } from '$lib/server/klasse';
 
 export type Karte = typeof planItems.$inferSelect;
 
@@ -43,16 +44,21 @@ export function istRueckschau(v: string): v is Rueckschau {
 	return v in RUECKSCHAU;
 }
 
-/** Die Skala der Klasse, in der dieses Kind ist. */
-export async function skalaFuer(studentId: string): Promise<[Stufe, Stufe, Stufe]> {
-	const zeile = (
-		await db
-			.select({ scale: classes.masteryScale })
-			.from(students)
-			.innerJoin(classes, eq(classes.id, students.classId))
-			.where(eq(students.userId, studentId))
-	)[0];
-	return skalaLesen(zeile?.scale ?? null);
+/**
+ * Die Grenzen, ab denen ein Prozentwert „sitzt" heißt. Sie hängen an der Klasse, und ein Kind
+ * sitzt in mehreren — darum mit dem Fach, um das es geht: `fachId` zeigt über
+ * `tocEntries.classId` auf genau eine Klasse. Ohne Fach (oder bei Altdaten ohne Klasse) gilt
+ * die erste Klasse des Kindes; das ist derselbe Notnagel wie vorher, nur jetzt sichtbar.
+ */
+export async function skalaFuer(
+	studentId: string,
+	fachId?: string | null
+): Promise<[Stufe, Stufe, Stufe]> {
+	if (fachId) {
+		const klasse = await klasseFuerFach(studentId, fachId);
+		if (klasse) return skalaLesen(klasse.skala);
+	}
+	return skalaLesen((await meineKlassen(studentId))[0]?.skala ?? null);
 }
 
 export async function meineKarte(studentId: string, karteId: string): Promise<Karte | null> {
@@ -184,7 +190,7 @@ export async function uebungsfragenSchreiben(
 		auftrag: karte.auftrag,
 		minuten: karte.minutes ?? 10,
 		material: materialAlsText(material, true),
-		lernziel: await lernzielFuer(karte.studentId, kontext.fach),
+		lernziel: await lernzielFuer(karte.studentId, kontext.fachId),
 		beurteilung: kontext.beurteilung,
 		mitschrieb: mitschriebFuer(roundId)
 	});
@@ -234,7 +240,7 @@ export async function uebungAbschliessen(
 		.set({ status: 'abgeschlossen', finishedAt: jetzt })
 		.where(eq(rounds.id, runde.id));
 
-	const skala = await skalaFuer(runde.studentId);
+	const skala = await skalaFuer(runde.studentId, karte.subjectId);
 	// Ohne mögliche Punkte gibt es nichts zu bewerten — dann bleibt die Karte, wo sie ist.
 	const kategorie: Kategorie = wert === null ? 4 : kategorieAus(wert, skala);
 

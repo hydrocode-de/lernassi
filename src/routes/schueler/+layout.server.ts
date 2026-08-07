@@ -14,6 +14,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	// wer sie unterrichtet — dass die Klasse „Geschichte 9b" heißt, ist Sache der Lehrkraft.
 	const zugehoerigkeiten = await db
 		.select({
+			classId: classes.id,
 			fach: classes.subject,
 			lehrkraft: user.firstName,
 			lehrkraftName: user.name,
@@ -38,8 +39,12 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 			lehrkraft: z.lehrkraftName ?? z.lehrkraft ?? null
 		})),
 		// Die Grenzen der Klasse: aus ihnen entsteht bei der Anzeige das Wort am Thema.
-		// Mehrere Klassen können verschiedene Grenzen haben — bis die Anzeige das je Fach
-		// trennt, gilt die erste.
+		// Je Klasse, weil ein Kind in mehreren sitzt und in Klasse 6 etwas anderes „sitzt" heißt
+		// als im Leistungskurs. Das Verzeichnis wählt über `fach.classId` die richtige.
+		skalen: Object.fromEntries(
+			zugehoerigkeiten.map((z) => [z.classId, skalaLesen(z.skala)])
+		) as Record<string, ReturnType<typeof skalaLesen>>,
+		// Rückfall für Seiten, die kein Fach im Zugriff haben.
 		skala: skalaLesen(zugehoerigkeiten[0]?.skala ?? null),
 		// Die Fächer trägt die Seitenleiste auf jeder Seite, darum hier statt in der Route.
 		faecher: await heftLesen(studentId)

@@ -25,7 +25,14 @@ export type Kapitel = {
 	gefragt: number | null;
 	neuesMaterial: boolean;
 };
-export type Fach = { id: string; title: string; kapitel: Kapitel[]; anzahlThemen: number };
+export type Fach = {
+	id: string;
+	title: string;
+	/** Die Klasse, deren Fach dieser Zweig ist. null nur bei Altdaten ohne Zuordnung. */
+	classId: string | null;
+	kapitel: Kapitel[];
+	anzahlThemen: number;
+};
 
 // Das Inhaltsverzeichnis eines Kindes. Die Seitenleiste braucht es auf jeder Seite,
 // darum liegt es im Layout und nicht in einer einzelnen Route.
@@ -87,6 +94,7 @@ export async function heftLesen(studentId: string): Promise<Fach[]> {
 			return {
 				id: f.id,
 				title: f.title,
+				classId: f.classId,
 				kapitel,
 				anzahlThemen: kapitel.reduce((s, k) => s + k.themen.length, 0)
 			};

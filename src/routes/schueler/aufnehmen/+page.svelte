@@ -7,7 +7,6 @@
 	let { data, form } = $props();
 
 	let gewaehlt = $state<string | null>(null);
-	let neuesFach = $state('');
 	let seiten = $state<File[]>([]);
 	let liest = $state(false);
 	let zieht = $state(false);
@@ -15,10 +14,11 @@
 	let dateien = $state<HTMLInputElement | null>(null);
 	let sendefeld = $state<HTMLInputElement | null>(null);
 
-	// Mit festem Ziel ist die Fachwahl weg: Kapitel und Stelle hat das Kind im Verzeichnis
-	// schon entschieden, das Fach steht über dem Kapitel.
-	const fach = $derived(data.ziel?.fach ?? gewaehlt ?? data.faecher[0]?.title ?? '__neu');
-	const gewaehltesFach = $derived(fach === '__neu' ? neuesFach.trim() : fach);
+	// Gewählt wird eine Klasse, kein Name: ein Fach im Heft IST eine Klasse. Mit festem Ziel
+	// fällt auch das weg — Kapitel und Stelle hat das Kind im Verzeichnis schon entschieden.
+	const klasseId = $derived(gewaehlt ?? data.klassen[0]?.id ?? '');
+	const klasse = $derived(data.klassen.find((k) => k.id === klasseId) ?? null);
+	const gewaehltesFach = $derived(data.ziel?.fach ?? klasse?.fach ?? '');
 	const stelle = $derived(
 		data.ziel
 			? data.ziel.davor
@@ -157,24 +157,19 @@
 			</div>
 			<input type="hidden" name="kapitel" value={data.ziel.kapitelId} />
 			<input type="hidden" name="nach" value={data.ziel.stelle} />
-		{:else}
+		{:else if data.klassen.length > 1}
 			<label class="field fachwahl">
 				<span class="field__label">Fach</span>
-				<select value={fach} onchange={(e) => (gewaehlt = e.currentTarget.value)}>
-					{#each data.faecher as f (f.id)}
-						<option value={f.title}>{f.title}</option>
+				<select value={klasseId} onchange={(e) => (gewaehlt = e.currentTarget.value)}>
+					{#each data.klassen as k (k.id)}
+						<option value={k.id}>{k.fach}</option>
 					{/each}
-					<option value="__neu">Neues Fach …</option>
 				</select>
 			</label>
-
-			{#if fach === '__neu'}
-				<label class="field" style="margin-bottom:10px">
-					<span class="field__label">Neues Fach</span>
-					<input bind:value={neuesFach} placeholder="z. B. Geschichte" />
-				</label>
-			{/if}
-			<input type="hidden" name="fach" value={gewaehltesFach} />
+			<input type="hidden" name="klasse" value={klasseId} />
+		{:else}
+			<!-- Ein Fach, nichts zu wählen. Der Name steht ohnehin in der Kopfzeile. -->
+			<input type="hidden" name="klasse" value={klasseId} />
 		{/if}
 		{#if data.weiter}<input type="hidden" name="weiter" value={data.weiter} />{/if}
 
