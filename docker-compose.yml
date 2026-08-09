@@ -4,7 +4,7 @@
 # das tut, was er vorher tat.
 #
 #   Produktion  lernassi.hydrocode.cloud      127.0.0.1:8030  /data/lernassi
-#   Dev         dev.lernassi.hydrocode.cloud  127.0.0.1:8031  /data/lernassi-dev
+#   Dev         dev.lernassi.hydrocode.cloud  127.0.0.1:8032  /data/lernassi-dev
 #
 # Den Projektnamen (und damit die Containernamen) leitet Compose aus dem Verzeichnis ab,
 # die beiden Instanzen kommen sich also nicht ins Gehege.

@@ -8,7 +8,7 @@ Zwei Instanzen auf demselben Server, je ein Zweig:
 | Adresse | lernassi.hydrocode.cloud | dev.lernassi.hydrocode.cloud |
 | Checkout | `/apps/lernassi` | `/apps/lernassi-dev` |
 | Daten | `/data/lernassi` | `/data/lernassi-dev` |
-| Port (nur lokal) | 127.0.0.1:8030 | 127.0.0.1:8031 |
+| Port (nur lokal) | 127.0.0.1:8030 | 127.0.0.1:8032 |
 | Datenbank | `/data/lernassi/db/lernassi.db` | `/data/lernassi-dev/db/lernassi.db` |
 | Bilder | `/data/lernassi/uploads` | `/data/lernassi-dev/uploads` |
 | Nginx | `/etc/nginx/sites-enabled/lernassi.conf` | `…/lernassi-dev.conf` |
@@ -142,13 +142,13 @@ cd /apps/lernassi-dev && git checkout main
 # 3. Geheimnisse — plus die vier Werte, die Dev von der Produktion unterscheiden
 cp /apps/lernassi-dev/.env.example /apps/lernassi-dev/.env
 cat >> /apps/lernassi-dev/.env <<'ENDE'
-LERNASSI_PORT=8031
+LERNASSI_PORT=8032
 LERNASSI_ORIGIN=https://dev.lernassi.hydrocode.cloud
 LERNASSI_DATEN=/data/lernassi-dev
 ENDE
 $EDITOR /apps/lernassi-dev/.env
 
-# 4. Starten (hört auf 127.0.0.1:8031)
+# 4. Starten (hört auf 127.0.0.1:8032)
 cd /apps/lernassi-dev && docker compose up -d --build
 
 # 5.–7. wie oben, nur mit den Dev-Dateien
