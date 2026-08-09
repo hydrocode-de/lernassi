@@ -1,5 +1,15 @@
-# Deployen, wenn ein Tag gesetzt wird — dann ist das Ausrollen ein `git push origin v0.6.0`
-# und kein Handgriff auf dem Server mehr. Von Hand geht es weiterhin über „Run workflow".
+# Deployen von selbst, je Zweig eine Instanz:
+#
+#   Push auf `main`  ->  Dev          https://dev.lernassi.hydrocode.cloud
+#   Push auf `prod`  ->  Produktion   https://lernassi.hydrocode.cloud
+#
+# Nach `prod` kommt nichts direkt: dorthin führt nur der Merge eines Pull Requests von
+# `main`. Der PR ist die Stelle, an der der Unterschied zwischen Dev und Produktion
+# sichtbar wird — der Moment, in dem man „ja, das darf zu den Kindern" sagt.
+#
+# Tags lösen bewusst nichts mehr aus. Sie markieren Meilensteine, sie rollen nicht aus;
+# sonst gäbe es zwei Wege zu einem Ziel und irgendwann zwei verschiedene Wahrheiten.
+# Einen Tag trotzdem ausrollen: „Run workflow" auf `prod` mit dem Tag im Feld `ref`.
 #
 # Was in den Repository-Secrets liegen muss (Settings → Secrets and variables → Actions):
 #
@@ -10,28 +20,38 @@
 #                       Lauf den Wirt blind akzeptieren — dann deployt man beim ersten
 #                       DNS-Zwischenfall irgendwohin.
 #
-# Optional als Variables (statt Secrets), wenn die Vorgaben nicht passen:
-#   DEPLOY_ZIEL (root@data.camels-de.org) · DEPLOY_PFAD (/apps/lernassi) · DEPLOY_URL
+# Optional als Variables, wenn die Vorgaben nicht passen:
+#   DEPLOY_ZIEL (root@data.camels-de.org)
+#   DEPLOY_PFAD / DEPLOY_DATEN / DEPLOY_URL              — Produktion
+#   DEPLOY_PFAD_DEV / DEPLOY_DATEN_DEV / DEPLOY_URL_DEV  — Dev
 
 name: Deploy
 
 on:
   push:
-    tags: ['v*']
+    branches: [main, prod]
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Tag oder Commit, der ausgerollt werden soll (leer = main)'
+        description: 'Tag oder Commit statt der Zweigspitze (leer = Spitze des Zweigs)'
         required: false
 
 concurrency:
-  # Zwei Deploys gleichzeitig auf denselben Server wären zwei Wahrheiten.
-  group: deploy-camels-de
+  # Je Instanz eine Gruppe: ein Dev-Deploy darf einen Prod-Deploy nicht aufhalten, aber
+  # zwei Deploys auf dieselbe Instanz wären zwei Wahrheiten.
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
+    # Trägt den Link in die Zusammenfassung des Laufs und in die Zeitleiste des Repos —
+    # so sieht man ohne Nachfragen, welcher Stand gerade wo läuft.
+    environment:
+      name: ${{ github.ref_name == 'prod' && 'produktion' || 'dev' }}
+      url: ${{ github.ref_name == 'prod' && 'https://lernassi.hydrocode.cloud' || 'https://dev.lernassi.hydrocode.cloud' }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -49,12 +69,58 @@ jobs:
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
           echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
 
+      # Welche Instanz gemeint ist, sagt der Zweig — und sonst nichts. Die Werte landen
+      # in GITHUB_ENV, damit der Deploy-Schritt und die Fehlermeldung dieselben sehen.
+      - name: Ziel bestimmen
+        env:
+          ZWEIG: ${{ github.ref_name }}
+          V_PFAD: ${{ vars.DEPLOY_PFAD }}
+          V_DATEN: ${{ vars.DEPLOY_DATEN }}
+          V_URL: ${{ vars.DEPLOY_URL }}
+          V_PFAD_DEV: ${{ vars.DEPLOY_PFAD_DEV }}
+          V_DATEN_DEV: ${{ vars.DEPLOY_DATEN_DEV }}
+          V_URL_DEV: ${{ vars.DEPLOY_URL_DEV }}
+        run: |
+          if [ "$ZWEIG" = "prod" ]; then
+            pfad="${V_PFAD:-/apps/lernassi}"
+            daten="${V_DATEN:-/data/lernassi}"
+            url="${V_URL:-https://lernassi.hydrocode.cloud}"
+          else
+            pfad="${V_PFAD_DEV:-/apps/lernassi-dev}"
+            daten="${V_DATEN_DEV:-/data/lernassi-dev}"
+            url="${V_URL_DEV:-https://dev.lernassi.hydrocode.cloud}"
+          fi
+          {
+            echo "LERNASSI_BRANCH=$ZWEIG"
+            echo "LERNASSI_PFAD=$pfad"
+            echo "LERNASSI_DATEN=$daten"
+            echo "LERNASSI_URL=$url"
+          } >> "$GITHUB_ENV"
+          echo "Zweig $ZWEIG -> $url ($pfad)"
+
       - name: Ausrollen
         env:
           LERNASSI_SSH: ${{ vars.DEPLOY_ZIEL || 'root@data.camels-de.org' }}
-          LERNASSI_PFAD: ${{ vars.DEPLOY_PFAD || '/apps/lernassi' }}
-          LERNASSI_URL: ${{ vars.DEPLOY_URL || 'https://lernassi.hydrocode.cloud' }}
+          REF: ${{ inputs.ref }}
         run: |
           chmod +x scripts/deploy.sh
-          # Bei einem Tag genau diesen Stand, sonst was in der Eingabe steht (leer = main).
-          scripts/deploy.sh "${{ github.ref_type == 'tag' && github.ref_name || inputs.ref }}"
+          scripts/deploy.sh "$REF"
+
+      # Scheitert der Deploy, sind die Migrationen schon gelaufen. Automatisch
+      # zurückzurollen macht es dann meist schlimmer — mit `DROP COLUMN` in der Historie
+      # läuft der alte Code gegen ein Schema, in dem die Spalte fehlt. Also nur laut
+      # sagen, wo die Sicherung liegt und wie man nachsieht.
+      - name: Bei Fehlschlag weitersagen
+        if: failure()
+        env:
+          ZIEL: ${{ vars.DEPLOY_ZIEL || 'root@data.camels-de.org' }}
+        run: |
+          {
+            echo "## Deploy gescheitert"
+            echo
+            echo "Nichts wurde zurückgenommen. Die Sicherung von vor den Migrationen liegt in \`${LERNASSI_DATEN:-?}/backups\`."
+            echo
+            echo '```bash'
+            echo "ssh $ZIEL 'cd ${LERNASSI_PFAD:-/apps/lernassi} && docker compose logs --tail 50'"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

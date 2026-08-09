@@ -1,5 +1,13 @@
-# Gehört auf dem Server nach /apps/lernassi/docker-compose.yml
-# Nginx (lernassi.conf): lernassi.hydrocode.cloud -> 127.0.0.1:8030
+# Trägt beide Instanzen: die Produktion in /apps/lernassi und die Dev-Instanz in
+# /apps/lernassi-dev. Was sie unterscheidet, steht in der jeweiligen .env daneben —
+# ohne Angabe gelten die Werte der Produktion, damit ein Checkout ohne .env immer noch
+# das tut, was er vorher tat.
+#
+#   Produktion  lernassi.hydrocode.cloud      127.0.0.1:8030  /data/lernassi
+#   Dev         dev.lernassi.hydrocode.cloud  127.0.0.1:8031  /data/lernassi-dev
+#
+# Den Projektnamen (und damit die Containernamen) leitet Compose aus dem Verzeichnis ab,
+# die beiden Instanzen kommen sich also nicht ins Gehege.
 services:
   web:
     build:
@@ -7,19 +15,22 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - '127.0.0.1:8030:3000'
+      - '127.0.0.1:${LERNASSI_PORT:-8030}:3000'
     env_file:
       - path: .env
         required: false
     environment:
-      # Datenbank und Bilder liegen auf /data/lernassi, nicht im Container.
+      # Datenbank und Bilder liegen auf dem Wirt, nicht im Container. Im Container immer
+      # unter /data — welches Wirtsverzeichnis das ist, entscheidet LERNASSI_DATEN unten.
       DATABASE_URL: /data/db/lernassi.db
       UPLOAD_DIR: /data/uploads
-      # Hinter dem Proxy muss SvelteKit wissen, wie es von außen heißt.
-      ORIGIN: https://lernassi.hydrocode.cloud
+      # Hinter dem Proxy muss SvelteKit wissen, wie es von außen heißt. Steht das falsch,
+      # scheitert jede Formularabsendung an der Origin-Prüfung — auf Dev also zwingend
+      # LERNASSI_ORIGIN in der .env setzen.
+      ORIGIN: ${LERNASSI_ORIGIN:-https://lernassi.hydrocode.cloud}
       PROTOCOL_HEADER: x-forwarded-proto
       HOST_HEADER: x-forwarded-host
-      BETTER_AUTH_URL: https://lernassi.hydrocode.cloud
+      BETTER_AUTH_URL: ${LERNASSI_ORIGIN:-https://lernassi.hydrocode.cloud}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET fehlt in .env}
       # Einmalcode für Lehrkraft-Konten. Bewusst im Klartext: er sperrt das freie
       # Registrieren, schützt aber nichts, was schon angelegt ist. Zum Ändern hier
@@ -37,4 +48,4 @@ services:
       REQUESTY_MODEL_BEURTEILUNG:
       REQUESTY_MODEL_BEWERTER:
     volumes:
-      - /data/lernassi:/data
+      - ${LERNASSI_DATEN:-/data/lernassi}:/data

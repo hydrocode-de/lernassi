@@ -4,16 +4,23 @@
 # was in DEPLOY.md steht — plus die Handgriffe, die man sonst vergisst: Sicherung der
 # Datenbank vor den Migrationen, und hinterher nachsehen, ob die Seite auch antwortet.
 #
-#   scripts/deploy.sh              # den Stand von main ausrollen
+#   scripts/deploy.sh              # den Stand des Zweigs ausrollen (Vorgabe: prod)
 #   scripts/deploy.sh v0.5.0       # genau diesen Tag ausrollen
 #
 # Voraussetzung ist ein SSH-Zugang, der ohne Rückfragen durchgeht (Schlüssel im Agent).
-# Abweichende Ziele über Umgebungsvariablen:
+# Abweichende Ziele über Umgebungsvariablen — ohne Angabe geht es auf die Produktion:
 #
 #   LERNASSI_SSH=root@data.camels-de.org
 #   LERNASSI_PFAD=/apps/lernassi
 #   LERNASSI_DATEN=/data/lernassi
 #   LERNASSI_URL=https://lernassi.hydrocode.cloud
+#   LERNASSI_BRANCH=prod
+#
+# Die Dev-Instanz ist dasselbe Skript mit anderen Werten:
+#
+#   LERNASSI_PFAD=/apps/lernassi-dev LERNASSI_DATEN=/data/lernassi-dev \
+#   LERNASSI_URL=https://dev.lernassi.hydrocode.cloud LERNASSI_BRANCH=main \
+#   scripts/deploy.sh
 
 set -euo pipefail
 
@@ -21,11 +28,12 @@ ZIEL="${LERNASSI_SSH:-root@data.camels-de.org}"
 PFAD="${LERNASSI_PFAD:-/apps/lernassi}"
 DATEN="${LERNASSI_DATEN:-/data/lernassi}"
 URL="${LERNASSI_URL:-https://lernassi.hydrocode.cloud}"
+ZWEIG="${LERNASSI_BRANCH:-prod}"
 REF="${1:-}"
 
 sagen() { printf '\n\033[1m▸ %s\033[0m\n' "$*"; }
 
-sagen "Ziel: $ZIEL:$PFAD${REF:+ (Stand $REF)}"
+sagen "Ziel: $ZIEL:$PFAD (${REF:-Zweig $ZWEIG})"
 
 # Die Datenbank vor den Migrationen sichern. Sie liegt außerhalb des Checkouts, ein
 # fehlgeschlagener Deploy fasst sie also nicht an — eine Migration aber schon.
@@ -47,14 +55,15 @@ fi
 FERN
 
 sagen "Stand holen und bauen"
-ssh "$ZIEL" "PFAD='$PFAD' REF='$REF' bash -euo pipefail -s" <<'FERN'
+ssh "$ZIEL" "PFAD='$PFAD' REF='$REF' ZWEIG='$ZWEIG' bash -euo pipefail -s" <<'FERN'
 cd "$PFAD"
 git fetch --tags --prune
-# Mit Tag genau diesen Stand (abgekoppelt, damit klar ist, was läuft), sonst main nachziehen.
+# Mit Tag genau diesen Stand (abgekoppelt, damit klar ist, was läuft), sonst den Zweig
+# nachziehen: prod für die Produktion, main für Dev.
 if [ -n "$REF" ]; then
 	git checkout --detach "$REF"
 else
-	git checkout main && git pull --ff-only
+	git checkout "$ZWEIG" && git pull --ff-only
 fi
 echo "jetzt auf: $(git describe --tags --always) ($(git rev-parse --short HEAD))"
 docker compose up -d --build
