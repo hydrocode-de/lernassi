@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="lernassi staging">
+	<title>lernassi staging</title>
+	<rect width="512" height="512" fill="#ccccf8"/>
+	<g id="mark" transform="translate(256 256) scale(1.2) translate(-256 -256)">
+		<rect x="156" y="125" width="200" height="262" rx="30" fill="#fcdec7"
+			transform="rotate(-16 256 256) translate(-46 0)"/>
+		<rect x="156" y="125" width="200" height="262" rx="30" fill="#caefdd"
+			transform="rotate(16 256 256) translate(46 0)"/>
+		<rect x="156" y="125" width="200" height="262" rx="30" fill="#ffffff"/>
+		<path d="M199 256 L237 298 L313 208" fill="none" stroke="#0e6549" stroke-width="32"
+			stroke-linecap="round" stroke-linejoin="round"/>
+	</g>
+	<!-- Die Binde liegt bewusst über dem Zeichen, nicht daneben: auf dem Startbildschirm
+	     stehen beide Fassungen nebeneinander, und dort entscheidet der erste Blick. -->
+	<g id="binde">
+		<rect x="0" y="352" width="512" height="112" fill="#362c24"/>
+		<text x="256" y="425" textLength="392" lengthAdjust="spacingAndGlyphs"
+			font-family="Quicksand, ui-rounded, system-ui, sans-serif" font-size="76" font-weight="700"
+			fill="#ffffff" text-anchor="middle">staging</text>
+	</g>
+</svg>

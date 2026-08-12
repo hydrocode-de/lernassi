@@ -31,6 +31,11 @@ services:
       PROTOCOL_HEADER: x-forwarded-proto
       HOST_HEADER: x-forwarded-host
       BETTER_AUTH_URL: ${LERNASSI_ORIGIN:-https://lernassi.hydrocode.cloud}
+      # Welche der beiden Instanzen das hier ist — sie unterscheiden sich im Zeichen der
+      # PWA, damit auf einem Tablet niemand die falsche antippt. Ohne Angabe liest die
+      # Anwendung es an ORIGIN ab (`dev.…` heißt Dev), zu setzen ist hier also nichts.
+      # Nur wenn das einmal nicht stimmt: `staging` oder `produktion` in die .env.
+      LERNASSI_UMGEBUNG:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET fehlt in .env}
       # Einmalcode für Lehrkraft-Konten. Bewusst im Klartext: er sperrt das freie
       # Registrieren, schützt aber nichts, was schon angelegt ist. Zum Ändern hier

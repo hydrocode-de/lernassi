@@ -20,7 +20,12 @@ const OFFLINE = '/offline.html';
 // build = die gehashten Dateien aus dem Bau, files = alles aus static/.
 // Beide ändern bei jeder Änderung ihren Namen bzw. die Version, sind also
 // unveränderlich und dürfen bedenkenlos von der Platte kommen.
-const vorrat = [...build, ...files];
+//
+// Ausgenommen sind die Zeichen mit der „staging"-Binde: in static/ liegen beide
+// Fassungen, gebraucht wird je Instanz nur eine, und welche das ist, weiß hier im
+// Browser niemand. Sie fehlen im Vorrat nicht — das Betriebssystem holt sie beim
+// Einrichten auf dem Startbildschirm ohnehin frisch, und dabei ist man online.
+const vorrat = [...build, ...files.filter((pfad) => !pfad.includes('-staging.'))];
 const imVorrat = new Set(vorrat);
 
 sw.addEventListener('install', (event) => {

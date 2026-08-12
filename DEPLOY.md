@@ -12,6 +12,7 @@ Zwei Instanzen auf demselben Server, je ein Zweig:
 | Datenbank | `/data/lernassi/db/lernassi.db` | `/data/lernassi-dev/db/lernassi.db` |
 | Bilder | `/data/lernassi/uploads` | `/data/lernassi-dev/uploads` |
 | Nginx | `/etc/nginx/sites-enabled/lernassi.conf` | `…/lernassi-dev.conf` |
+| Zeichen der PWA | lernassi | dasselbe mit „staging"-Binde |
 
 Die beiden teilen sich nichts außer dem Wirt. Getrennte Datenbanken sind kein
 Ordnungsfimmel, sondern Notwehr: `main` ist im Schema immer vor `prod`, und in der
@@ -21,6 +22,25 @@ ohne Warnung, nur 500er bei den Kindern.
 
 Auf Dev arbeiten Beta-Lehrkräfte mit Testklassen, nie mit echten Kindern. Die Dev-Daten
 sind wegwerfbar und werden nicht gesichert.
+
+Damit auf einem Tablet, auf dem beide liegen, niemand die falsche antippt, liefert die
+Dev-Instanz ein eigenes Zeichen aus: dasselbe wie sonst, mit einer „staging"-Binde
+darüber, und „staging" statt „lernassi" unter dem Symbol auf dem Startbildschirm. Welche
+Fassung es wird, entscheidet die Anwendung beim Ausliefern an `LERNASSI_ORIGIN` — ein
+Name, der mit `dev.` beginnt, ist Dev. Dafür ist nichts einzurichten; nur falls die
+Dev-Instanz einmal anders heißen sollte, setzt man `LERNASSI_UMGEBUNG=staging` in ihre
+`.env`. Im Zweifel gilt Produktion.
+
+Die Zeichen liegen als SVG in `static/`; die PNG daneben — die verlangen iOS und Android
+beim Einrichten auf dem Startbildschirm — erzeugt `scripts/icons.mjs` daraus:
+
+```bash
+npm i --no-save sharp && node scripts/icons.mjs
+```
+
+Wer die Dev-Instanz schon auf dem Startbildschirm hat, sieht das neue Zeichen nicht von
+selbst: das Betriebssystem holt es nur beim Einrichten. Einmal entfernen und neu
+hinzufügen.
 
 Alles, was der Server braucht, liegt im Repo. Von Hand angelegt wird nur, was dort nicht
 hingehört: die `.env` neben dem jeweiligen Checkout (Geheimnisse, Vorlage ist
