@@ -83,6 +83,30 @@ meldet ein Deploy Erfolg, während der Container noch im Kreis läuft.
 
 Migrationen laufen beim Containerstart mit (`node scripts/migrate.mjs`).
 
+### Konten und Passwörter
+
+Wer die Zugangsdaten einer Instanz nicht mehr weiß, fragt sie dort nach — `seed.mjs` hat
+auf dem Server nichts zu suchen, das legt die Testklasse neu an und löscht dabei.
+
+```bash
+# Welche Konten gibt es? (Produktion; für Dev /apps/lernassi-dev)
+ssh root@95.217.79.15 'cd /apps/lernassi && docker compose exec -T web node scripts/passwort.mjs'
+
+# Passwort neu setzen — ohne Vorgabe wird eines ausgewürfelt und angezeigt
+ssh root@95.217.79.15 'cd /apps/lernassi && docker compose exec -T web node scripts/passwort.mjs t@test.de'
+
+# Oder selbst vorgeben
+ssh root@95.217.79.15 'cd /apps/lernassi && docker compose exec -T web node scripts/passwort.mjs t@test.de geheim123'
+```
+
+Kennung ist, womit sich das Konto anmeldet: bei Lehrkräften die E-Mail, bei Kindern das
+Pseudonym. Offene Sitzungen des Kontos werden dabei verworfen — wer ein Passwort
+zurücksetzt, will den bisher Angemeldeten in der Regel draußen haben.
+
+Das ausgewürfelte Passwort steht danach in der Shell-Historie des Servers und in keinem
+Protokoll der App. Es ist als Einmal-Passwort gedacht: weitergeben, und die Lehrkraft
+ändert es selbst.
+
 ### Wenn ein Deploy scheitert
 
 Es wird nichts zurückgenommen — bewusst. Die Migrationen sind zu dem Zeitpunkt schon
